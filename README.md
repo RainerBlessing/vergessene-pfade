@@ -9,9 +9,10 @@ Narrativer Retro-RPG-Prototyp (C11 / SDL3). Er prüft, ob der Loop
 - Kulturelle Notizen und Quellen: [docs/culture-notes.md](docs/culture-notes.md)
 - Herkunft des Codes: Emberpost (Japan-/Deutsch-Fassung), siehe [docs/emberpost/](docs/emberpost/)
 
-**Aktueller Stand (Stage 1):** Das ist noch der entschlackte Emberpost-Slice mit
-Dorf, Weg, Dornengeist und Spiegel, ohne Laden, Gold und Klinge. Die
-Walddorf-Inhalte folgen ab Stage 2A.
+**Aktueller Stand (Stage 2A):** Das Dorf Kiriyama und der Wald sind begehbar.
+Fünf Figuren sprechen nach einer Regeltabelle, und die Umgebung lässt sich
+untersuchen. Beobachtungen landen diegetisch im Notizbuch. Fuchs, Tierzeichen,
+die Begegnung mit dem Kami und die Lösungswege folgen ab Stage 2B.
 
 ## Bauen (Linux)
 
@@ -37,20 +38,27 @@ cmake --build build-core && ctest --test-dir build-core
 
 ## Diagnose
 
-Beide Modi aus einem beschreibbaren Arbeitsverzeichnis starten:
+Alle Modi aus einem beschreibbaren Arbeitsverzeichnis starten:
 
 - `vergessene_pfade --smoke`: 10 Frames rendern, `smoke.bmp` schreiben, beenden.
 - `vergessene_pfade --verify`: den kompletten Journey-Test im echten Fenster
   spielen und nummerierte BMP-Screenshots schreiben. Exit 0 nur bei Erfolg.
+- `vergessene_pfade --log sitzung.log`: Sitzungsprotokoll für Playtests, auch
+  zusammen mit `--verify`. Jede Zeile hat die Spalten
+  `zeit_ms  karte  x,y  ereignis  details`.
+  - Ereignisse: `observe`, `examine`, `examine_nothing`, `npc_talk`, `notebook_open`.
+  - Wiederholte erfolglose Untersuchungen desselben Ziels erzeugen keine eigene
+    Zeile. Ihre Anzahl steht als `repeat=n` in der nächsten
+    `examine_nothing`-Zeile.
 
 ## Steuerung
 
 | Taste | Aktion |
 |---|---|
 | Pfeile / WASD | gehen |
-| Leertaste / Enter | reden, weiter, bestätigen |
-| I | Inventar |
-| Esc | Dialog schließen / Notizbuch |
+| Leertaste / Enter | reden bzw. untersuchen (Blickfeld, sonst das Feld unter dir), weiter |
+| I | Tasche; Enter sieht einen Gegenstand genauer an |
+| Esc | Dialog schließen / Notizbuch (Hoch/Runter blättert) |
 | F1 / F2 | Debug-Anzeige / Hindernisse |
 | R, Q (im Notizbuch) | neu starten / beenden |
 

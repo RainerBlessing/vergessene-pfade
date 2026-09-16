@@ -16,7 +16,7 @@ void combat_turn(Combat *c, Player *p, bool herb, char *message, int size) {
   int hit = 0;
   if (herb) {
     if (!player_heal(p)) {
-      snprintf(message, (size_t)size, "Kein Tee benutzt. Waehle neu.");
+      snprintf(message, (size_t)size, "Kein Heilkraut benutzt. Waehle neu.");
       return;
     }
   } else {
@@ -27,8 +27,7 @@ void combat_turn(Combat *c, Player *p, bool herb, char *message, int size) {
     c->hp = 0;
     c->won = true;
     snprintf(message, (size_t)size,
-             "Dein Hieb verursacht %d Schaden.\nSieg! Du hast den Spiegel gefunden.",
-             hit);
+             "Dein Hieb verursacht %d Schaden.\nDer Geist weicht zurueck.", hit);
     return;
   }
   int damage = combat_damage(beast.attack, p->defense, roll(c));
@@ -36,14 +35,13 @@ void combat_turn(Combat *c, Player *p, bool herb, char *message, int size) {
   if (p->hp <= 0) {
     p->hp = 0;
     c->lost = true;
-    snprintf(message, (size_t)size,
-             "Der Geist verursacht %d Schaden.\nDu faellst. Nao bringt dich heim.",
+    snprintf(message, (size_t)size, "Der Geist verursacht %d Schaden.\nDu faellst.",
              damage);
     return;
   }
   if (herb)
     snprintf(message, (size_t)size,
-             "Der Tee heilt bis zu 8 Lebenspunkte.\nDer Geist verursacht %d Schaden.",
+             "Das Kraut heilt bis zu 8 Lebenspunkte.\nDer Geist verursacht %d Schaden.",
              damage);
   else
     snprintf(message, (size_t)size,

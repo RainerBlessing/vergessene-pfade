@@ -1,13 +1,13 @@
 #include "inventory.h"
-const ItemDef items[ITEM_COUNT] = {{"Beifusstee", 8}, {"Bernsteinspiegel", 0}};
+const ItemDef items[ITEM_COUNT] = {{"", 0}, {"Heilkraut", 8}, {"Scherben", 0}};
 bool inventory_add(Inventory *i, ItemId item, int n) {
-  if (item < 0 || item >= ITEM_COUNT || n <= 0 || n > 99 - i->quantities[item])
+  if (item <= ITEM_NONE || item >= ITEM_COUNT || n <= 0 || n > 99 - i->quantities[item])
     return false;
   i->quantities[item] += (uint8_t)n;
   return true;
 }
 bool inventory_remove(Inventory *i, ItemId item, int n) {
-  if (item < 0 || item >= ITEM_COUNT || n <= 0 || n > i->quantities[item])
+  if (item <= ITEM_NONE || item >= ITEM_COUNT || n <= 0 || n > i->quantities[item])
     return false;
   i->quantities[item] -= (uint8_t)n;
   return true;

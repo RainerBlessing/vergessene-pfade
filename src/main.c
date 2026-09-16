@@ -45,12 +45,48 @@ static Action held(void) {
     return ACT_RIGHT;
   return ACT_NONE;
 }
+/* Session log: one tab-separated line per event (see IMPLEMENTATION_PLAN.md). */
+static void drain_events(Game *g, FILE *log, Uint64 ms) {
+  GameEvent events[EVENT_LIMIT];
+  int n = game_take_events(g, events, EVENT_LIMIT);
+  if (!log)
+    return;
+  for (int i = 0; i < n; i++) {
+    const GameEvent *e = &events[i];
+    fprintf(log, "%llu\t%d\t%d,%d\t", (unsigned long long)ms, e->map, e->x, e->y);
+    switch (e->type) {
+    case EV_OBSERVE:
+      fprintf(log, "observe\t%s\n", obs_names[e->a]);
+      break;
+    case EV_EXAMINE:
+      fprintf(log, "examine\ttile=%c dialogue=%d\n", e->a ? e->a : '-', e->b);
+      break;
+    case EV_EXAMINE_NOTHING:
+      fprintf(log, "examine_nothing\ttile=%c repeat=%d\n", e->a, e->b);
+      break;
+    case EV_NPC_TALK:
+      fprintf(log, "npc_talk\t%s dialogue=%d\n", npcs[e->a].key, e->b);
+      break;
+    case EV_NOTEBOOK_OPEN:
+      fprintf(log, "notebook_open\tentries=%d\n", e->a);
+      break;
+    }
+  }
+  if (g->events_dropped) {
+    fprintf(log, "%llu\t%d\t%d,%d\tevents_dropped\tcount=%d\n", (unsigned long long)ms,
+            g->map, g->x, g->y, g->events_dropped);
+    g->events_dropped = 0;
+  }
+  fflush(log);
+}
 typedef struct {
   Renderer *renderer;
+  FILE *log;
   bool ok;
 } Capture;
-static void capture(const Game *g, const char *label, void *context) {
+static void capture(Game *g, const char *label, void *context) {
   Capture *c = context;
+  drain_events(g, c->log, SDL_GetTicks());
   render_game(c->renderer, g, 60);
   SDL_Surface *s = SDL_RenderReadPixels(c->renderer->sdl, NULL);
   char path[128];
@@ -63,9 +99,40 @@ static void capture(const Game *g, const char *label, void *context) {
   SDL_RenderPresent(c->renderer->sdl);
   SDL_PumpEvents();
 }
+static void act(Game *g, Action a, FILE *log) {
+  game_action(g, a);
+  drain_events(g, log, SDL_GetTicks());
+}
+static int usage(void) {
+  fprintf(stderr, "Aufruf: vergessene_pfade [--smoke | --verify] [--log DATEI]\n");
+  return 2;
+}
 int main(int argc, char **argv) {
+  bool smoke = false, verify = false;
+  const char *log_path = NULL;
+  for (int i = 1; i < argc; i++) {
+    if (strcmp(argv[i], "--smoke") == 0)
+      smoke = true;
+    else if (strcmp(argv[i], "--verify") == 0)
+      verify = true;
+    else if (strcmp(argv[i], "--log") == 0 && i + 1 < argc)
+      log_path = argv[++i];
+    else
+      return usage();
+  }
+  FILE *log = NULL;
+  if (log_path) {
+    log = fopen(log_path, "w");
+    if (!log) {
+      fprintf(stderr, "Protokoll %s kann nicht geschrieben werden.\n", log_path);
+      return 1;
+    }
+    fprintf(log, "# time_ms\tmap\tx,y\tevent\tdetails\n");
+  }
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     fprintf(stderr, "%s\n", SDL_GetError());
+    if (log)
+      fclose(log);
     return 1;
   }
   SDL_Window *w = NULL;
@@ -79,10 +146,11 @@ int main(int argc, char **argv) {
   if (!SDL_SetRenderLogicalPresentation(sdl, 320, 200,
                                         SDL_LOGICAL_PRESENTATION_INTEGER_SCALE))
     goto cleanup;
+  const char *base = SDL_GetBasePath();
   char assets[1024];
-  snprintf(assets, sizeof assets, "%sassets", SDL_GetBasePath());
   Game g;
-  if (!game_init(&g, assets) || !renderer_init(&r, sdl, assets)) {
+  if (!base || snprintf(assets, sizeof assets, "%sassets", base) >= (int)sizeof assets ||
+      !game_init(&g, assets) || !renderer_init(&r, sdl, assets)) {
     SDL_ShowSimpleMessageBox(
         SDL_MESSAGEBOX_ERROR, "Die vergessenen Pfade",
         "Spieldaten fehlen. Der Ordner assets muss neben dem Programm liegen. Bitte das "
@@ -90,12 +158,13 @@ int main(int argc, char **argv) {
         w);
     goto cleanup;
   }
-  if (argc > 1 && strcmp(argv[1], "--verify") == 0) {
-    Capture c = {&r, true};
+  if (verify) {
+    Capture c = {&r, log, true};
     result = journey(&g, capture, &c) && c.ok ? 0 : 1;
+    drain_events(&g, log, SDL_GetTicks());
     goto cleanup;
   }
-  bool run = true, smoke = argc > 1 && strcmp(argv[1], "--smoke") == 0;
+  bool run = true;
   int frames = 0, fps = 60, fps_frames = 0;
   Uint64 last_move = 0, fps_time = SDL_GetTicks();
   result = 0;
@@ -106,15 +175,15 @@ int main(int argc, char **argv) {
       if (e.type == SDL_EVENT_QUIT)
         run = false;
       if (e.type == SDL_EVENT_KEY_DOWN && !e.key.repeat) {
-        if (g.state == GAME_PAUSED && e.key.key == SDLK_Q)
+        if (g.state == GAME_NOTEBOOK && e.key.key == SDLK_Q)
           run = false;
-        else if (g.state == GAME_PAUSED && e.key.key == SDLK_R) {
+        else if (g.state == GAME_NOTEBOOK && e.key.key == SDLK_R) {
           if (!game_init(&g, assets)) {
             result = 1;
             run = false;
           }
         } else {
-          game_action(&g, key(e.key.key));
+          act(&g, key(e.key.key), log);
           last_move = frame_start;
         }
       }
@@ -123,7 +192,7 @@ int main(int argc, char **argv) {
         frame_start - last_move >= 140) {
       Action a = held();
       if (a != ACT_NONE) {
-        game_action(&g, a);
+        act(&g, a, log);
         last_move = frame_start;
       }
     }
@@ -135,7 +204,7 @@ int main(int argc, char **argv) {
     fps_frames++;
     render_game(&r, &g, fps);
     if (smoke && ++frames == 10) {
-      Capture c = {&r, true};
+      Capture c = {&r, log, true};
       capture(&g, "smoke", &c);
       result = c.ok ? 0 : 1;
       run = false;
@@ -148,6 +217,8 @@ int main(int argc, char **argv) {
 cleanup:
   if (result)
     fprintf(stderr, "Die vergessenen Pfade fehlgeschlagen: %s\n", SDL_GetError());
+  if (log)
+    fclose(log);
   renderer_destroy(&r);
   SDL_DestroyRenderer(sdl);
   SDL_DestroyWindow(w);

@@ -76,118 +76,113 @@ bool renderer_init(Renderer *r, SDL_Renderer *sdl, const char *assets) {
   return SDL_SetTextureScaleMode(r->atlas, SDL_SCALEMODE_NEAREST);
 }
 void renderer_destroy(Renderer *r) { SDL_DestroyTexture(r->atlas); }
+static int tile_art(char t) {
+  static const char symbols[] = ".,~T^#H_+><*SBr=Rls[]GxOoYmdAkWMh";
+  static const int art[] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
+                            11, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
+                            29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39};
+  const char *at = strchr(symbols, t);
+  return at ? art[at - symbols] : 4;
+}
 static void world(Renderer *r, const Game *g) {
+  static const int npc_art[NPC_COUNT] = {13, 14, 15, 16, 40};
   int cx, cy;
   game_camera(g, &cx, &cy);
   for (int y = 0; y < 10; y++)
     for (int x = 0; x < 20; x++) {
-      char t = map_at(&g->maps[g->map], x + cx, y + cy);
-      static const char symbols[] = ".,~T^#H_+><*SBr=Rls[]";
-      static const int art[] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10,
-                                11, 19, 20, 21, 22, 23, 24, 25, 26, 27};
-      const char *at = strchr(symbols, t);
-      int id = at ? art[at - symbols] : 4;
-      sprite(r, id, x * 16, 16 + y * 16, 1);
+      sprite(r, tile_art(map_at(&g->maps[g->map], x + cx, y + cy)), x * 16, 16 + y * 16,
+             1);
       if (g->collision && !map_passable(&g->maps[g->map], x + cx, y + cy))
         box(r, x * 16 + 6, y * 16 + 22, 4, 4, 4);
     }
   SDL_Rect clip = {0, 16, 320, 160};
   SDL_SetRenderClipRect(r->sdl, &clip);
-  if (g->map == beast.map && g->quest < OBJECTIVE_FOUND)
-    sprite(r, 17, (beast.x - cx) * 16, 16 + (beast.y - cy) * 16, 1);
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < NPC_COUNT; i++)
     if (npcs[i].map == g->map)
-      sprite(r, 13 + npcs[i].sprite, (npcs[i].x - cx) * 16, 16 + (npcs[i].y - cy) * 16,
-             1);
+      sprite(r, npc_art[npcs[i].sprite], (npcs[i].x - cx) * 16,
+             16 + (npcs[i].y - cy) * 16, 1);
   sprite(r, 12, (g->x - cx) * 16, 16 + (g->y - cy) * 16, 1);
   box(r, (g->x - cx) * 16 + 7 + g->dx * 6, 16 + (g->y - cy) * 16 + 7 + g->dy * 6, 2, 2,
       2);
   SDL_SetRenderClipRect(r->sdl, NULL);
   box(r, 0, 0, 320, 16, 0);
-  text(r, 8, 4, 1, g->map == 0 ? "VERGESSENE PFADE / WALD" : "VERGESSENE PFADE / DORF");
+  text(r, 8, 4, 1, g->map == MAP_VILLAGE ? "KIRIYAMA" : "DER WALD");
   box(r, 0, 176, 320, 24, 0);
   color(r, 1);
-  formatted(r, 8, 178, "LP %02d/%02d  I INVENTAR", g->player.hp, g->player.max_hp);
-  int n = game_npc_at(g, g->x + g->dx, g->y + g->dy);
-  if (n >= 0)
-    text(r, 8, 190, 2, "ENTER REDEN / ESC NOTIZBUCH");
-  else if (g->message[0])
+  formatted(r, 8, 178, "LP %02d/%02d  I TASCHE  ESC NOTIZBUCH", g->player.hp,
+            g->player.max_hp);
+  /* The hint never depends on whether a tile hides something (no markers). */
+  if (g->message[0])
     text(r, 8, 190, 2, g->message);
   else
     text(r, 8, 190, 2,
-         g->quest == NOT_STARTED && g->map == 0 ? "FOLGE DEM WEG NACH NORDEN INS DORF"
-                                                : quest_labels[g->quest]);
+         game_npc_at(g, g->x + g->dx, g->y + g->dy) >= 0 ? "ENTER REDEN"
+                                                         : "ENTER UNTERSUCHEN");
+}
+static void dialogue_panel(Renderer *r, const Game *g) {
+  const TileDef *tile = tile_def(g->examined);
+  const char *title = g->npc >= 0 ? npcs[g->npc].name
+                      : tile      ? tile->name
+                                  : "In deiner Tasche";
+  panel(r, 4, 105, 312, 91);
+  text(r, 12, 114, 1, title);
+  text(r, 12, 132, 2, dialogues[g->dialogue].pages[g->page]);
+  color(r, 3);
+  if (dialogues[g->dialogue].count > 1)
+    formatted(r, 12, 181, "ENTER WEITER %d/%d  ESC SCHLIESSEN", g->page + 1,
+              dialogues[g->dialogue].count);
+  else
+    formatted(r, 12, 181, "ENTER / ESC SCHLIESSEN");
+}
+static void inventory_panel(Renderer *r, const Game *g) {
+  ItemId owned[ITEM_COUNT];
+  int count = game_owned_items(g, owned);
+  panel(r, 4, 26, 312, 146);
+  text(r, 12, 36, 1, "DEINE TASCHE");
+  if (count == 0)
+    text(r, 14, 58, 2, "Die Tasche ist leer.");
+  for (int i = 0; i < count; i++) {
+    if (g->selection == i)
+      box(r, 10, 55 + i * 16, 300, 14, 4);
+    color(r, g->selection == i ? 1 : 2);
+    formatted(r, 14, 58 + i * 16, "%c %-16s %2d", g->selection == i ? '>' : ' ',
+              items[owned[i]].name, g->player.inventory.quantities[owned[i]]);
+  }
+  text(r, 12, 125, 2, g->message);
+  text(r, 12, 157, 1, "ENTER ANSEHEN  /  ESC ZURUECK");
+}
+static void notebook_panel(Renderer *r, const Game *g) {
+  panel(r, 4, 22, 312, 174);
+  text(r, 16, 31, 1, "NOTIZBUCH");
+  if (g->note_count == 0)
+    text(r, 16, 51, 2, "Noch keine Notizen.");
+  for (int i = 0; i < NOTES_PER_PAGE && g->scroll + i < g->note_count; i++)
+    text(r, 16, 49 + i * 28, 2, notes[g->notes[g->scroll + i]]);
+  color(r, 3);
+  if (g->scroll > 0)
+    formatted(r, 292, 31, "^");
+  if (g->scroll + NOTES_PER_PAGE < g->note_count)
+    formatted(r, 292, 154, "v");
+  text(r, 16, 166, 3, "HOCH/RUNTER BLAETTERN  ESC WEITER");
+  text(r, 16, 180, 1, "R NEU BEGINNEN  /  Q BEENDEN");
 }
 void render_game(Renderer *r, const Game *g, int fps) {
   r->paper = false;
   color(r, 0);
   SDL_RenderClear(r->sdl);
   world(r, g);
-  if (g->state == GAME_DIALOGUE) {
-    panel(r, 4, 105, 312, 91);
-    text(r, 12, 114, 1, npcs[g->npc].name);
-    text(r, 12, 132, 2, dialogues[g->dialogue].pages[g->page]);
-    color(r, 3);
-    formatted(r, 12, 181, "ENTER WEITER %d/%d  ESC SCHLIESSEN", g->page + 1,
-              dialogues[g->dialogue].count);
-  }
-  if (g->state == GAME_INVENTORY) {
-    panel(r, 4, 26, 312, 146);
-    text(r, 12, 36, 1, "DEIN INVENTAR");
-    for (int i = 0; i < ITEM_COUNT; i++) {
-      if (g->selection == i)
-        box(r, 10, 55 + i * 16, 300, 14, 4);
-      color(r, g->selection == i ? 1 : 2);
-      formatted(r, 14, 58 + i * 16, "%c %-16s %2d STUECK", g->selection == i ? '>' : ' ',
-                items[i].name, g->player.inventory.quantities[i]);
-    }
-    text(r, 12, 115, 2, g->message);
-    color(r, 3);
-    formatted(r, 12, 137, "ANG %d  ABW %d / TEE HEILT 8 LP", g->player.attack,
-              g->player.defense);
-    text(r, 12, 157, 1, "HOCH/RUNTER  ENTER WAHL  ESC ENDE");
-  }
-  if (g->state == GAME_COMBAT) {
-    panel(r, 4, 21, 312, 175);
-    text(r, 16, 31, 1, "WALDSCHREIN / DORNENGEIST");
-    color(r, 2);
-    formatted(r, 16, 46, "GEIST %02d/%02d       DU %02d/%02d", g->combat.hp, beast.hp,
-              g->player.hp, g->player.max_hp);
-    box(r, 16, 57, 128, 3, 3);
-    box(r, 16, 57, 128 * g->combat.hp / beast.hp, 3, 4);
-    box(r, 176, 57, 128, 3, 3);
-    box(r, 176, 57, 128 * g->player.hp / g->player.max_hp, 3, 1);
-    sprite(r, g->combat.won ? 18 : 17, 144, 64, 2);
-    text(r, 12, 103, 2, g->message);
-    if (g->combat.won || g->combat.lost)
-      text(r, 12, 177, 1, "ENTER / ZURUECK AUF DEN WEG");
-    else {
-      box(r, 12, 137 + g->selection * 15, 296, 14, 4);
-      color(r, 1);
-      formatted(r, 16, 140, "%c ANGREIFEN", g->selection == 0 ? '>' : ' ');
-      formatted(r, 16, 155, "%c BEIFUSSTEE (%d)", g->selection == 1 ? '>' : ' ',
-                g->player.inventory.quantities[ITEM_HERB]);
-      text(r, 12, 180, 2, "HOCH/RUNTER WAHL / ENTER AKTION");
-    }
-  }
-  if (g->state == GAME_PAUSED) {
-    panel(r, 4, 22, 312, 174);
-    text(r, 16, 33, 1, "VERGESSENE PFADE / NOTIZBUCH");
-    text(r, 16, 53, 2, quest_labels[g->quest]);
-    text(r, 16, 73, 3,
-         "AOI: HAUS IM NORDWESTEN\nREN: HAUS IM NORDOSTEN\nNAO: AM SUEDTOR");
-    text(r, 16, 111, 2,
-         "PFEILE / WASD  LAUFEN\nLEERTASTE / ENTER  REDEN / WAHL\nI              "
-         "INVENTAR\nF1 / F2        DEBUG / HINDERNISSE");
-    text(r, 16, 157, 1, "ENTER / ESC WEITER\nR NEUE REISE / Q BEENDEN");
-    text(r, 16, 182, 3, "NICHT JEDER PFAD IST VERGESSEN.");
-  }
+  if (g->state == GAME_DIALOGUE)
+    dialogue_panel(r, g);
+  if (g->state == GAME_INVENTORY)
+    inventory_panel(r, g);
+  if (g->state == GAME_NOTEBOOK)
+    notebook_panel(r, g);
   if (g->debug) {
-    static const char *states[] = {"WELT", "DIALOG", "TASCHE", "KAMPF", "PAUSE"};
+    static const char *states[] = {"WELT", "DIALOG", "TASCHE", "NOTIZ"};
     panel(r, 4, 16, 312, 37);
     color(r, 2);
     formatted(r, 10, 23, "KARTE %d XY %d,%d BPS %d", g->map, g->x, g->y, fps);
-    formatted(r, 10, 37, "%s AUFTRAG %d FIGUREN %d", states[g->state], g->quest,
-              g->map == 1 ? 4 : 0);
+    formatted(r, 10, 37, "%s BEOB %05X NOTIZEN %d", states[g->state], (unsigned)g->obs,
+              g->note_count);
   }
 }

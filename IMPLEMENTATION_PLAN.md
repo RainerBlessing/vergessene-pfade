@@ -144,7 +144,13 @@ Der Log wird im Core als Ereignispuffer geführt; `main.c` schreibt die Datei.
 - Unit: Alle Texte passen ins Panel.
 - Unit: **Notizbuch-Guard**: Kein Notizbuchtext enthält Ziffern, „/“ oder Häkchen-Zeichen.
 - Journey: Alle Untersuchungspunkte von 2A sind vom Start aus erreichbar.
-**Status**: Not Started
+**Status**: Complete (2026-09-16).
+- Build ohne Warnungen, `ctest` 2/2.
+- `--verify` und `--log` mit Exit 0; 10 Screenshots angesehen (Dorf, Dialog, Hausmarke, Wald, Scherben, Tasche, Mulde, Besitzerin, Notizbuch, Debug).
+- Probeweise eingebaute Fehler (Regel `verboten` ignoriert, Log-Deduplizierung aus) werden von den Tests erkannt.
+- Anmerkungen:
+  - Passierbare Untersuchungspunkte (Mulde, Schleifspur) werden unter der Figur untersucht, da man sie nicht „anblicken“ kann, ohne sie zu betreten.
+  - Das Kampfmodul (`combat.c`) bleibt mit Unit-Test erhalten, ist aber bis Stage 3A nicht ans Spiel angeschlossen.
 
 ## Stage 2B: Wahrnehmung – Fuchs, Tierzeichen, Gefahr
 **Goal**: Das Versorgen des Fuchses verändert, was die Spielfigur *sehen* kann. Der Hainrand ist gefährlich.

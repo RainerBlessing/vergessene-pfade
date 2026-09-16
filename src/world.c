@@ -3,16 +3,22 @@
 #include <string.h>
 const TileDef tiles[] = {
     {'.', true, false, "Wiese"},       {',', true, false, "Weg"},
-    {'~', false, false, "Wasser"},     {'T', false, false, "Kiefer"},
+    {'~', false, false, "Bach"},       {'T', false, false, "Kiefer"},
     {'^', false, false, "Fels"},       {'#', false, false, "Dorfmauer"},
     {'H', false, false, "Hauswand"},   {'_', true, false, "Boden"},
-    {'+', true, false, "Tuer"},        {'>', true, true, "Dorftor"},
-    {'<', true, true, "Aussenwelt"},   {'*', true, false, "Steinlaterne"},
+    {'+', true, false, "Tuer"},        {'>', true, true, "Weg ins Dorf"},
+    {'<', true, true, "Nordtor"},      {'*', true, false, "Steinlaterne"},
     {'S', false, false, "Sakura"},     {'B', false, false, "Bambus"},
     {'r', false, false, "Reisfeld"},   {'=', true, false, "Bruecke"},
     {'R', false, false, "Ziegeldach"}, {'l', false, false, "Papierlaterne"},
     {'s', true, false, "Kies"},        {'[', false, false, "Dachkante"},
-    {']', false, false, "Dachkante"}};
+    {']', false, false, "Dachkante"},  {'G', false, false, "Grenzstein"},
+    {'x', false, false, "Baumstumpf"}, {'O', false, false, "Schrein"},
+    {'o', false, false, "Opferstein"}, {'Y', false, false, "Alter Baum"},
+    {'m', true, false, "Mulde"},       {'d', true, false, "Aufgewuehlte Erde"},
+    {'A', false, false, "Zelt"},       {'k', false, false, "Werktisch"},
+    {'W', false, false, "Holzstapel"}, {'M', false, false, "Hauswand"},
+    {'h', true, false, "Moosboden"}};
 const int tile_count = (int)(sizeof tiles / sizeof tiles[0]);
 const TileDef *tile_def(char s) {
   for (int i = 0; i < tile_count; i++)
