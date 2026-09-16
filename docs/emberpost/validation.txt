@@ -1,0 +1,24 @@
+Emberpost validation - 2026-09-15
+
+Environment: Windows x64, GCC 11.2.0 (MinGW-w64), CMake 3.25.2, vendored SDL 3.2.28.
+
+PASS: fresh source copy configured with -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release.
+PASS: cmake --build clean-build -j 8; no compiler warnings or errors.
+PASS: ctest in clean build: core + complete_journey, 2/2.
+PASS: independent EMBERPOST_BUILD_GAME=OFF build; 2/2 tests without SDL.
+PASS: native SDL window startup and capture.
+PASS: full action-driven journey in the installed Windows package, launched from an unrelated working directory; --verify exit 0.
+PASS: 11 native screenshots generated; dialogue, shop, inventory, combat, victory, ending, journal, debug and exploration layouts inspected.
+PASS: screenshot pixel analysis found exact 4x4 blocks across all 11 1280x800 captures, confirming integer scaling without filtered edges.
+PASS: executable import inspection found only Windows system DLLs, no SDL or MinGW runtime DLL to ship.
+
+Not verified on this host: Linux or MSVC compilation, physical gamepad input (not implemented), human-timed 5-15 minute session.
+Playthrough verification used core actions and native renderer captures; it was not a physical-keyboard playtest.
+
+Milestone checks and fixes are summarized in milestones.md.
+
+Japanese-inspired edition update:
+PASS: rebuilt with no compiler warnings; core and complete_journey 2/2.
+PASS: --verify rendered the complete updated quest and all 11 captures.
+PASS: screenshot inspection of exploration, town, shrine dialogue, and combat.
+Artwork and map metadata now include sakura, bamboo, paddies, bridge, roofs, lanterns, and gravel.
