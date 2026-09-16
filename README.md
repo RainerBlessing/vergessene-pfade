@@ -9,10 +9,12 @@ Narrativer Retro-RPG-Prototyp (C11 / SDL3). Er prüft, ob der Loop
 - Kulturelle Notizen und Quellen: [docs/culture-notes.md](docs/culture-notes.md)
 - Herkunft des Codes: Emberpost (Japan-/Deutsch-Fassung), siehe [docs/emberpost/](docs/emberpost/)
 
-**Aktueller Stand (Stage 2A):** Das Dorf Kiriyama und der Wald sind begehbar.
-Fünf Figuren sprechen nach einer Regeltabelle, und die Umgebung lässt sich
-untersuchen. Beobachtungen landen diegetisch im Notizbuch. Fuchs, Tierzeichen,
-die Begegnung mit dem Kami und die Lösungswege folgen ab Stage 2B.
+**Aktueller Stand (Stage 2B):**
+- Das Spiel beginnt mit der Ankunftsszene im Wald. Danach sind das Dorf Kiriyama und der Wald begehbar.
+- Fünf Figuren sprechen nach einer Regeltabelle, die Umgebung lässt sich untersuchen, und Beobachtungen landen diegetisch im Notizbuch.
+- Der verletzte Fuchs lässt sich mit Mios Heilkraut versorgen. Danach sieht die Figur Tierfährten („Tierzeichen“).
+- Wer den Hain betritt, wird von einem Windstoß zurückgeworfen.
+- Die Begegnung mit dem Kami und die Lösungswege folgen ab Stage 3A.
 
 ## Bauen (Linux)
 
@@ -46,7 +48,8 @@ Alle Modi aus einem beschreibbaren Arbeitsverzeichnis starten:
 - `vergessene_pfade --log sitzung.log`: Sitzungsprotokoll für Playtests, auch
   zusammen mit `--verify`. Jede Zeile hat die Spalten
   `zeit_ms  karte  x,y  ereignis  details`.
-  - Ereignisse: `observe`, `examine`, `examine_nothing`, `npc_talk`, `notebook_open`.
+  - Ereignisse: `observe`, `examine`, `examine_nothing`, `npc_talk`, `notebook_open`,
+    `knockback`, `action_attempt` (Gegenstand benutzt, `ok=0/1`).
   - Wiederholte erfolglose Untersuchungen desselben Ziels erzeugen keine eigene
     Zeile. Ihre Anzahl steht als `repeat=n` in der nächsten
     `examine_nothing`-Zeile.
@@ -57,7 +60,7 @@ Alle Modi aus einem beschreibbaren Arbeitsverzeichnis starten:
 |---|---|
 | Pfeile / WASD | gehen |
 | Leertaste / Enter | reden bzw. untersuchen (Blickfeld, sonst das Feld unter dir), weiter |
-| I | Tasche; Enter sieht einen Gegenstand genauer an |
+| I | Tasche; Enter benutzt einen Gegenstand am Ziel vor dir oder sieht ihn genauer an |
 | Esc | Dialog schließen / Notizbuch (Hoch/Runter blättert) |
 | F1 / F2 | Debug-Anzeige / Hindernisse |
 | R, Q (im Notizbuch) | neu starten / beenden |

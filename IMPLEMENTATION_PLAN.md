@@ -162,7 +162,16 @@ Der Log wird im Core als Ereignispuffer geführt; `main.c` schreibt die Datei.
 **Tests**:
 - Unit: Fährten unsichtbar/ununtersuchbar ohne Fähigkeit, sichtbar mit Fähigkeit; Fuchs nur einmal versorgbar; Rückstoß landet auf einem begehbaren Tile.
 - Journey: Start → Mio → Fuchs → Fährte gefunden.
-**Status**: Not Started
+**Status**: Complete (2026-09-16).
+- Build ohne Warnungen, `ctest` 2/2.
+- `--verify --log` und `--smoke` mit Exit 0; Screenshots angesehen (Szene, Fuchs, Versorgung, Fährten, Rückstoß, Notizbuch).
+- Probeweise eingebaute Fehler (Rückstoß aus, Überlagerungen ohne Bedingung) werden erkannt.
+- Umsetzung:
+  - Gegenstände werden über die Tasche am Ziel in Blickrichtung benutzt (`POINT_ITEM` mit Symbol, verbraucht `takes`).
+  - Versorgter Fuchs und Fährten sind **Tile-Overrides** mit Beobachtungsbedingung; Stage 4 erweitert sie um Ausgang und Phase.
+  - Moosboden ist `guarded`: Der Hain ist vor einer Auflösung nicht betretbar. Deshalb steht der alte Baum jetzt am Hainrand (22,11).
+  - Das Spiel beginnt im Wald mit der Ankunftsszene.
+  - Neue Log-Ereignisse: `knockback`, `action_attempt`.
 
 ## Stage 3A: Begegnungssystem
 **Goal**: Der Kami ist ein Wesen mit Gemüt, nicht nur ein Lebenspunktebalken.

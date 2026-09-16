@@ -77,10 +77,10 @@ bool renderer_init(Renderer *r, SDL_Renderer *sdl, const char *assets) {
 }
 void renderer_destroy(Renderer *r) { SDL_DestroyTexture(r->atlas); }
 static int tile_art(char t) {
-  static const char symbols[] = ".,~T^#H_+><*SBr=Rls[]GxOoYmdAkWMh";
-  static const int art[] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
-                            11, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
-                            29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39};
+  static const char symbols[] = ".,~T^#H_+><*SBr=Rls[]GxOoYmdAkWMhFft";
+  static const int art[] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11,
+                            19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+                            31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 42, 43};
   const char *at = strchr(symbols, t);
   return at ? art[at - symbols] : 4;
 }
@@ -90,9 +90,8 @@ static void world(Renderer *r, const Game *g) {
   game_camera(g, &cx, &cy);
   for (int y = 0; y < 10; y++)
     for (int x = 0; x < 20; x++) {
-      sprite(r, tile_art(map_at(&g->maps[g->map], x + cx, y + cy)), x * 16, 16 + y * 16,
-             1);
-      if (g->collision && !map_passable(&g->maps[g->map], x + cx, y + cy))
+      sprite(r, tile_art(game_tile(g, g->map, x + cx, y + cy)), x * 16, 16 + y * 16, 1);
+      if (g->collision && !game_passable(g, g->map, x + cx, y + cy))
         box(r, x * 16 + 6, y * 16 + 22, 4, 4, 4);
     }
   SDL_Rect clip = {0, 16, 320, 160};
@@ -121,9 +120,10 @@ static void world(Renderer *r, const Game *g) {
 }
 static void dialogue_panel(Renderer *r, const Game *g) {
   const TileDef *tile = tile_def(g->examined);
-  const char *title = g->npc >= 0 ? npcs[g->npc].name
-                      : tile      ? tile->name
-                                  : "In deiner Tasche";
+  const char *title = g->npc >= 0               ? npcs[g->npc].name
+                      : g->npc == SPEAKER_SCENE ? "Unterwegs"
+                      : tile                    ? tile->name
+                                                : "In deiner Tasche";
   panel(r, 4, 105, 312, 91);
   text(r, 12, 114, 1, title);
   text(r, 12, 132, 2, dialogues[g->dialogue].pages[g->page]);

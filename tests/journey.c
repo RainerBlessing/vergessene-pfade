@@ -23,12 +23,13 @@ static bool walk(Game *g, int tx, int ty) {
     int at = queue[head++], x = at % m->width, y = at / m->width;
     for (int i = 0; i < 4; i++) {
       int nx = x + dxs[i], ny = y + dys[i];
-      if (!map_passable(m, nx, ny) || game_npc_at(g, nx, ny) >= 0)
+      if (!game_passable(g, g->map, nx, ny) || game_npc_at(g, nx, ny) >= 0 ||
+          tile_def(game_tile(g, g->map, nx, ny))->guarded)
         continue;
       int n = ny * m->width + nx;
       if (prev[n] >= 0)
         continue;
-      if (tile_def(map_at(m, nx, ny))->transition && n != end)
+      if (tile_def(game_tile(g, g->map, nx, ny))->transition && n != end)
         continue;
       prev[n] = at;
       queue[tail++] = n;
@@ -52,7 +53,7 @@ static bool walk(Game *g, int tx, int ty) {
 static bool approach(Game *g, int tx, int ty) {
   for (int i = 0; i < 4; i++) {
     int sx = tx - dxs[i], sy = ty - dys[i];
-    if (map_passable(&g->maps[g->map], sx, sy) && game_npc_at(g, sx, sy) < 0 &&
+    if (game_passable(g, g->map, sx, sy) && game_npc_at(g, sx, sy) < 0 &&
         walk(g, sx, sy)) {
       game_action(g, moves[i]);
       return g->x == sx && g->y == sy && g->dx == dxs[i] && g->dy == dys[i];
@@ -77,24 +78,58 @@ static void see(Game *g, JourneyObserver o, void *c, const char *label) {
   if (o)
     o(g, label, c);
 }
+static bool use_item(Game *g, ItemId item) {
+  ItemId owned[ITEM_COUNT];
+  int count = game_owned_items(g, owned);
+  game_action(g, ACT_INVENTORY);
+  for (int i = 0; i < count && owned[g->selection] != item; i++)
+    game_action(g, ACT_DOWN);
+  if (g->state != GAME_INVENTORY || owned[g->selection] != item)
+    return false;
+  game_action(g, ACT_CONFIRM);
+  return g->state == GAME_DIALOGUE;
+}
 bool journey(Game *g, JourneyObserver observer, void *context) {
-  REQUIRE(g->map == MAP_VILLAGE && g->obs == 0 && g->note_count == 0);
-  see(g, observer, context, "01-village");
+  REQUIRE(g->map == MAP_FOREST && g->obs == 0 && g->note_count == 0);
+  REQUIRE(g->state == GAME_DIALOGUE && g->npc == SPEAKER_SCENE);
+  see(g, observer, context, "01-arrival");
+  close_dialogue(g);
+  REQUIRE(g->state == GAME_EXPLORATION);
+  REQUIRE(use(g, 5, 20));
+  REQUIRE(game_knows(g, OBS_FOX_WOUNDED));
+  see(g, observer, context, "02-fox");
+  close_dialogue(g);
+
+  REQUIRE(walk(g, 24, 39) || g->map == MAP_VILLAGE);
+  REQUIRE(g->map == MAP_VILLAGE);
   REQUIRE(talk_to(g, NPC_SUMI));
   REQUIRE(game_knows(g, OBS_ASKED_BY_SUMI));
-  see(g, observer, context, "02-sumi");
+  see(g, observer, context, "03-sumi");
   close_dialogue(g);
   REQUIRE(use(g, 4, 6));
   REQUIRE(game_knows(g, OBS_HOUSE_MARK) && g->dialogue == D_X_HOUSE_MARK);
-  see(g, observer, context, "03-house-mark");
   close_dialogue(g);
   REQUIRE(talk_to(g, NPC_KENTA));
   REQUIRE(game_knows(g, OBS_KENTA_STARE));
   close_dialogue(g);
+  REQUIRE(talk_to(g, NPC_MIO));
+  REQUIRE(g->dialogue == D_MIO_HERB && g->player.inventory.quantities[ITEM_HERB] == 1);
+  close_dialogue(g);
 
   REQUIRE(walk(g, 16, 0) || g->map == MAP_FOREST);
   REQUIRE(g->map == MAP_FOREST);
-  see(g, observer, context, "04-forest");
+  REQUIRE(approach(g, 5, 20));
+  REQUIRE(use_item(g, ITEM_HERB));
+  REQUIRE(game_knows(g, OBS_FOX_TENDED) &&
+          g->player.inventory.quantities[ITEM_HERB] == 0);
+  see(g, observer, context, "04-tend-fox");
+  close_dialogue(g);
+  REQUIRE(walk(g, 8, 19)); /* tracks are passable: examined underfoot */
+  game_action(g, ACT_CONFIRM);
+  REQUIRE(game_knows(g, OBS_TRACKS));
+  close_dialogue(g);
+  see(g, observer, context, "05-tracks");
+
   REQUIRE(talk_to(g, NPC_DAIGO));
   close_dialogue(g);
   REQUIRE(use(g, 12, 30));
@@ -106,13 +141,10 @@ bool journey(Game *g, JourneyObserver observer, void *context) {
   REQUIRE(use(g, 38, 20));
   REQUIRE(game_knows(g, OBS_BOWL_SHARDS) &&
           g->player.inventory.quantities[ITEM_SHARDS] == 1);
-  see(g, observer, context, "05-shards");
   close_dialogue(g);
-  game_action(g, ACT_INVENTORY);
-  REQUIRE(g->state == GAME_INVENTORY);
-  see(g, observer, context, "06-bag");
-  game_action(g, ACT_CONFIRM);
+  REQUIRE(use_item(g, ITEM_SHARDS));
   REQUIRE(game_knows(g, OBS_BOWL_MARK) && g->dialogue == D_I_BOWL_MARK_MATCH);
+  see(g, observer, context, "06-bowl-mark");
   close_dialogue(g);
 
   REQUIRE(use(g, 24, 16));
@@ -122,15 +154,18 @@ bool journey(Game *g, JourneyObserver observer, void *context) {
   REQUIRE(g->dy != 1);      /* facing the drag marks would examine those first */
   game_action(g, ACT_CONFIRM);
   REQUIRE(game_knows(g, OBS_STONE_HOLLOW));
-  see(g, observer, context, "07-hollow");
   close_dialogue(g);
+  REQUIRE(walk(g, 24, 12));
+  game_action(g, ACT_UP); /* into the grove: thrown back */
+  REQUIRE(g->x == 24 && g->y == 13 && g->message[0]);
+  see(g, observer, context, "07-knockback");
   REQUIRE(use(g, 12, 12));
   REQUIRE(game_knows(g, OBS_CLAW_MARKS_EDGE));
   close_dialogue(g);
   REQUIRE(use(g, 16, 11));
   REQUIRE(game_knows(g, OBS_FRESH_STUMPS));
   close_dialogue(g);
-  REQUIRE(use(g, 24, 5));
+  REQUIRE(use(g, 22, 11));
   REQUIRE(game_knows(g, OBS_BROKEN_ROPE));
   close_dialogue(g);
 
@@ -143,9 +178,12 @@ bool journey(Game *g, JourneyObserver observer, void *context) {
   REQUIRE(talk_to(g, NPC_ORIHA));
   REQUIRE(g->dialogue == D_ORIHA_OWNER);
   close_dialogue(g);
+  REQUIRE(talk_to(g, NPC_MIO));
+  REQUIRE(g->dialogue == D_MIO_THANKS);
+  close_dialogue(g);
 
   game_action(g, ACT_CANCEL);
-  REQUIRE(g->state == GAME_NOTEBOOK && g->note_count == 13);
+  REQUIRE(g->state == GAME_NOTEBOOK && g->note_count == 17);
   see(g, observer, context, "09-notebook");
   game_action(g, ACT_UP);
   REQUIRE(g->scroll == g->note_count - NOTES_PER_PAGE - 1);

@@ -70,6 +70,13 @@ static void drain_events(Game *g, FILE *log, Uint64 ms) {
     case EV_NOTEBOOK_OPEN:
       fprintf(log, "notebook_open\tentries=%d\n", e->a);
       break;
+    case EV_KNOCKBACK:
+      fprintf(log, "knockback\tguarded=%d,%d\n", e->a, e->b);
+      break;
+    case EV_ITEM_USE:
+      fprintf(log, "action_attempt\tuse=%s ok=%d dialogue=%d\n", items[e->a].name,
+              e->b != D_NONE, e->b);
+      break;
     }
   }
   if (g->events_dropped) {

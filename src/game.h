@@ -23,7 +23,9 @@ typedef enum {
   EV_EXAMINE,         /* a = tile symbol or 0 for items, b = DialogueId */
   EV_EXAMINE_NOTHING, /* a = tile symbol, b = suppressed repeats of the previous one */
   EV_NPC_TALK,        /* a = NpcId, b = DialogueId */
-  EV_NOTEBOOK_OPEN    /* a = number of entries */
+  EV_NOTEBOOK_OPEN,   /* a = number of entries */
+  EV_KNOCKBACK,       /* x,y = where the player landed; a,b = the guarded tile */
+  EV_ITEM_USE         /* a = ItemId, b = DialogueId, or D_NONE when nothing happened */
 } EventType;
 typedef struct {
   EventType type;
@@ -41,7 +43,8 @@ typedef struct {
   Map maps[MAP_COUNT];
   int map, x, y, dx, dy;
   GameState state;
-  /* Dialogue speaker: an NPC, or -1 with the examined tile symbol (0 for items). */
+  /* Dialogue speaker: an NPC, SPEAKER_SCENE, or -1 with the examined tile symbol
+   * (0 for items). */
   int npc, page, selection, dialogue, scroll;
   char examined;
   Obs obs;
@@ -58,6 +61,9 @@ bool game_init(Game *g, const char *assets);
 void game_action(Game *g, Action a);
 int game_npc_at(const Game *g, int x, int y);
 void game_camera(const Game *g, int *x, int *y);
+/* Map tile after applying overrides for what the player has observed. */
+char game_tile(const Game *g, int map, int x, int y);
+bool game_passable(const Game *g, int map, int x, int y);
 bool game_knows(const Game *g, ObsId o);
 /* Items the player owns, in display order; returns the count. */
 int game_owned_items(const Game *g, ItemId *out);

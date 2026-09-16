@@ -3,11 +3,13 @@
 #include <string.h>
 bool game_init(Game *g, const char *assets) {
   memset(g, 0, sizeof *g);
-  g->map = MAP_VILLAGE;
-  g->x = 16;
-  g->y = 21;
+  g->map = MAP_FOREST;
+  g->x = 24;
+  g->y = 19;
   g->dy = -1;
-  g->npc = -1;
+  g->npc = SPEAKER_SCENE;
+  g->dialogue = D_SCENE_ARRIVAL;
+  g->state = GAME_DIALOGUE;
   g->player = (Player){.hp = 24, .max_hp = 24, .attack = 8, .defense = 2};
   char path[1024];
   snprintf(path, sizeof path, "%s/maps/village.map", assets);
@@ -23,6 +25,21 @@ int game_npc_at(const Game *g, int x, int y) {
   return -1;
 }
 bool game_knows(const Game *g, ObsId o) { return (g->obs & OBS(o)) != 0; }
+static bool matches(const Game *g, Obs needs, Obs forbids) {
+  return (g->obs & needs) == needs && !(g->obs & forbids);
+}
+char game_tile(const Game *g, int map, int x, int y) {
+  for (int i = 0; i < tile_override_count; i++) {
+    const TileOverride *o = &tile_overrides[i];
+    if (o->map == map && o->x == x && o->y == y && matches(g, o->needs, 0))
+      return o->symbol;
+  }
+  return map_at(&g->maps[map], x, y);
+}
+bool game_passable(const Game *g, int map, int x, int y) {
+  const TileDef *t = tile_def(game_tile(g, map, x, y));
+  return t && t->passable;
+}
 int game_owned_items(const Game *g, ItemId *out) {
   int n = 0;
   for (int i = ITEM_NONE + 1; i < ITEM_COUNT; i++)
@@ -43,9 +60,6 @@ static void emit(Game *g, EventType type, int a, int b) {
     return;
   }
   g->events[g->event_count++] = (GameEvent){type, g->map, g->x, g->y, a, b};
-}
-static bool matches(const Game *g, Obs needs, Obs forbids) {
-  return (g->obs & needs) == needs && !(g->obs & forbids);
 }
 static void learn(Game *g, Obs grants, NoteId note) {
   for (int o = 0; o < OBS_COUNT; o++)
@@ -74,6 +88,8 @@ static void talk(Game *g, int npc) {
     const DialogueRule *r = &dialogue_rules[i];
     if ((int)r->npc != npc || !matches(g, r->needs, r->forbids))
       continue;
+    if (r->gives != ITEM_NONE)
+      inventory_add(&g->player.inventory, r->gives, 1);
     learn(g, r->grants, r->note);
     emit(g, EV_NPC_TALK, npc, r->dialogue);
     open_dialogue(g, npc, 0, r->dialogue);
@@ -81,7 +97,7 @@ static void talk(Game *g, int npc) {
   }
 }
 static const ExaminePoint *point_at(const Game *g, int x, int y) {
-  char symbol = map_at(&g->maps[g->map], x, y);
+  char symbol = game_tile(g, g->map, x, y);
   for (int i = 0; i < examine_point_count; i++) {
     const ExaminePoint *p = &examine_points[i];
     if (p->kind == POINT_ITEM || p->map != g->map || !matches(g, p->needs, 0))
@@ -92,14 +108,19 @@ static const ExaminePoint *point_at(const Game *g, int x, int y) {
   return NULL;
 }
 static const ExaminePoint *point_for_item(const Game *g, ItemId item) {
+  char facing = game_tile(g, g->map, g->x + g->dx, g->y + g->dy);
   for (int i = 0; i < examine_point_count; i++) {
     const ExaminePoint *p = &examine_points[i];
-    if (p->kind == POINT_ITEM && p->item == item && matches(g, p->needs, 0))
+    if (p->kind != POINT_ITEM || p->item != item || !matches(g, p->needs, 0))
+      continue;
+    if (!p->symbol || (p->map == g->map && p->symbol == facing))
       return p;
   }
   return NULL;
 }
 static void use_point(Game *g, const ExaminePoint *p, char examined) {
+  if (p->takes != ITEM_NONE)
+    inventory_remove(&g->player.inventory, p->takes, 1);
   if (p->gives != ITEM_NONE)
     inventory_add(&g->player.inventory, p->gives, 1);
   learn(g, p->grants, p->note);
@@ -109,7 +130,7 @@ static void use_point(Game *g, const ExaminePoint *p, char examined) {
 /* Repeated presses at the same target are counted, not logged again. */
 static void examine_nothing(Game *g, int x, int y) {
   NothingTarget *last = &g->last_nothing;
-  char symbol = map_at(&g->maps[g->map], x, y);
+  char symbol = game_tile(g, g->map, x, y);
   const TileDef *tile = tile_def(symbol);
   snprintf(g->message, sizeof g->message, "%s: nichts Besonderes.",
            tile ? tile->name : "Dort");
@@ -126,12 +147,12 @@ static void examine(Game *g) {
   int fx = g->x + g->dx, fy = g->y + g->dy;
   const ExaminePoint *p = point_at(g, fx, fy);
   if (p) {
-    use_point(g, p, map_at(&g->maps[g->map], fx, fy));
+    use_point(g, p, game_tile(g, g->map, fx, fy));
     return;
   }
   p = point_at(g, g->x, g->y);
   if (p) {
-    use_point(g, p, map_at(&g->maps[g->map], g->x, g->y));
+    use_point(g, p, game_tile(g, g->map, g->x, g->y));
     return;
   }
   examine_nothing(g, fx, fy);
@@ -154,15 +175,18 @@ static void inventory_action(Game *g, Action a) {
   if (g->selection >= count)
     g->selection = 0;
   ItemId item = owned[g->selection];
-  if (item == ITEM_HERB) {
-    snprintf(g->message, sizeof g->message, "%s",
-             player_heal(&g->player) ? "Das Kraut lindert deine Wunden."
-                                     : "Du bist unverletzt.");
+  const ExaminePoint *p = point_for_item(g, item);
+  if (p) {
+    emit(g, EV_ITEM_USE, item, p->dialogue);
+    use_point(g, p, p->symbol);
     return;
   }
-  const ExaminePoint *p = point_for_item(g, item);
-  if (p)
-    use_point(g, p, 0);
+  bool healed = item == ITEM_HERB && player_heal(&g->player);
+  emit(g, EV_ITEM_USE, item, D_NONE);
+  snprintf(g->message, sizeof g->message, "%s",
+           healed              ? "Das Kraut lindert deine Wunden."
+           : item == ITEM_HERB ? "Du bist unverletzt."
+                               : "Damit kannst du hier nichts tun.");
 }
 static void notebook_action(Game *g, Action a) {
   int last = g->note_count > NOTES_PER_PAGE ? g->note_count - NOTES_PER_PAGE : 0;
@@ -173,15 +197,34 @@ static void notebook_action(Game *g, Action a) {
   else if (a == ACT_DOWN && g->scroll < last)
     g->scroll++;
 }
+static bool can_enter(const Game *g, int x, int y) {
+  return game_npc_at(g, x, y) < 0 && game_passable(g, g->map, x, y);
+}
+/* The spirit throws the player back from guarded ground: to the previous tile,
+ * and one more step if that is free, safe ground. */
+static void knock_back(Game *g, int gx, int gy) {
+  int bx = g->x - g->dx, by = g->y - g->dy;
+  const TileDef *back = tile_def(game_tile(g, g->map, bx, by));
+  if (can_enter(g, bx, by) && !back->guarded && !back->transition) {
+    g->x = bx;
+    g->y = by;
+  }
+  snprintf(g->message, sizeof g->message, "Ein Windstoss wirft dich zurueck!");
+  emit(g, EV_KNOCKBACK, gx, gy);
+}
 static void move(Game *g, int dx, int dy) {
   g->dx = dx;
   g->dy = dy;
-  if (game_npc_at(g, g->x + dx, g->y + dy) >= 0 ||
-      !map_passable(&g->maps[g->map], g->x + dx, g->y + dy))
+  if (!can_enter(g, g->x + dx, g->y + dy))
     return;
+  const TileDef *tile = tile_def(game_tile(g, g->map, g->x + dx, g->y + dy));
+  if (tile->guarded) {
+    knock_back(g, g->x + dx, g->y + dy);
+    return;
+  }
   g->x += dx;
   g->y += dy;
-  if (!tile_def(map_at(&g->maps[g->map], g->x, g->y))->transition)
+  if (!tile->transition)
     return;
   for (int i = 0; i < TRANSITION_COUNT; i++) {
     const Transition *t = &transitions[i];
@@ -237,6 +280,8 @@ void game_action(Game *g, Action a) {
       examine(g);
     return;
   }
+  if (a == ACT_NONE)
+    return;
   g->message[0] = 0;
   if (a == ACT_UP)
     move(g, 0, -1);

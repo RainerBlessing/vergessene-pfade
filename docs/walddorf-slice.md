@@ -43,6 +43,8 @@ Die Designregeln 1–5 aus `IMPLEMENTATION_PLAN.md` gelten hier durchgehend.
   m = leere Mulde (ursprünglicher Platz von G2)
 ```
 Wegezeit Dorf → Hain: etwa 1 Minute. Die Untersuchungspunkte liegen abseits des Hauptwegs.
+Der Moosboden des Hains ist vor einer Auflösung bewacht (Rückstoß). Der alte
+Baum steht deshalb direkt am Hainrand und ist von der Grenzlinie aus zu untersuchen.
 
 ## 3. Figuren
 

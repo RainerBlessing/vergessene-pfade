@@ -51,7 +51,8 @@ static bool reachable(const Game *g, int map, int sx, int sy, int tx, int ty) {
     const int dx[4] = {0, 0, -1, 1}, dy[4] = {-1, 1, 0, 0};
     for (int i = 0; i < 4; i++) {
       int nx = x + dx[i], ny = y + dy[i], n = ny * m->width + nx;
-      if (!map_passable(m, nx, ny) || seen[n] || tile_def(map_at(m, nx, ny))->transition)
+      const TileDef *t = tile_def(game_tile(g, map, nx, ny));
+      if (!t || !t->passable || t->guarded || t->transition || seen[n])
         continue;
       bool npc = false;
       for (int k = 0; k < NPC_COUNT; k++)
@@ -65,11 +66,11 @@ static bool reachable(const Game *g, int map, int sx, int sy, int tx, int ty) {
   return false;
 }
 static bool point_reachable(const Game *g, int map, int x, int y) {
-  const int entry_x[MAP_COUNT] = {16, 24}, entry_y[MAP_COUNT] = {21, 38};
+  const int entry_x[MAP_COUNT] = {16, 24}, entry_y[MAP_COUNT] = {1, 19};
   const int dx[5] = {0, 0, 0, -1, 1}, dy[5] = {0, -1, 1, 0, 0};
   for (int i = 0; i < 5; i++) {
     int nx = x + dx[i], ny = y + dy[i];
-    if (map_passable(&g->maps[map], nx, ny) &&
+    if (game_passable(g, map, nx, ny) &&
         reachable(g, map, entry_x[map], entry_y[map], nx, ny))
       return true;
   }
@@ -86,8 +87,16 @@ static int test_world(const char *assets) {
   CHECK(map_passable(&g.maps[MAP_VILLAGE], 16, 21));
   for (int i = 0; i < NPC_COUNT; i++)
     CHECK(map_passable(&g.maps[npcs[i].map], npcs[i].x, npcs[i].y));
+  /* The game opens with the arrival scene in the forest. */
+  CHECK(g.map == MAP_FOREST && g.state == GAME_DIALOGUE && g.npc == SPEAKER_SCENE);
+  CHECK(g.dialogue == D_SCENE_ARRIVAL && dialogues[D_SCENE_ARRIVAL].count == 3);
   game_action(&g, ACT_UP);
-  CHECK(g.x == 16 && g.y == 20);
+  CHECK(g.state == GAME_DIALOGUE && g.x == 24 && g.y == 19);
+  for (int i = 0; i < 3; i++)
+    game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_EXPLORATION && g.obs == 0);
+  game_action(&g, ACT_DOWN);
+  CHECK(g.x == 24 && g.y == 20);
   int x, y;
   stand(&g, MAP_VILLAGE, 1, 1, 0, 1);
   game_camera(&g, &x, &y);
@@ -196,6 +205,7 @@ static int test_examine_nothing(const char *assets) {
   CHECK(game_init(&g, assets));
   GameEvent events[EVENT_LIMIT];
   game_take_events(&g, events, EVENT_LIMIT);
+  stand(&g, MAP_FOREST, 24, 19, 0, -1);
   Obs before = g.obs;
   game_action(&g, ACT_CONFIRM);
   CHECK(g.state == GAME_EXPLORATION && g.obs == before && g.note_count == 0);
@@ -228,6 +238,7 @@ static int test_inventory_and_notebook(const char *assets) {
   Game g;
   CHECK(game_init(&g, assets));
   ItemId owned[ITEM_COUNT];
+  stand(&g, MAP_VILLAGE, 16, 21, 0, -1);
   CHECK(game_owned_items(&g, owned) == 0);
   game_action(&g, ACT_INVENTORY);
   game_action(&g, ACT_CONFIRM);
@@ -246,6 +257,14 @@ static int test_inventory_and_notebook(const char *assets) {
   CHECK(player_heal(&g.player) && g.player.hp == 24);
   CHECK(!player_heal(&g.player));
   CHECK(game_owned_items(&g, owned) == 0);
+  /* Items without a target nearby do nothing but are logged as attempts. */
+  CHECK(inventory_add(&g.player.inventory, ITEM_HERB, 1));
+  game_action(&g, ACT_INVENTORY);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_INVENTORY && g.player.inventory.quantities[ITEM_HERB] == 1);
+  CHECK(count_events(&g, EV_ITEM_USE) == 1 && g.events[g.event_count - 1].b == D_NONE);
+  game_action(&g, ACT_CANCEL);
+  CHECK(inventory_remove(&g.player.inventory, ITEM_HERB, 1));
   CHECK(inventory_add(&g.player.inventory, ITEM_SHARDS, 1));
   CHECK(game_owned_items(&g, owned) == 1 && owned[0] == ITEM_SHARDS);
   /* Notebook: empty, then scrolling is clamped to the entries. */
@@ -288,19 +307,113 @@ static int test_content(const char *assets) {
     if (p->kind == POINT_AT)
       CHECK(point_reachable(&g, p->map, p->x, p->y));
     if (p->kind == POINT_SYMBOL) {
+      /* The symbol exists before or after overrides (all observations known). */
       bool found = false;
       const Map *m = &g.maps[p->map];
-      for (int y = 0; y < m->height; y++)
-        for (int x = 0; x < m->width; x++)
-          if (map_at(m, x, y) == p->symbol && point_reachable(&g, p->map, x, y))
-            found = true;
+      const Obs states[2] = {0, ~(Obs)0};
+      for (int k = 0; k < 2; k++) {
+        g.obs = states[k];
+        for (int y = 0; y < m->height; y++)
+          for (int x = 0; x < m->width; x++)
+            if (game_tile(&g, p->map, x, y) == p->symbol &&
+                point_reachable(&g, p->map, x, y))
+              found = true;
+      }
       CHECK(found);
     }
   }
+  g.obs = 0;
   for (int i = 0; i < NPC_COUNT; i++)
     CHECK(point_reachable(&g, npcs[i].map, npcs[i].x, npcs[i].y));
+  /* Overrides replace passable ground with passable ground or the fox den. */
+  for (int i = 0; i < tile_override_count; i++) {
+    const TileOverride *o = &tile_overrides[i];
+    const TileDef *base = tile_def(map_at(&g.maps[o->map], o->x, o->y));
+    const TileDef *now = tile_def(o->symbol);
+    CHECK(base && now && (base->passable == now->passable || o->symbol == 'f'));
+  }
   for (int o = 0; o < OBS_COUNT; o++)
     CHECK(obs_names[o] != NULL);
+  return 0;
+}
+
+static int test_fox_and_tracks(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  /* Tracks are invisible and cannot be examined before the fox is tended. */
+  stand(&g, MAP_FOREST, 8, 19, 1, 0);
+  CHECK(game_tile(&g, MAP_FOREST, 8, 19) == '.');
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_EXPLORATION && !game_knows(&g, OBS_TRACKS));
+  stand(&g, MAP_FOREST, 6, 20, -1, 0);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_FOX && game_knows(&g, OBS_FOX_WOUNDED));
+  game_action(&g, ACT_CANCEL);
+  /* Mio hands over the herb once. */
+  stand(&g, MAP_VILLAGE, 11, 11, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_MIO_HERB && g.player.inventory.quantities[ITEM_HERB] == 1);
+  game_action(&g, ACT_CANCEL);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_MIO_HERB_AGAIN && g.player.inventory.quantities[ITEM_HERB] == 1);
+  game_action(&g, ACT_CANCEL);
+  /* The herb only tends the fox while facing the den. */
+  stand(&g, MAP_FOREST, 6, 21, 0, 1);
+  game_action(&g, ACT_INVENTORY);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_INVENTORY && !game_knows(&g, OBS_FOX_TENDED));
+  CHECK(strcmp(g.message, "Du bist unverletzt.") == 0);
+  game_action(&g, ACT_CANCEL);
+  stand(&g, MAP_FOREST, 6, 20, -1, 0);
+  game_action(&g, ACT_INVENTORY);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_DIALOGUE && g.dialogue == D_I_TEND_FOX);
+  CHECK(game_knows(&g, OBS_FOX_TENDED) && g.player.inventory.quantities[ITEM_HERB] == 0);
+  CHECK(g.notes[g.note_count - 1] == N_FOX_TENDED);
+  game_action(&g, ACT_CANCEL);
+  CHECK(game_tile(&g, MAP_FOREST, 5, 20) == 'f' &&
+        game_tile(&g, MAP_FOREST, 8, 19) == 't');
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_FOX_TENDED);
+  game_action(&g, ACT_CANCEL);
+  /* A second herb cannot tend the fox again. */
+  CHECK(inventory_add(&g.player.inventory, ITEM_HERB, 1));
+  game_action(&g, ACT_INVENTORY);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_INVENTORY && g.player.inventory.quantities[ITEM_HERB] == 1);
+  game_action(&g, ACT_CANCEL);
+  stand(&g, MAP_FOREST, 8, 19, 1, 0);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_TRACKS && game_knows(&g, OBS_TRACKS));
+  game_action(&g, ACT_CANCEL);
+  stand(&g, MAP_VILLAGE, 11, 11, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_MIO_THANKS);
+  game_action(&g, ACT_CANCEL);
+  return 0;
+}
+
+static int test_guarded_grove(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  stand(&g, MAP_FOREST, 24, 12, 0, -1);
+  game_action(&g, ACT_UP);
+  CHECK(g.x == 24 && g.y == 13 && g.dy == -1);
+  CHECK(strstr(g.message, "Windstoss") != NULL);
+  CHECK(count_events(&g, EV_KNOCKBACK) == 1);
+  CHECK(g.events[g.event_count - 1].a == 24 && g.events[g.event_count - 1].b == 11);
+  /* Every guarded tile bordering open ground throws back onto safe ground. */
+  for (int y = 1; y < g.maps[MAP_FOREST].height - 1; y++)
+    for (int x = 1; x < g.maps[MAP_FOREST].width - 1; x++) {
+      if (!tile_def(game_tile(&g, MAP_FOREST, x, y))->guarded ||
+          !game_passable(&g, MAP_FOREST, x, y + 1) ||
+          tile_def(game_tile(&g, MAP_FOREST, x, y + 1))->guarded)
+        continue;
+      stand(&g, MAP_FOREST, x, y + 1, 0, -1);
+      game_action(&g, ACT_UP);
+      const TileDef *t = tile_def(game_tile(&g, MAP_FOREST, g.x, g.y));
+      CHECK(g.y > y && t->passable && !t->guarded && !t->transition);
+    }
   return 0;
 }
 
@@ -330,8 +443,9 @@ int main(int argc, char **argv) {
     return 1;
   if (test_world(argv[1]) || test_dialogue_rules(argv[1]) || test_examine(argv[1]) ||
       test_examine_nothing(argv[1]) || test_inventory_and_notebook(argv[1]) ||
-      test_content(argv[1]) || test_combat())
+      test_content(argv[1]) || test_fox_and_tracks(argv[1]) ||
+      test_guarded_grove(argv[1]) || test_combat())
     return 1;
-  puts("World, dialogue rules, examining, notebook, content and combat pass.");
+  puts("World, dialogue rules, examining, notebook, content, fox, grove and combat pass.");
   return 0;
 }

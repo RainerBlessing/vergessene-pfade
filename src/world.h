@@ -8,6 +8,7 @@ typedef struct {
   char symbol;
   bool passable, transition;
   const char *name;
+  bool guarded; /* stepping on it provokes the forest spirit */
 } TileDef;
 typedef struct {
   uint8_t width, height;

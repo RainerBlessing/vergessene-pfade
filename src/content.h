@@ -19,6 +19,10 @@ typedef enum {
   OBS_HOUSE_MARK,
   OBS_BOWL_OWNER,
   OBS_LEDGER_DEBT,
+  OBS_FOX_WOUNDED,
+  OBS_MIO_HERB,
+  OBS_FOX_TENDED, /* also the ability "Tierzeichen": tracks become visible */
+  OBS_TRACKS,
   OBS_COUNT
 } ObsId;
 typedef uint32_t Obs;
@@ -40,6 +44,7 @@ extern const Transition transitions[TRANSITION_COUNT];
 
 typedef enum {
   D_NONE,
+  D_SCENE_ARRIVAL,
   D_SUMI_TASK,
   D_SUMI_WAITING,
   D_SUMI_OWNER,
@@ -48,6 +53,9 @@ typedef enum {
   D_ORIHA_SHARDS,
   D_ORIHA_OWNER,
   D_MIO,
+  D_MIO_HERB,
+  D_MIO_HERB_AGAIN,
+  D_MIO_THANKS,
   D_KENTA,
   D_KENTA_AGAIN,
   D_DAIGO,
@@ -65,6 +73,10 @@ typedef enum {
   D_X_SHARDS,
   D_X_LEDGER,
   D_X_TENT,
+  D_X_FOX,
+  D_X_FOX_TENDED,
+  D_X_TRACKS,
+  D_I_TEND_FOX,
   D_I_BOWL_MARK,
   D_I_BOWL_MARK_MATCH,
   DIALOGUE_COUNT
@@ -93,6 +105,10 @@ typedef enum {
   N_MARKS_MATCH,
   N_OWNER,
   N_LEDGER,
+  N_FOX,
+  N_HERB,
+  N_FOX_TENDED,
+  N_TRACKS,
   NOTE_COUNT
 } NoteId;
 extern const char *const notes[NOTE_COUNT];
@@ -103,22 +119,35 @@ typedef struct {
   Obs needs, forbids, grants;
   DialogueId dialogue;
   NoteId note;
+  ItemId gives;
 } DialogueRule;
 extern const DialogueRule dialogue_rules[];
 extern const int dialogue_rule_count;
 
 typedef enum { POINT_AT, POINT_SYMBOL, POINT_ITEM } PointKind;
 /* First matching point wins: POINT_AT by map position, POINT_SYMBOL by tile
- * symbol on a map, POINT_ITEM by an inventory item. */
+ * symbol on a map, POINT_ITEM by an inventory item. An item point with a symbol
+ * applies only while facing that tile on its map, and consumes `takes`. */
 typedef struct {
   PointKind kind;
   int map, x, y;
   char symbol;
-  ItemId item, gives;
+  ItemId item, gives, takes;
   Obs needs, grants;
   DialogueId dialogue;
   NoteId note;
 } ExaminePoint;
 extern const ExaminePoint examine_points[];
 extern const int examine_point_count;
+
+/* The first override whose observations are known replaces the map tile. */
+typedef struct {
+  int map, x, y;
+  char symbol;
+  Obs needs;
+} TileOverride;
+extern const TileOverride tile_overrides[];
+extern const int tile_override_count;
+
+#define SPEAKER_SCENE (-2)
 #endif

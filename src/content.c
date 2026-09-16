@@ -3,7 +3,8 @@ const char *const obs_names[OBS_COUNT] = {
     "ASKED_BY_SUMI", "KENTA_STARE",        "CLAW_MARKS_EDGE", "FRESH_STUMPS",
     "BROKEN_ROPE",   "SHRINE_INSCRIPTION", "STONE_DRAGGED",   "STONE_HOLLOW",
     "BOWL_SHARDS",   "BOWL_MARK",          "HOUSE_MARK",      "BOWL_OWNER",
-    "LEDGER_DEBT"};
+    "LEDGER_DEBT",   "FOX_WOUNDED",        "MIO_HERB",        "FOX_TENDED",
+    "TRACKS"};
 
 const Npc npcs[NPC_COUNT] = {{MAP_VILLAGE, 5, 4, 0, "SUMI", "Sumi / Dorfaelteste"},
                              {MAP_VILLAGE, 24, 4, 1, "ORIHA", "Oriha / Lackmeisterin"},
@@ -16,6 +17,13 @@ const Transition transitions[TRANSITION_COUNT] = {
 
 /* Pages: at most 3 lines of at most 36 characters (checked by test_game). */
 const Dialogue dialogues[DIALOGUE_COUNT] = {
+    [D_SCENE_ARRIVAL] = {3,
+                         {"Die Abkuerzung durch den Wald.\nSeit Jahren bist du "
+                          "sie nicht\nmehr gegangen.",
+                          "Ein Schrei. Kenta rennt an dir\nvorbei und verschwindet "
+                          "nach\nSueden, Richtung Dorf.",
+                          "Vom alten Hain her faehrt ein\nWindstoss auf dich zu und "
+                          "wirft\ndich zurueck. Dann ist es still."}},
     [D_SUMI_TASK] = {2,
                      {"Du bist zurueck. Gut. Wir brauchen\njede Hand. Im Wald greift "
                       "ein\nGeist unsere Holzfaeller an.",
@@ -43,6 +51,15 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
                {"Im Wald wohnt ein Fuchs. Er hat\nmir mal zugesehen, wie ich\nBeeren "
                 "gesammelt habe.",
                 "Seit die Baeume fallen, sehe ich\nihn nicht mehr. Ob er Angst hat?"}},
+    [D_MIO_HERB] = {1,
+                    {"Der Fuchs ist verletzt? Oh nein.\nHier, mein Heilkraut. "
+                     "Leg es ihm\nauf die Wunde. Bitte!"}},
+    [D_MIO_HERB_AGAIN] = {1,
+                          {"Hast du ihm schon geholfen? Nimm\ndas Kraut aus der "
+                           "Tasche, wenn\ndu bei ihm bist."}},
+    [D_MIO_THANKS] = {1,
+                      {"Du hast ihm geholfen? Danke!\nFuechse merken sich so "
+                       "etwas."}},
     [D_KENTA] = {2,
                  {"Ich geh da nicht mehr rein! Der\nalte Baum hat mich angeschaut.\nMit "
                   "... mit Rinde!",
@@ -83,6 +100,18 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
                     {"Ein Auftragsbuch. Holz fuer die\nStadt, Frist in zehn "
                      "Tagen.\nLetzte Seite: Schulden."}},
     [D_X_TENT] = {1, {"Zelte der Holzfaeller. Es riecht\nnach Harz und Rauch."}},
+    [D_X_FOX] = {1,
+                 {"Ein Fuchs vor seinem Bau. Er ist\nverletzt und knurrt leise. "
+                  "An\nder Pfote klebt dunkler Lehm."}},
+    [D_X_FOX_TENDED] = {1, {"Der Fuchs schlaeft vor dem Bau.\nDer Verband haelt."}},
+    [D_X_TRACKS] = {1,
+                    {"Tierspuren. Sie machen einen\nweiten Bogen um das Lager "
+                     "und\nfolgen dem Rand des Hains."}},
+    [D_I_TEND_FOX] = {2,
+                      {"Du legst Mios Kraut auf die\nWunde. Der Fuchs haelt "
+                       "still.\nDann humpelt er in den Bau.",
+                       "Als du dich aufrichtest, faellt\ndir etwas am Boden auf: "
+                       "Faehrten.\nUeberall Faehrten."}},
     [D_I_BOWL_MARK] = {1, {"Auf dem Boden einer Scherbe ist\nein Zeichen eingebrannt."}},
     [D_I_BOWL_MARK_MATCH] = {1,
                              {"Auf dem Boden einer Scherbe ist\nein Zeichen "
@@ -106,23 +135,31 @@ const char *const notes[NOTE_COUNT] = {
     [N_MARKS_MATCH] = "Das Zeichen auf der Schale gleicht\ndem an Sumis Tuer.",
     [N_OWNER] = "Sumis Grossmutter gehoerte die\nSchale. Sie pflegte den Schrein.",
     [N_LEDGER] = "Ein Holzauftrag aus der Stadt.\nDie Frist ist knapp. Schulden.",
+    [N_FOX] = "Ein verletzter Fuchs am Bau. An\nder Pfote dunkler Lehm.",
+    [N_HERB] = "Mio gab mir Heilkraut fuer den\nFuchs.",
+    [N_FOX_TENDED] = "Seit ich den Fuchs versorgt habe,\nsehe ich ueberall Faehrten.",
+    [N_TRACKS] = "Tierspuren meiden das Lager und\nlaufen im Bogen um den Hain.",
 };
 
 #define MARKS (OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK))
 const DialogueRule dialogue_rules[] = {
-    {NPC_SUMI, MARKS, OBS(OBS_BOWL_OWNER), OBS(OBS_BOWL_OWNER), D_SUMI_OWNER, N_OWNER},
-    {NPC_SUMI, OBS(OBS_BOWL_OWNER), 0, 0, D_SUMI_OWNER_KNOWN, NOTE_NONE},
-    {NPC_SUMI, OBS(OBS_ASKED_BY_SUMI), 0, 0, D_SUMI_WAITING, NOTE_NONE},
-    {NPC_SUMI, 0, 0, OBS(OBS_ASKED_BY_SUMI), D_SUMI_TASK, N_ASKED},
+    {NPC_SUMI, MARKS, OBS(OBS_BOWL_OWNER), OBS(OBS_BOWL_OWNER), D_SUMI_OWNER, N_OWNER,
+     ITEM_NONE},
+    {NPC_SUMI, OBS(OBS_BOWL_OWNER), 0, 0, D_SUMI_OWNER_KNOWN, NOTE_NONE, ITEM_NONE},
+    {NPC_SUMI, OBS(OBS_ASKED_BY_SUMI), 0, 0, D_SUMI_WAITING, NOTE_NONE, ITEM_NONE},
+    {NPC_SUMI, 0, 0, OBS(OBS_ASKED_BY_SUMI), D_SUMI_TASK, N_ASKED, ITEM_NONE},
     {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | OBS(OBS_BOWL_OWNER), 0, 0, D_ORIHA_OWNER,
-     NOTE_NONE},
-    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS), 0, 0, D_ORIHA_SHARDS, NOTE_NONE},
-    {NPC_ORIHA, 0, 0, 0, D_ORIHA, NOTE_NONE},
-    {NPC_MIO, 0, 0, 0, D_MIO, NOTE_NONE},
-    {NPC_KENTA, OBS(OBS_KENTA_STARE), 0, 0, D_KENTA_AGAIN, NOTE_NONE},
-    {NPC_KENTA, 0, 0, OBS(OBS_KENTA_STARE), D_KENTA, N_KENTA},
-    {NPC_DAIGO, OBS(OBS_LEDGER_DEBT), 0, 0, D_DAIGO_LEDGER, NOTE_NONE},
-    {NPC_DAIGO, 0, 0, 0, D_DAIGO, NOTE_NONE},
+     NOTE_NONE, ITEM_NONE},
+    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS), 0, 0, D_ORIHA_SHARDS, NOTE_NONE, ITEM_NONE},
+    {NPC_ORIHA, 0, 0, 0, D_ORIHA, NOTE_NONE, ITEM_NONE},
+    {NPC_MIO, OBS(OBS_FOX_TENDED), 0, 0, D_MIO_THANKS, NOTE_NONE, ITEM_NONE},
+    {NPC_MIO, OBS(OBS_MIO_HERB), 0, 0, D_MIO_HERB_AGAIN, NOTE_NONE, ITEM_NONE},
+    {NPC_MIO, OBS(OBS_FOX_WOUNDED), 0, OBS(OBS_MIO_HERB), D_MIO_HERB, N_HERB, ITEM_HERB},
+    {NPC_MIO, 0, 0, 0, D_MIO, NOTE_NONE, ITEM_NONE},
+    {NPC_KENTA, OBS(OBS_KENTA_STARE), 0, 0, D_KENTA_AGAIN, NOTE_NONE, ITEM_NONE},
+    {NPC_KENTA, 0, 0, OBS(OBS_KENTA_STARE), D_KENTA, N_KENTA, ITEM_NONE},
+    {NPC_DAIGO, OBS(OBS_LEDGER_DEBT), 0, 0, D_DAIGO_LEDGER, NOTE_NONE, ITEM_NONE},
+    {NPC_DAIGO, 0, 0, 0, D_DAIGO, NOTE_NONE, ITEM_NONE},
 };
 const int dialogue_rule_count = (int)(sizeof dialogue_rules / sizeof dialogue_rules[0]);
 
@@ -207,7 +244,30 @@ const ExaminePoint examine_points[] = {
      .dialogue = D_X_LEDGER,
      .note = N_LEDGER},
     {.kind = POINT_SYMBOL, .map = MAP_FOREST, .symbol = 'A', .dialogue = D_X_TENT},
+    {.kind = POINT_SYMBOL,
+     .map = MAP_FOREST,
+     .symbol = 'F',
+     .grants = OBS(OBS_FOX_WOUNDED),
+     .dialogue = D_X_FOX,
+     .note = N_FOX},
+    {.kind = POINT_SYMBOL, .map = MAP_FOREST, .symbol = 'f', .dialogue = D_X_FOX_TENDED},
+    {.kind = POINT_SYMBOL,
+     .map = MAP_FOREST,
+     .symbol = 't',
+     .needs = OBS(OBS_FOX_TENDED),
+     .grants = OBS(OBS_TRACKS),
+     .dialogue = D_X_TRACKS,
+     .note = N_TRACKS},
     /* Items */
+    {.kind = POINT_ITEM,
+     .map = MAP_FOREST,
+     .symbol = 'F',
+     .item = ITEM_HERB,
+     .takes = ITEM_HERB,
+     .needs = OBS(OBS_FOX_WOUNDED),
+     .grants = OBS(OBS_FOX_TENDED),
+     .dialogue = D_I_TEND_FOX,
+     .note = N_FOX_TENDED},
     {.kind = POINT_ITEM,
      .item = ITEM_SHARDS,
      .needs = OBS(OBS_HOUSE_MARK),
@@ -221,3 +281,25 @@ const ExaminePoint examine_points[] = {
      .note = N_BOWL_MARK},
 };
 const int examine_point_count = (int)(sizeof examine_points / sizeof examine_points[0]);
+
+#define TRACK(x, y) {MAP_FOREST, x, y, 't', OBS(OBS_FOX_TENDED)}
+const TileOverride tile_overrides[] = {
+    {MAP_FOREST, 5, 20, 'f', OBS(OBS_FOX_TENDED)},
+    /* Paw prints: around the camp, along the grove edge, to the stone gap. */
+    TRACK(8, 19),
+    TRACK(9, 18),
+    TRACK(10, 17),
+    TRACK(11, 16),
+    TRACK(12, 15),
+    TRACK(14, 14),
+    TRACK(16, 14),
+    TRACK(18, 15),
+    TRACK(20, 15),
+    TRACK(22, 15),
+    TRACK(26, 15),
+    TRACK(28, 15),
+    TRACK(30, 14),
+    TRACK(32, 14),
+    TRACK(34, 13),
+};
+const int tile_override_count = (int)(sizeof tile_overrides / sizeof tile_overrides[0]);
