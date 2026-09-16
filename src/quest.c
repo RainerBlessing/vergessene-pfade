@@ -18,7 +18,6 @@ bool quest_complete(QuestState *q, Player *p) {
   if (*q != OBJECTIVE_FOUND || !inventory_remove(&p->inventory, ITEM_LENS, 1))
     return false;
   *q = COMPLETED;
-  p->gold += 25;
   p->hp = p->max_hp;
   return true;
 }

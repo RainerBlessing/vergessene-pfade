@@ -6,8 +6,8 @@ bool game_init(Game *g, const char *assets) {
   g->x = 10;
   g->y = 26;
   g->dy = -1;
-  g->player = (Player){.hp = 24, .max_hp = 24, .attack = 6, .defense = 2, .gold = 18};
-  inventory_add(&g->player.inventory, ITEM_HERB, 1);
+  g->player = (Player){.hp = 24, .max_hp = 24, .attack = 8, .defense = 2};
+  inventory_add(&g->player.inventory, ITEM_HERB, 2);
   char path[1024];
   snprintf(path, sizeof path, "%s/maps/world.map", assets);
   if (!map_load(&g->maps[0], path))
@@ -67,13 +67,11 @@ void game_action(Game *g, Action a) {
   if (g->state == GAME_DIALOGUE) {
     if (a == ACT_CANCEL ||
         (a == ACT_CONFIRM && ++g->page >= dialogues[g->dialogue].count))
-      g->state = npcs[g->npc].role == ROLE_MERCHANT && a == ACT_CONFIRM
-                     ? GAME_SHOP
-                     : GAME_EXPLORATION;
+      g->state = GAME_EXPLORATION;
     return;
   }
-  if (g->state == GAME_INVENTORY || g->state == GAME_SHOP) {
-    int count = g->state == GAME_SHOP ? 2 : ITEM_COUNT;
+  if (g->state == GAME_INVENTORY) {
+    int count = ITEM_COUNT;
     if (a == ACT_CANCEL || a == ACT_INVENTORY) {
       g->state = GAME_EXPLORATION;
       return;
@@ -83,19 +81,13 @@ void game_action(Game *g, Action a) {
     if (a == ACT_DOWN)
       g->selection = (g->selection + 1) % count;
     if (a == ACT_CONFIRM) {
-      if (g->state == GAME_SHOP)
-        snprintf(g->message, sizeof g->message, "%s",
-                 shop_buy(&g->player, shop_stock[g->selection])
-                     ? "Gekauft. Eine gute Reise!"
-                     : "Kauf nicht moeglich: Gold / Besitz.");
-      else if (g->selection == ITEM_HERB)
+      if (g->selection == ITEM_HERB)
         snprintf(g->message, sizeof g->message, "%s",
                  player_heal(&g->player) ? "Der Tee gibt dir neue Lebenskraft."
                                          : "Volle Lebenskraft oder kein Tee.");
       else
         snprintf(g->message, sizeof g->message, "%s",
-                 g->selection == ITEM_SWORD ? "Reiseklinge: angelegt, +2 Angriff."
-                                            : "Der Schreinspiegel. Bring ihn Aoi.");
+                 "Der Schreinspiegel. Bring ihn Aoi.");
     }
     return;
   }

@@ -1,6 +1,6 @@
 #ifndef CONTENT_H
 #define CONTENT_H
-typedef enum { ROLE_KEEPER, ROLE_MERCHANT, ROLE_RESIDENT, ROLE_SCOUT } NpcRole;
+typedef enum { ROLE_KEEPER, ROLE_RESIDENT, ROLE_SCOUT } NpcRole;
 typedef struct {
   int map, x, y, sprite;
   NpcRole role;

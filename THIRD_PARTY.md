@@ -1,10 +1,15 @@
 # Third-party notices
 
-SDL 3.2.28 is vendored unmodified from the official release archive:
+SDL3 (zlib license) is used as the platform library. Linux development builds link
+the system SDL3 package. Distributed builds (Stage 6) will statically link SDL 3.2.28,
+unpacked unmodified from the official release archive into `vendor/`:
 https://github.com/libsdl-org/SDL/releases/download/release-3.2.28/SDL3-3.2.28.tar.gz
+Those packages must ship `vendor/SDL3-3.2.28/LICENSE.txt`. SDL also provides the bundled
+bitmap font used for text.
 
-SDL uses the zlib license. Its full license is in `vendor/SDL3-3.2.28/LICENSE.txt`; its source tree retains additional upstream notices, including the bundled bitmap font. The Windows package includes a copy of that license. SDL is statically linked; no SDL DLL installation is needed.
+The code base derives from the author's Emberpost proof of concept (see `docs/emberpost/`).
+Maps, palette, atlas generator, sprites, names and dialogue are original.
 
-The project's maps, palette, atlas generator, sprites, names, and dialogue are original. No external game artwork or text was imported.
-
-Japanese visual direction reference: https://nippon-museum.de/gallery . No images or game content from that site are distributed in this project.
+Retro-RPG structure reference: https://nippon-museum.de (fan archive of the C64 game NIPPON).
+Thematic inspiration: H. Yoda / S. Blind, "Acht Millionen Wege zum Glück" (dtv).
+No images, text or game content from either source are distributed in this project.

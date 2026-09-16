@@ -104,15 +104,13 @@ static void world(Renderer *r, const Game *g) {
       2);
   SDL_SetRenderClipRect(r->sdl, NULL);
   box(r, 0, 0, 320, 16, 0);
-  text(r, 8, 4, 1,
-       g->map == 0 ? "EMBERPOST / DER LATERNENPFAD" : "EMBERPOST / DORF KOHARU");
+  text(r, 8, 4, 1, g->map == 0 ? "VERGESSENE PFADE / WALD" : "VERGESSENE PFADE / DORF");
   box(r, 0, 176, 320, 24, 0);
   color(r, 1);
-  formatted(r, 8, 178, "LP %02d/%02d  GOLD %02d  I INVENTAR", g->player.hp,
-            g->player.max_hp, g->player.gold);
+  formatted(r, 8, 178, "LP %02d/%02d  I INVENTAR", g->player.hp, g->player.max_hp);
   int n = game_npc_at(g, g->x + g->dx, g->y + g->dy);
   if (n >= 0)
-    text(r, 8, 190, 2, "ENTER REDEN / ESC TAGEBUCH");
+    text(r, 8, 190, 2, "ENTER REDEN / ESC NOTIZBUCH");
   else if (g->message[0])
     text(r, 8, 190, 2, g->message);
   else
@@ -133,22 +131,15 @@ void render_game(Renderer *r, const Game *g, int fps) {
     formatted(r, 12, 181, "ENTER WEITER %d/%d  ESC SCHLIESSEN", g->page + 1,
               dialogues[g->dialogue].count);
   }
-  if (g->state == GAME_INVENTORY || g->state == GAME_SHOP) {
+  if (g->state == GAME_INVENTORY) {
     panel(r, 4, 26, 312, 146);
-    color(r, 1);
-    formatted(r, 12, 36, "%s     GOLD %d",
-              g->state == GAME_SHOP ? "RENS LADEN" : "DEIN INVENTAR", g->player.gold);
-    int count = g->state == GAME_SHOP ? 2 : ITEM_COUNT;
-    for (int i = 0; i < count; i++) {
-      ItemId id = g->state == GAME_SHOP ? shop_stock[i] : (ItemId)i;
+    text(r, 12, 36, 1, "DEIN INVENTAR");
+    for (int i = 0; i < ITEM_COUNT; i++) {
       if (g->selection == i)
         box(r, 10, 55 + i * 16, 300, 14, 4);
       color(r, g->selection == i ? 1 : 2);
-      formatted(r, 14, 58 + i * 16, "%c %-15s %2d %s", g->selection == i ? '>' : ' ',
-                items[id].name,
-                g->state == GAME_SHOP ? items[id].price
-                                      : g->player.inventory.quantities[id],
-                g->state == GAME_SHOP ? "GOLD" : "STUECK");
+      formatted(r, 14, 58 + i * 16, "%c %-16s %2d STUECK", g->selection == i ? '>' : ' ',
+                items[i].name, g->player.inventory.quantities[i]);
     }
     text(r, 12, 115, 2, g->message);
     color(r, 3);
@@ -181,18 +172,18 @@ void render_game(Renderer *r, const Game *g, int fps) {
   }
   if (g->state == GAME_PAUSED) {
     panel(r, 4, 22, 312, 174);
-    text(r, 16, 33, 1, "EMBERPOST / REISETAGEBUCH");
+    text(r, 16, 33, 1, "VERGESSENE PFADE / NOTIZBUCH");
     text(r, 16, 53, 2, quest_labels[g->quest]);
     text(r, 16, 73, 3,
-         "AOI: HAUS IM NORDWESTEN\nREN: LADEN IM NORDOSTEN\nNAO: AM SUEDTOR");
-    text(r, 16, 105, 2,
+         "AOI: HAUS IM NORDWESTEN\nREN: HAUS IM NORDOSTEN\nNAO: AM SUEDTOR");
+    text(r, 16, 111, 2,
          "PFEILE / WASD  LAUFEN\nLEERTASTE / ENTER  REDEN / WAHL\nI              "
          "INVENTAR\nF1 / F2        DEBUG / HINDERNISSE");
     text(r, 16, 157, 1, "ENTER / ESC WEITER\nR NEUE REISE / Q BEENDEN");
-    text(r, 16, 182, 3, "EIN WEG. EIN LICHT. DEINE REISE.");
+    text(r, 16, 182, 3, "NICHT JEDER PFAD IST VERGESSEN.");
   }
   if (g->debug) {
-    static const char *states[] = {"WELT", "DIALOG", "TASCHE", "LADEN", "KAMPF", "PAUSE"};
+    static const char *states[] = {"WELT", "DIALOG", "TASCHE", "KAMPF", "PAUSE"};
     panel(r, 4, 16, 312, 37);
     color(r, 2);
     formatted(r, 10, 23, "KARTE %d XY %d,%d BPS %d", g->map, g->x, g->y, fps);

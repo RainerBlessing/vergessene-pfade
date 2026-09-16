@@ -1,18 +1,17 @@
 #include "journey.h"
 #include <stdio.h>
-#define REQUIRE(x)                                                             \
-  do {                                                                         \
-    if (!(x)) {                                                                \
-      fprintf(stderr, "Journey failed at %d: %s\n", __LINE__, #x);             \
-      return false;                                                            \
-    }                                                                          \
+#define REQUIRE(x)                                                                       \
+  do {                                                                                   \
+    if (!(x)) {                                                                          \
+      fprintf(stderr, "Journey failed at %d: %s\n", __LINE__, #x);                       \
+      return false;                                                                      \
+    }                                                                                    \
   } while (0)
 /* Breadth-first navigation issues only real movement actions. It never edits
  * state. */
 static bool walk(Game *g, int tx, int ty) {
   const Map *m = &g->maps[g->map];
-  int prev[MAP_LIMIT * MAP_LIMIT], queue[MAP_LIMIT * MAP_LIMIT], head = 0,
-                                                                 tail = 0;
+  int prev[MAP_LIMIT * MAP_LIMIT], queue[MAP_LIMIT * MAP_LIMIT], head = 0, tail = 0;
   const int dx[4] = {0, 0, -1, 1}, dy[4] = {-1, 1, 0, 0};
   const Action a[4] = {ACT_UP, ACT_DOWN, ACT_LEFT, ACT_RIGHT};
   for (int i = 0; i < MAP_LIMIT * MAP_LIMIT; i++)
@@ -41,8 +40,7 @@ static bool walk(Game *g, int tx, int ty) {
     path[count++] = at;
   while (count) {
     int to = path[--count], from = prev[to];
-    int vx = to % m->width - from % m->width,
-        vy = to / m->width - from / m->width;
+    int vx = to % m->width - from % m->width, vy = to / m->width - from / m->width;
     for (int i = 0; i < 4; i++)
       if (dx[i] == vx && dy[i] == vy)
         game_action(g, a[i]);
@@ -82,55 +80,48 @@ bool journey(Game *g, JourneyObserver observer, void *context) {
   REQUIRE(walk(g, 22, 10));
   game_action(g, ACT_UP);
   game_action(g, ACT_CONFIRM);
+  REQUIRE(g->npc == 1);
   close_dialogue(g);
-  REQUIRE(g->state == GAME_SHOP);
-  int gold = g->player.gold;
-  game_action(g, ACT_CONFIRM);
-  REQUIRE(g->player.gold == gold - 6);
-  see(g, observer, context, "04-shop");
-  game_action(g, ACT_CANCEL);
+  REQUIRE(g->state == GAME_EXPLORATION);
   game_action(g, ACT_INVENTORY);
   REQUIRE(g->state == GAME_INVENTORY);
-  see(g, observer, context, "05-inventory");
+  see(g, observer, context, "04-inventory");
   game_action(g, ACT_CANCEL);
   REQUIRE(walk(g, 15, 28));
   REQUIRE(g->map == 0);
   REQUIRE(walk(g, 38, 8));
   REQUIRE(g->state == GAME_COMBAT);
-  see(g, observer, context, "06-combat");
+  see(g, observer, context, "05-combat");
   for (int turn = 0; turn < 20 && !g->combat.won && !g->combat.lost; turn++) {
     int wanted =
-        g->player.hp <= 12 && g->player.inventory.quantities[ITEM_HERB] > 0 ? 1
-                                                                            : 0;
+        g->player.hp <= 12 && g->player.inventory.quantities[ITEM_HERB] > 0 ? 1 : 0;
     if (g->selection != wanted)
       game_action(g, ACT_DOWN);
     game_action(g, ACT_CONFIRM);
   }
   REQUIRE(g->combat.won && g->quest == OBJECTIVE_FOUND);
-  see(g, observer, context, "07-victory");
+  see(g, observer, context, "06-victory");
   game_action(g, ACT_CONFIRM);
   REQUIRE(walk(g, 10, 8));
   REQUIRE(g->map == 1);
   REQUIRE(walk(g, 10, 8));
   game_action(g, ACT_UP);
   game_action(g, ACT_CONFIRM);
-  REQUIRE(g->quest == COMPLETED &&
-          g->player.inventory.quantities[ITEM_LENS] == 0);
-  see(g, observer, context, "08-complete");
+  REQUIRE(g->quest == COMPLETED && g->player.inventory.quantities[ITEM_LENS] == 0);
+  see(g, observer, context, "07-complete");
   game_action(g, ACT_CONFIRM);
-  see(g, observer, context, "09-reward");
-  gold = g->player.gold;
+  see(g, observer, context, "08-ending");
   close_dialogue(g);
   game_action(g, ACT_CONFIRM);
-  REQUIRE(g->dialogue == 6 && g->player.gold == gold);
+  REQUIRE(g->dialogue == 6 && g->quest == COMPLETED);
   close_dialogue(g);
   game_action(g, ACT_CANCEL);
   REQUIRE(g->state == GAME_PAUSED);
-  see(g, observer, context, "10-journal");
+  see(g, observer, context, "09-journal");
   game_action(g, ACT_CONFIRM);
   REQUIRE(g->state == GAME_EXPLORATION);
   game_action(g, ACT_DEBUG);
-  see(g, observer, context, "11-debug");
+  see(g, observer, context, "10-debug");
   game_action(g, ACT_DEBUG);
   return true;
 }

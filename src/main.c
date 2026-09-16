@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
   SDL_Renderer *sdl = NULL;
   Renderer r = {0};
   int result = 1;
-  if (!SDL_CreateWindowAndRenderer("Emberpost | Der Laternenpfad | Deutsch", 1280, 800,
+  if (!SDL_CreateWindowAndRenderer("Die vergessenen Pfade | POC Walddorf", 1280, 800,
                                    SDL_WINDOW_RESIZABLE, &w, &sdl))
     goto cleanup;
   SDL_SetWindowMinimumSize(w, 320, 200);
@@ -84,8 +84,8 @@ int main(int argc, char **argv) {
   Game g;
   if (!game_init(&g, assets) || !renderer_init(&r, sdl, assets)) {
     SDL_ShowSimpleMessageBox(
-        SDL_MESSAGEBOX_ERROR, "Emberpost",
-        "Spieldaten fehlen. Der Ordner assets muss neben emberpost.exe liegen. Bitte das "
+        SDL_MESSAGEBOX_ERROR, "Die vergessenen Pfade",
+        "Spieldaten fehlen. Der Ordner assets muss neben dem Programm liegen. Bitte das "
         "Spiel vollstaendig entpacken.",
         w);
     goto cleanup;
@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
   }
 cleanup:
   if (result)
-    fprintf(stderr, "Emberpost fehlgeschlagen: %s\n", SDL_GetError());
+    fprintf(stderr, "Die vergessenen Pfade fehlgeschlagen: %s\n", SDL_GetError());
   renderer_destroy(&r);
   SDL_DestroyRenderer(sdl);
   SDL_DestroyWindow(w);

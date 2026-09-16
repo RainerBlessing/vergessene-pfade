@@ -1,11 +1,11 @@
 #include "game.h"
 #include <stdio.h>
-#define CHECK(x)                                                               \
-  do {                                                                         \
-    if (!(x)) {                                                                \
-      fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #x);                     \
-      return 1;                                                                \
-    }                                                                          \
+#define CHECK(x)                                                                         \
+  do {                                                                                   \
+    if (!(x)) {                                                                          \
+      fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #x);                               \
+      return 1;                                                                          \
+    }                                                                                    \
   } while (0)
 int main(int argc, char **argv) {
   Game g;
@@ -48,13 +48,7 @@ int main(int argc, char **argv) {
   CHECK(inventory_remove(&inv, ITEM_HERB, 99));
   CHECK(!inventory_remove(&inv, ITEM_HERB, 1));
   CHECK(!inventory_add(&inv, ITEM_COUNT, 1));
-  int gold = g.player.gold;
-  CHECK(shop_buy(&g.player, ITEM_HERB));
-  CHECK(g.player.gold == gold - 6);
   CHECK(g.player.inventory.quantities[ITEM_HERB] == 2);
-  CHECK(!shop_buy(&g.player, ITEM_LENS));
-  g.player.gold = 0;
-  CHECK(!shop_buy(&g.player, ITEM_HERB));
   g.player.hp = 23;
   CHECK(player_heal(&g.player) && g.player.hp == 24);
   CHECK(!player_heal(&g.player));
@@ -64,10 +58,10 @@ int main(int argc, char **argv) {
   g.dx = 0;
   g.dy = -1;
   game_action(&g, ACT_CONFIRM);
-  game_action(&g, ACT_CONFIRM);
-  game_action(&g, ACT_CONFIRM);
-  CHECK(g.state == GAME_SHOP);
-  game_action(&g, ACT_CANCEL);
+  CHECK(g.state == GAME_DIALOGUE && g.npc == 1);
+  for (int i = 0; i < 4 && g.state == GAME_DIALOGUE; i++)
+    game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_EXPLORATION);
   game_action(&g, ACT_INVENTORY);
   CHECK(g.state == GAME_INVENTORY);
   game_action(&g, ACT_CANCEL);
@@ -80,8 +74,7 @@ int main(int argc, char **argv) {
   CHECK(p.inventory.quantities[ITEM_LENS] == 1);
   CHECK(!quest_find(&q, &p));
   CHECK(quest_complete(&q, &p));
-  CHECK(q == COMPLETED && p.gold == 25 && p.hp == 24 &&
-        p.inventory.quantities[ITEM_LENS] == 0);
+  CHECK(q == COMPLETED && p.hp == 24 && p.inventory.quantities[ITEM_LENS] == 0);
   CHECK(!quest_complete(&q, &p));
   CHECK(g.quest == ACTIVE);
   CHECK(quest_find(&g.quest, &g.player));
@@ -104,7 +97,6 @@ int main(int argc, char **argv) {
   g.state = GAME_EXPLORATION;
   g.quest = ACTIVE;
   g.player.hp = 24;
-  g.player.attack = 8;
   g.map = 0;
   g.x = 38;
   g.y = 9;

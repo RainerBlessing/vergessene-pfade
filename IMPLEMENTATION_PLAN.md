@@ -129,7 +129,7 @@ Der Log wird im Core als Ereignispuffer geführt; `main.c` schreibt die Datei.
 **Tests**:
 - `ctest`: `core` und `complete_journey` grün.
 - `./vergessene_pfade --smoke` unter Linux mit Exit 0.
-**Status**: Not Started
+**Status**: Complete (2026-09-16). Linux/GCC mit System-SDL3 3.4.16: Build ohne Warnungen, `ctest` 2/2, `--smoke` und `--verify` mit Exit 0, 10 Screenshots angesehen. Die Notizbuch-Überlappung aus Emberpost ist behoben. Vendortes SDL ist noch nicht eingecheckt (Stage 6).
 
 ## Stage 2A: Erkunden – Dorf, Wald, Untersuchen, Notizbuch
 **Goal**: Dorf und Wald sind begehbar, Umgebung und NPCs lassen sich untersuchen, Beobachtungen landen diegetisch im Notizbuch.
