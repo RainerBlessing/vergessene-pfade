@@ -249,7 +249,15 @@ Der Log wird im Core als Ereignispuffer geführt; `main.c` schreibt die Datei.
 **Tests**:
 - Unit: Goldlack nicht ohne `BOWL_OWNER`; Reparatur nicht doppelt; falsche Scherbe ändert nichts; `BOWL_DRYING` → `BOWL_READY` nur beim Übergang Wald → Dorf, nicht bei Dorf → Wald oder durch Herumlaufen im Dorf; Darbringen erst mit `BOWL_READY`.
 - Journey: Scherben → Reparatur → Wald → Dorf → Schale → Darbringen → Kami `RUHIG`; alle bisherigen Journeys grün.
-**Status**: Not Started
+**Status**: Complete (2026-09-18).
+- Build ohne Warnungen, `ctest` 2/2, `--verify --log` mit Exit 0, Screenshots angesehen.
+- Umsetzung:
+  - Orihas Angebot führt über das neue Regelfeld `opens` direkt in die Reparaturansicht (`GAME_MEND`).
+  - Die Ansicht nennt die offene Bruchstelle und listet die Stücke; ein falsches Stück kostet nichts, die Arbeit lässt sich unterbrechen und fortsetzen.
+  - Trocknen ohne Zähler: Die Schale steht sichtbar in Orihas Regal (Tile-Overrides `b`/`q`), und der Wechsel geschieht beim Übergang Wald → Dorf.
+  - Die geflickte Schale ist ein eigener Gegenstand und beruhigt den Kami (Gemüt RUHIG); kein Ausgang.
+  - `journey_mend` als vierter Journey-Test; neues Log-Ereignis `mend`.
+- Abweichung von der Spec: Die Schale wird dem Kami in der Begegnung dargebracht, nicht am Opferstein. Das Gemüt gehört zur Begegnung, und der Opferstein liegt weit vom Hain entfernt. Die Spec ist entsprechend angepasst.
 
 ## Stage 3E: Kompromiss mit Daigo
 **Goal**: Aus der Beruhigung wird eine Aushandlung zwischen Dorf und Hain.

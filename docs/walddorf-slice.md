@@ -88,7 +88,7 @@ Die Fähigkeit **Tierzeichen** erhält man, indem man den Fuchs mit Mios Heilkra
 | Kami angreifen | – | Kampf (3B) |
 | Stein G2' schieben | `STONE_DRAGGED` + `STONE_HOLLOW` | Schiebe-Rätsel (3C) |
 | Oriha um Goldlack bitten | `BOWL_SHARDS` + `BOWL_OWNER` | Reparaturansicht (3D) |
-| geflickte Schale darbringen | `BOWL_READY` (nach Rückkehr aus dem Wald abgeholt) | Kami → RUHIG |
+| geflickte Schale darbringen (in der Begegnung) | `BOWL_READY` (nach Rückkehr aus dem Wald bei Oriha abgeholt) | Kami → RUHIG |
 | Daigo: neue Grenze vorschlagen | Kami RUHIG + `TRACKS` + `LEDGER_DEBT` | Daigo folgt zu den Pfählen (3E) |
 | Scherben darbringen (ungeflickt) | `BOWL_SHARDS` | Kami → WUETEND (Fehlgriff mit Folge) |
 
@@ -120,7 +120,7 @@ Scherben finden → Zeichen am Boden bemerken → dasselbe Zeichen an Sumis Tür
   → Reparaturansicht: 4 Scherben an ihre Bruchkanten setzen, Nähte werden golden
   → Oriha stellt die Schale sichtbar aufs Regal: „Komm wieder, wenn du aus dem Wald zurück bist.“
   → beim nächsten Übergang Wald → Dorf ist sie fertig (BOWL_DRYING → BOWL_READY)
-  → geflickte Schale am Schrein darbringen → Kami RUHIG
+  → geflickte Schale dem Kami am Hainrand darbringen → Kami RUHIG
   → mit Daigo eine neue Grenze entlang der Tierspuren abstecken (3 Pfähle)
 ```
 **Reparaturansicht**: Die Schale steht als Umriss in der Mitte, die 4 Scherben
