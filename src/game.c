@@ -40,6 +40,10 @@ bool game_knows(const Game *g, ObsId o) { return (g->obs & OBS(o)) != 0; }
 static bool matches(const Game *g, Obs needs, Obs forbids) {
   return (g->obs & needs) == needs && !(g->obs & forbids);
 }
+static bool fits_now(const Game *g, Obs needs, Outcome outcome, Phase phase) {
+  return (g->obs & needs) == needs && (outcome == OUT_ANY || outcome == g->outcome) &&
+         (phase == PHASE_ANY || phase == g->phase);
+}
 char game_tile(const Game *g, int map, int x, int y) {
   if (map == MAP_FOREST && x == g->stone_x && y == g->stone_y)
     return 'G';
@@ -49,7 +53,14 @@ char game_tile(const Game *g, int map, int x, int y) {
         return 'p';
   for (int i = 0; i < tile_override_count; i++) {
     const TileOverride *o = &tile_overrides[i];
-    if (o->map == map && o->x == x && o->y == y && matches(g, o->needs, 0))
+    if (o->map == map && o->x == x && o->y == y &&
+        fits_now(g, o->needs, o->outcome, o->phase))
+      return o->symbol;
+  }
+  for (int i = 0; i < outcome_change_count; i++) {
+    const TileOverride *o = &outcome_changes[i];
+    if (o->map == map && o->x == x && o->y == y &&
+        fits_now(g, o->needs, o->outcome, o->phase))
       return o->symbol;
   }
   return map_at(&g->maps[map], x, y);
@@ -123,7 +134,7 @@ static void talk(Game *g, int npc) {
     const DialogueRule *r = &dialogue_rules[i];
     if ((int)r->npc != npc || !matches(g, r->needs, r->forbids))
       continue;
-    if (r->outcome != OUT_ANY && r->outcome != g->outcome)
+    if (!fits_now(g, 0, r->outcome, r->phase))
       continue;
     /* Do not hand over something the player still carries: the next rule speaks. */
     if (r->gives != ITEM_NONE && g->player.inventory.quantities[r->gives])
@@ -179,6 +190,13 @@ static void reset_stone(Game *g) {
 static void use_point(Game *g, const ExaminePoint *p, char examined) {
   if (p->kind == POINT_STONE && p->dialogue == D_X_STONE_STUCK)
     reset_stone(g);
+  /* Reading the grey patch in the morning closes the slice, once. */
+  if (p->note == N_VISITOR && g->phase == PHASE_MORNING && !game_knows(g, OBS_TEASED)) {
+    learn(g, p->grants | OBS(OBS_TEASED), p->note);
+    emit(g, EV_EXAMINE, examined, p->dialogue);
+    open_scene(g, "Die vergessenen Pfade", D_SCENE_TEASER);
+    return;
+  }
   if (p->takes != ITEM_NONE)
     inventory_remove(&g->player.inventory, p->takes, 1);
   if (p->gives != ITEM_NONE)
@@ -203,9 +221,10 @@ static void examine_nothing(Game *g, int x, int y) {
   *last = (NothingTarget){true, g->map, x, y, g->dx, g->dy, 0};
 }
 static bool stake_here(Game *g);
+static bool sleep_here(Game *g);
 /* Facing tile first, then the tile underfoot (passable points cannot be faced). */
 static void examine(Game *g) {
-  if (stake_here(g))
+  if (stake_here(g) || sleep_here(g))
     return;
   int fx = g->x + g->dx, fy = g->y + g->dy;
   const ExaminePoint *p = point_at(g, fx, fy);
@@ -315,7 +334,20 @@ static void finish(Game *g, Outcome outcome) {
   if (g->outcome != OUT_NONE)
     return;
   g->outcome = outcome;
+  learn(g, OBS(OBS_SETTLED), NOTE_NONE);
   emit(g, EV_OUTCOME, outcome, 0);
+}
+/* The night at the inn: only once something has been decided. */
+static bool sleep_here(Game *g) {
+  if (game_tile(g, g->map, g->x, g->y) != 'u' || g->phase != PHASE_BEFORE)
+    return false;
+  if (g->outcome == OUT_NONE)
+    return false; /* the futon point says why */
+  g->phase = PHASE_MORNING;
+  learn(g, OBS(OBS_MORNING), N_MORNING);
+  emit(g, EV_PHASE, g->phase, 0);
+  open_scene(g, "Im Gasthaus", D_SCENE_MORNING);
+  return true;
 }
 /* One exchange of blows. The fight continues until someone falls or the player
  * steps back; the spirit keeps its wounds until it wins. */

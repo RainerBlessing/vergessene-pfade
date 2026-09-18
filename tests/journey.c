@@ -76,6 +76,29 @@ static void close_dialogue(Game *g) {
   for (int i = 0; i < DIALOGUE_PAGES + 1 && g->state == GAME_DIALOGUE; i++)
     game_action(g, ACT_CONFIRM);
 }
+static void see(Game *g, JourneyObserver o, void *c, const char *label);
+/* The night at the inn, then the grey patch by the shrine: every outcome ends
+ * the same way and says nothing more about the visitor. */
+static bool sleep_and_look(Game *g, JourneyObserver o, void *c, const char *label) {
+  if (g->map == MAP_FOREST)
+    REQUIRE(walk(g, 24, 39) || g->map == MAP_VILLAGE);
+  REQUIRE(walk(g, 4, 14));
+  game_action(g, ACT_CONFIRM);
+  REQUIRE(g->state == GAME_DIALOGUE && g->phase == PHASE_MORNING);
+  close_dialogue(g);
+  REQUIRE(walk(g, 24, 15)); /* the wood yard shows what the night brought */
+  see(g, o, c, label);
+  REQUIRE(walk(g, 16, 0) || g->map == MAP_FOREST);
+  REQUIRE(approach(g, 37, 19));
+  game_action(g, ACT_CONFIRM);
+  REQUIRE(game_knows(g, OBS_GREY_TRACE));
+  close_dialogue(g);
+  REQUIRE(approach(g, 38, 19));
+  game_action(g, ACT_CONFIRM);
+  REQUIRE(g->dialogue == D_SCENE_TEASER && game_knows(g, OBS_TEASED));
+  close_dialogue(g);
+  return true;
+}
 static void see(Game *g, JourneyObserver o, void *c, const char *label) {
   if (o)
     o(g, label, c);
@@ -267,6 +290,7 @@ bool journey_fight(Game *g, JourneyObserver observer, void *context) {
   REQUIRE(g->dialogue == D_SUMI_FOUGHT);
   see(g, observer, context, "14-sumi-after");
   close_dialogue(g);
+  REQUIRE(sleep_and_look(g, observer, context, "15-morning-fight"));
   return true;
 }
 
@@ -289,6 +313,7 @@ bool journey_boundary(Game *g, JourneyObserver observer, void *context) {
   REQUIRE(g->dialogue == D_SUMI_BOUNDARY);
   see(g, observer, context, "17-sumi-boundary");
   close_dialogue(g);
+  REQUIRE(sleep_and_look(g, observer, context, "18-morning-boundary"));
   return true;
 }
 
@@ -350,5 +375,6 @@ bool journey_mend(Game *g, JourneyObserver observer, void *context) {
   REQUIRE(g->dialogue == D_SUMI_MEND);
   see(g, observer, context, "24-sumi-mend");
   close_dialogue(g);
+  REQUIRE(sleep_and_look(g, observer, context, "25-morning-mend"));
   return true;
 }

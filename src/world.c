@@ -44,7 +44,12 @@ const TileDef tiles[] = {
     {.symbol = 't', .passable = true, .transition = false, .name = "Faehrte"},
     {.symbol = 'b', .passable = false, .transition = false, .name = "Regal"},
     {.symbol = 'q', .passable = false, .transition = false, .name = "Regal"},
-    {.symbol = 'p', .passable = true, .transition = false, .name = "Grenzpfahl"}};
+    {.symbol = 'p', .passable = true, .transition = false, .name = "Grenzpfahl"},
+    {.symbol = 'u', .passable = true, .transition = false, .name = "Futon"},
+    {.symbol = 'e', .passable = false, .transition = false, .name = "Leerer Bau"},
+    {.symbol = 'g', .passable = false, .transition = false, .name = "Fuchsbau"},
+    {.symbol = 'j', .passable = false, .transition = false, .name = "Setzling"},
+    {.symbol = 'v', .passable = false, .transition = false, .name = "Graue Spur"}};
 const int tile_count = (int)(sizeof tiles / sizeof tiles[0]);
 const TileDef *tile_def(char s) {
   for (int i = 0; i < tile_count; i++)

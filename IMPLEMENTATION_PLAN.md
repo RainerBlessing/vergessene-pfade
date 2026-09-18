@@ -293,7 +293,16 @@ Der Log wird im Core als Ereignispuffer geführt; `main.c` schreibt die Datei.
 - Unit: Overrides je Ausgang/Phase; Konnektivität der Karten in jedem Zustand; Balance-Guard.
 - Journeys aller drei Ausgänge inkl. Übernachtung und Hook.
 - `--verify`: Screenshot-Serie je Ausgang (Dorf, Hain, Morgen, Schrein-Spur) angesehen.
-**Status**: Not Started
+**Status**: Complete (2026-09-18).
+- Build ohne Warnungen, `ctest` 2/2, `--verify --log` und `--smoke` mit Exit 0, Screenshots angesehen (Morgen je Ausgang am Holzplatz).
+- Umsetzung:
+  - `TileOverride` und Dialogregeln kennen jetzt Ausgang **und** Phase (`PHASE_ANY`/`OUT_ANY` heißt „egal“).
+  - Die Konsequenzen stehen als eigene Tabelle `outcome_changes` mit Tag `GAIN`/`LOSS`.
+  - Übernachtung auf dem Futon im Gasthaus, aber erst nach einer Entscheidung; sonst: „Du liegst wach.“
+  - Morgen-Dialoge für Sumi, Mio und Daigo je Ausgang.
+  - Graue Spur am Schrein nach jedem Ausgang; mit Tierzeichen zusätzlich „nicht einmal Tiere“. Erst danach zeigt die Inschrift die Zeile über den Besucher, gefolgt vom Abspann-Teaser.
+  - Klang: zweistimmige Ambient-Fläche mit Rauschanteil, je nach Ort und Ausgang; ohne Audiogerät läuft das Spiel weiter.
+- Tests: Prüfung auf Gewinn und Verlust je Ausgang **und** Phase, Sichtbarkeit jeder Änderung, Begehbarkeit in jedem Zustand, Übernachtung nur nach Entscheidung, zweite Nacht ohne Wirkung, Spur und späte Inschrift. Alle drei Journeys laufen bis zum Abspann.
 
 ## Stage 5A: Interner Playthrough & Kulturcheck
 **Goal**: Der Slice ist in rund 30 Minuten ohne Vorwissen durchspielbar. Die Inhalte sind kulturell geprüft, bevor Fremde spielen.

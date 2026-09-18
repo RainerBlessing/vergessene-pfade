@@ -9,16 +9,17 @@ Narrativer Retro-RPG-Prototyp (C11 / SDL3). Er prüft, ob der Loop
 - Kulturelle Notizen und Quellen: [docs/culture-notes.md](docs/culture-notes.md)
 - Herkunft des Codes: Emberpost (Japan-/Deutsch-Fassung), siehe [docs/emberpost/](docs/emberpost/)
 
-**Aktueller Stand (Stage 3E): alle drei Lösungswege sind spielbar.**
-- Das Spiel beginnt mit der Ankunftsszene im Wald. Danach sind das Dorf Kiriyama und der Wald begehbar.
-- Fünf Figuren sprechen nach einer Regeltabelle, die Umgebung lässt sich untersuchen, und Beobachtungen landen diegetisch im Notizbuch.
-- Der verletzte Fuchs lässt sich mit Mios Heilkraut versorgen. Danach sieht die Figur Tierfährten („Tierzeichen“).
-- Am Hainrand erscheint der Waldkami. Stehen bleiben, Darbringen, Angreifen und Zurückweichen verändern sein Gemüt, das er sich merkt.
-- **Die drei Ausgänge:**
-  - *Bekämpfen:* Der Kampf ist zu Ende zu führen. Eine Niederlage entscheidet nichts.
-  - *Alte Grenze wiederherstellen:* Wer Schleifspur und Mulde bemerkt hat, kann den versetzten Grenzstein zurückschieben.
-  - *Kintsugi und Kompromiss:* Schale flicken, dem Kami darbringen, dann mit Daigo drei Pfähle entlang der Tierspuren setzen.
-- Es fehlen noch die Konsequenzen, der Zeitfortschritt und der Hinweis am Schrein (Stage 4).
+**Aktueller Stand (Stage 4): der Slice ist von der Ankunft bis zum Abspann spielbar.**
+- Ankunftsszene im Wald, danach Dorf Kiriyama und Wald begehbar.
+- Fünf Figuren mit Regeldialogen, Umgebung untersuchbar, diegetisches Notizbuch.
+- Verletzter Fuchs, Mios Heilkraut, Fähigkeit „Tierzeichen“ mit sichtbaren Fährten.
+- Waldkami am Hainrand mit Gemüt (zornig, misstrauisch, ruhig).
+- **Drei Ausgänge:** bekämpfen, alte Grenze wiederherstellen, Kintsugi mit Kompromiss.
+- **Konsequenzen:** Jeder Ausgang verändert Dorf und Wald sofort und, nach einer Nacht
+  im Gasthaus, ein zweites Mal. Jeder hat sichtbaren Gewinn **und** Verlust.
+- **Klang:** eine schlichte Ambient-Fläche, die auf Ort und Ausgang reagiert.
+- **Hinweis am Schrein:** eine graue Stelle ohne Erklärung und eine Zeile über einen
+  Besucher, der vor der Unruhe kam. Danach ein kurzer Abspann.
 
 ## Bauen (Linux)
 
@@ -55,7 +56,7 @@ Alle Modi aus einem beschreibbaren Arbeitsverzeichnis starten:
   `zeit_ms  karte  x,y  ereignis  details`.
   - Ereignisse: `observe`, `examine`, `examine_nothing`, `npc_talk`, `notebook_open`,
     `action_attempt` (Gegenstand benutzt, `ok=0/1`), `encounter`, `encounter_action`,
-    `outcome`, `stone_push`, `mend`, `stake`.
+    `outcome`, `stone_push`, `mend`, `stake`, `phase`.
   - Wiederholte erfolglose Untersuchungen desselben Ziels erzeugen keine eigene
     Zeile. Ihre Anzahl steht als `repeat=n` in der nächsten
     `examine_nothing`-Zeile.
@@ -68,6 +69,7 @@ Alle Modi aus einem beschreibbaren Arbeitsverzeichnis starten:
 | Leertaste / Enter | reden bzw. untersuchen (Blickfeld, sonst das Feld unter dir), weiter |
 | I | Tasche; Enter benutzt einen Gegenstand am Ziel vor dir oder sieht ihn genauer an |
 | Esc | Dialog schließen / Notizbuch (Hoch/Runter blättert) |
+| Enter auf dem Futon | übernachten, sobald etwas entschieden ist |
 | F1 / F2 | Debug-Anzeige / Hindernisse |
 | R, Q (im Notizbuch) | neu starten / beenden |
 

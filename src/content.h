@@ -30,12 +30,22 @@ typedef enum {
   OBS_BOWL_READY,
   OBS_KAMI_CALMED,
   OBS_DAIGO_DEAL,
+  OBS_SETTLED,
+  OBS_GREY_TRACE,
+  OBS_MORNING,
+  OBS_TEASED,
   OBS_COUNT
 } ObsId;
 typedef enum { OUT_NONE, OUT_FIGHT, OUT_BOUNDARY, OUT_MEND, OUTCOME_COUNT } Outcome;
 /* In a rule: applies whatever has been decided. OUT_NONE means "not yet decided". */
 #define OUT_ANY OUTCOME_COUNT
 extern const char *const outcome_names[OUTCOME_COUNT];
+/* Time: the night at the inn separates the immediate change from the later one. */
+typedef enum { PHASE_BEFORE, PHASE_MORNING, PHASE_COUNT } Phase;
+#define PHASE_ANY PHASE_COUNT
+extern const char *const phase_names[PHASE_COUNT];
+/* Every outcome must show a gain and a loss, in both phases (checked by a test). */
+typedef enum { TAG_NEUTRAL, TAG_GAIN, TAG_LOSS } ChangeTag;
 typedef uint32_t Obs;
 #define OBS(o) ((Obs)1 << (o))
 extern const char *const obs_names[OBS_COUNT];
@@ -116,6 +126,22 @@ typedef enum {
   D_SUMI_MEND,
   D_STAKE_SET,
   D_SCENE_MEND,
+  D_X_FUTON_AWAKE,
+  D_X_FUTON_MORNING,
+  D_SCENE_MORNING,
+  D_X_TRACE,
+  D_X_TRACE_TRACKS,
+  D_X_INSCRIPTION_LATE,
+  D_SCENE_TEASER,
+  D_SUMI_MORNING_FIGHT,
+  D_SUMI_MORNING_BOUNDARY,
+  D_SUMI_MORNING_MEND,
+  D_MIO_MORNING_FIGHT,
+  D_MIO_MORNING_BOUNDARY,
+  D_MIO_MORNING_MEND,
+  D_DAIGO_MORNING_FIGHT,
+  D_DAIGO_MORNING_BOUNDARY,
+  D_DAIGO_MORNING_MEND,
   D_I_BOWL_MARK,
   D_I_BOWL_MARK_MATCH,
   DIALOGUE_COUNT
@@ -157,6 +183,9 @@ typedef enum {
   N_KAMI_CALM,
   N_DEAL,
   N_MEND,
+  N_MORNING,
+  N_TRACE,
+  N_VISITOR,
   NOTE_COUNT
 } NoteId;
 extern const char *const notes[NOTE_COUNT];
@@ -170,8 +199,9 @@ typedef struct {
   DialogueId dialogue;
   NoteId note;
   ItemId gives;
-  Outcome outcome; /* OUT_NONE matches any outcome */
+  Outcome outcome; /* OUT_ANY matches whatever has been decided */
   DialogueOpens opens;
+  Phase phase; /* PHASE_ANY matches any time */
 } DialogueRule;
 extern const DialogueRule dialogue_rules[];
 extern const int dialogue_rule_count;
@@ -192,14 +222,21 @@ typedef struct {
 extern const ExaminePoint examine_points[];
 extern const int examine_point_count;
 
-/* The first override whose observations are known replaces the map tile. */
+/* The first override that fits replaces the map tile: observations, the outcome
+ * (OUT_ANY: any) and the phase (PHASE_ANY: any) all have to match. */
 typedef struct {
   int map, x, y;
   char symbol;
   Obs needs;
+  Outcome outcome;
+  Phase phase;
+  ChangeTag tag;
 } TileOverride;
 extern const TileOverride tile_overrides[];
 extern const int tile_override_count;
+/* What the outcomes change in the world, tagged as gain or loss. */
+extern const TileOverride outcome_changes[];
+extern const int outcome_change_count;
 
 /* Encounter: actions change the spirit's mood, not only its health. */
 typedef enum { MOOD_ANGRY, MOOD_WARY, MOOD_CALM, MOOD_COUNT } Mood;

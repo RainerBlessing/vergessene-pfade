@@ -307,20 +307,29 @@ static int test_content(const char *assets) {
     if (p->kind == POINT_AT)
       CHECK(point_reachable(&g, p->map, p->x, p->y));
     if (p->kind == POINT_SYMBOL) {
-      /* The symbol exists before or after overrides (all observations known). */
+      /* The symbol exists in some state of the world: before or after any
+       * override, outcome and phase. */
       bool found = false;
       const Map *m = &g.maps[p->map];
       const Obs states[2] = {0, ~(Obs)0};
-      const Obs saved = g.obs;
-      for (int k = 0; k < 2; k++) {
-        g.obs = states[k];
-        for (int y = 0; y < m->height; y++)
-          for (int x = 0; x < m->width; x++)
-            if (game_tile(&g, p->map, x, y) == p->symbol &&
-                point_reachable(&g, p->map, x, y))
-              found = true;
-      }
-      g.obs = saved;
+      const Obs saved_obs = g.obs;
+      const Outcome saved_outcome = g.outcome;
+      const Phase saved_phase = g.phase;
+      for (int k = 0; k < 2 && !found; k++)
+        for (int o = 0; o < OUTCOME_COUNT && !found; o++)
+          for (int ph = 0; ph < PHASE_COUNT && !found; ph++) {
+            g.obs = states[k];
+            g.outcome = (Outcome)o;
+            g.phase = (Phase)ph;
+            for (int y = 0; y < m->height; y++)
+              for (int x = 0; x < m->width; x++)
+                if (game_tile(&g, p->map, x, y) == p->symbol &&
+                    point_reachable(&g, p->map, x, y))
+                  found = true;
+          }
+      g.obs = saved_obs;
+      g.outcome = saved_outcome;
+      g.phase = saved_phase;
       CHECK(found);
     }
   }
@@ -865,6 +874,90 @@ static int test_daigo_stays(const char *assets) {
   return 0;
 }
 
+/* Sleep only settles a decided story, and the morning shows the later change. */
+static int test_phases(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  stand(&g, MAP_VILLAGE, 4, 14, 0, -1);
+  CHECK(game_tile(&g, MAP_VILLAGE, 4, 14) == 'u');
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.phase == PHASE_BEFORE && g.dialogue == D_X_FUTON_AWAKE);
+  game_action(&g, ACT_CANCEL);
+  g.outcome = OUT_FIGHT;
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.phase == PHASE_MORNING && g.dialogue == D_SCENE_MORNING);
+  CHECK(g.notes[g.note_count - 1] == N_MORNING);
+  CHECK(count_events(&g, EV_PHASE) == 1);
+  game_action(&g, ACT_CANCEL);
+  /* A second night changes nothing more. */
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_FUTON_MORNING && count_events(&g, EV_PHASE) == 1);
+  return 0;
+}
+static int test_consequences(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  /* Nothing changes before a decision. */
+  for (int i = 0; i < outcome_change_count; i++) {
+    const TileOverride *o = &outcome_changes[i];
+    CHECK(game_tile(&g, o->map, o->x, o->y) != o->symbol ||
+          map_at(&g.maps[o->map], o->x, o->y) == o->symbol);
+  }
+  /* Each outcome shows a gain and a loss, at once and again in the morning. */
+  for (int o = OUT_NONE + 1; o < OUTCOME_COUNT; o++)
+    for (int ph = 0; ph < PHASE_COUNT; ph++) {
+      bool gain = false, loss = false, visible = true;
+      g.outcome = (Outcome)o;
+      g.phase = (Phase)ph;
+      for (int i = 0; i < outcome_change_count; i++) {
+        const TileOverride *c = &outcome_changes[i];
+        if (c->outcome != (Outcome)o || (c->phase != PHASE_ANY && c->phase != (Phase)ph))
+          continue;
+        gain |= c->tag == TAG_GAIN;
+        loss |= c->tag == TAG_LOSS;
+        visible &= game_tile(&g, c->map, c->x, c->y) == c->symbol;
+      }
+      CHECK(gain && loss && visible);
+    }
+  /* The world stays walkable in every state. */
+  for (int o = 0; o < OUTCOME_COUNT; o++)
+    for (int ph = 0; ph < PHASE_COUNT; ph++) {
+      g.outcome = (Outcome)o;
+      g.phase = (Phase)ph;
+      g.obs = ~(Obs)0;
+      for (int i = 0; i < NPC_COUNT; i++)
+        CHECK(point_reachable(&g, npcs[i].map, npcs[i].x, npcs[i].y));
+      CHECK(point_reachable(&g, MAP_FOREST, 37, 19)); /* the shrine and its patch */
+    }
+  return 0;
+}
+/* The grey patch appears after any outcome and says nothing about itself. */
+static int test_grey_trace(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  CHECK(game_tile(&g, MAP_FOREST, 37, 19) != 'v');
+  g.outcome = OUT_BOUNDARY;
+  g.obs |= OBS(OBS_SETTLED);
+  CHECK(game_tile(&g, MAP_FOREST, 37, 19) == 'v');
+  stand(&g, MAP_FOREST, 37, 20, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_TRACE && game_knows(&g, OBS_GREY_TRACE));
+  CHECK(g.notes[g.note_count - 1] == N_TRACE);
+  game_action(&g, ACT_CANCEL);
+  /* Reading tracks adds what is missing, not an explanation. */
+  g.obs &= ~OBS(OBS_GREY_TRACE);
+  g.obs |= OBS(OBS_FOX_TENDED);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_TRACE_TRACKS);
+  game_action(&g, ACT_CANCEL);
+  /* Only then does the shrine show the line about a visitor. */
+  stand(&g, MAP_FOREST, 37, 19, 1, 0);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_INSCRIPTION_LATE);
+  CHECK(g.notes[g.note_count - 1] == N_VISITOR);
+  return 0;
+}
+
 static int test_combat(void) {
   for (int a = 0; a < 12; a++)
     for (int d = 0; d < 12; d++)
@@ -894,8 +987,9 @@ int main(int argc, char **argv) {
       test_content(argv[1]) || test_fox_and_tracks(argv[1]) || test_encounter(argv[1]) ||
       test_fight(argv[1]) || test_outcome_keeps_threads(argv[1]) ||
       test_defeat(argv[1]) || test_boundary(argv[1]) || test_mend(argv[1]) ||
-      test_compromise(argv[1]) || test_daigo_stays(argv[1]) || test_combat())
+      test_compromise(argv[1]) || test_daigo_stays(argv[1]) || test_phases(argv[1]) ||
+      test_consequences(argv[1]) || test_grey_trace(argv[1]) || test_combat())
     return 1;
-  puts("World, examining, fox, encounter, fight, boundary, mending, stakes pass.");
+  puts("World, examining, encounter, outcomes, consequences, morning, trace pass.");
   return 0;
 }

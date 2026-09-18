@@ -38,7 +38,8 @@ typedef enum {
   EV_OUTCOME,          /* a = Outcome */
   EV_STONE_PUSH,       /* a,b = the stone's position after moving it */
   EV_MEND,             /* a = pieces in place, b = 1 when the piece fitted */
-  EV_STAKE             /* a = stakes set */
+  EV_STAKE,            /* a = stakes set */
+  EV_PHASE             /* a = Phase */
 } EventType;
 typedef struct {
   EventType type;
@@ -74,6 +75,7 @@ typedef struct {
   Combat combat;
   bool fighting;
   Outcome outcome;
+  Phase phase;
   Player player;
   char message[128];
   bool debug, collision;

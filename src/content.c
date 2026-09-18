@@ -5,8 +5,10 @@ const char *const obs_names[OBS_COUNT] = {
     "BOWL_SHARDS",   "BOWL_MARK",          "HOUSE_MARK",      "BOWL_OWNER",
     "LEDGER_DEBT",   "FOX_WOUNDED",        "MIO_HERB",        "FOX_TENDED",
     "TRACKS",        "KAMI_SEEN",          "KAMI_ANGERED",    "STONE_MOVED",
-    "BOWL_DRYING",   "BOWL_READY",         "KAMI_CALMED",     "DAIGO_DEAL"};
+    "BOWL_DRYING",   "BOWL_READY",         "KAMI_CALMED",     "DAIGO_DEAL",
+    "SETTLED",       "GREY_TRACE",         "MORNING",         "TEASED"};
 const char *const outcome_names[OUTCOME_COUNT] = {"NONE", "FIGHT", "BOUNDARY", "MEND"};
+const char *const phase_names[PHASE_COUNT] = {"BEFORE", "MORNING"};
 
 const Npc npcs[NPC_COUNT] = {{MAP_VILLAGE, 5, 4, 0, "SUMI", "Sumi / Dorfaelteste"},
                              {MAP_VILLAGE, 24, 4, 1, "ORIHA", "Oriha / Lackmeisterin"},
@@ -206,6 +208,63 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
                        "lange\nnichts.",
                        "Zwischen den Staemmen sitzt der\nKami bei der Schale. Es "
                        "sieht\neuch zu und bleibt sitzen."}},
+    [D_X_FUTON_AWAKE] = {1,
+                         {"Du liegst wach. Solange der Wald\nunruhig ist, findest du "
+                          "keinen\nSchlaf."}},
+    [D_X_FUTON_MORNING] = {1,
+                           {"Du hast geschlafen. Jetzt ist\nTag, und das Dorf ist "
+                            "wach."}},
+    [D_SCENE_MORNING] = {1,
+                         {"Du schlaefst, bis die Schiebetuer\nklappert. Am naechsten "
+                          "Morgen\nist Kiriyama ein anderes Dorf."}},
+    [D_X_TRACE] = {1,
+                   {"Neben dem Schrein ist der Boden\ngrau. Keine Fussspur. Nichts\n"
+                    "Verbranntes. Keine Flechte."}},
+    [D_X_TRACE_TRACKS] = {2,
+                          {"Neben dem Schrein ist der Boden\ngrau. Keine Fussspur. "
+                           "Nichts\nVerbranntes. Keine Flechte.",
+                           "Und nicht einmal Tiere sind\nhier gegangen."}},
+    [D_X_INSCRIPTION_LATE] = {2,
+                              {"Ein kleiner, verwitterter Schrein.\nEingeritzt: Bis zu "
+                               "den drei\nSteinen und nicht weiter.",
+                               "Weiter unten, kaum lesbar: Es kam\nein Besucher, bevor "
+                               "der Wald\nunruhig wurde."}},
+    [D_SCENE_TEASER] = {2,
+                        {"Du sitzt lange am Schrein.\nDer Wald ist ruhig. Die graue\n"
+                         "Stelle bleibt grau.",
+                         "Irgendwo hinter den Bergen liegen\nweitere Doerfer. Auch "
+                         "dort, denkst\ndu, wird etwas leiser geworden sein."}},
+    [D_SUMI_MORNING_FIGHT] = {2,
+                              {"Der Holzplatz ist voll. Daigo hat\nseine Schulden "
+                               "bezahlt, Kenta\nhat wieder Arbeit.",
+                               "Der Bach ist truebe geworden.\nWahrscheinlich das "
+                               "Wetter."}},
+    [D_SUMI_MORNING_BOUNDARY] = {2,
+                                 {"Die Voegel sind zurueck. Ich habe\nheute frueh am "
+                                  "Schrein gekehrt,\nzum ersten Mal seit Jahren.",
+                                  "Das Lager macht zu. Die Steine\nstehen wieder. Mein "
+                                  "Sohn hat\njetzt keine Arbeit."}},
+    [D_SUMI_MORNING_MEND] = {2,
+                             {"Totholz reicht fuer den halben\nWinter. Wir werden "
+                              "sparsam\nheizen.",
+                              "Und jedes Jahr eine Gabe. Zwei\nFamilien fragen schon, "
+                              "wovon\nsie leben sollen."}},
+    [D_MIO_MORNING_FIGHT] = {1,
+                             {"Der Fuchs ist weg. Sein Bau ist\nleer. Du warst das, "
+                              "oder?"}},
+    [D_MIO_MORNING_BOUNDARY] = {1,
+                                {"Der Fuchs schlaeft wieder vor\nseinem Bau. Hoerst "
+                                 "du die Voegel?"}},
+    [D_MIO_MORNING_MEND] = {1, {"Der Fuchs hat Junge! Drei. Sie\nsind noch ganz grau."}},
+    [D_DAIGO_MORNING_FIGHT] = {1,
+                               {"Wir faellen bis zum Bach. Niemand\nhaelt uns mehr "
+                                "auf. Trotzdem ist\nes still hier oben."}},
+    [D_DAIGO_MORNING_BOUNDARY] = {1,
+                                  {"Das Lager ist abgebaut. Ich gehe\nins naechste "
+                                   "Tal. Frag nicht,\nob ich dir danke."}},
+    [D_DAIGO_MORNING_MEND] = {1,
+                              {"Totholz und Setzlinge. Weniger,\nals ich brauche. Mehr "
+                               "als nichts."}},
     [D_I_BOWL_MARK] = {1, {"Auf dem Boden einer Scherbe ist\nein Zeichen eingebrannt."}},
     [D_I_BOWL_MARK_MATCH] = {1,
                              {"Auf dem Boden einer Scherbe ist\nein Zeichen "
@@ -242,61 +301,86 @@ const char *const notes[NOTE_COUNT] = {
     [N_KAMI_CALM] = "Vor der geflickten Schale hat der\nKami sich hingesetzt.",
     [N_DEAL] = "Daigo will mit mir eine neue\nGrenze abstecken.",
     [N_MEND] = "Drei Pfaehle stehen entlang der\nSpuren. Der Kami blieb sitzen.",
+    [N_MORNING] = "Eine Nacht ist vergangen. Das Dorf\nsieht anders aus.",
+    [N_TRACE] = "Neben dem Schrein ist der Boden\ngrau. Keine Spur, nichts.",
+    [N_VISITOR] = "Am Schrein steht: Ein Besucher kam,\nbevor der Wald unruhig wurde.",
 };
 
 #define MARKS (OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK))
 const DialogueRule dialogue_rules[] = {
+    /* The morning after: each outcome reads differently to each of them. */
+    {NPC_SUMI, 0, 0, 0, D_SUMI_MORNING_FIGHT, N_MORNING, ITEM_NONE, OUT_FIGHT,
+     OPEN_NOTHING, PHASE_MORNING},
+    {NPC_SUMI, 0, 0, 0, D_SUMI_MORNING_BOUNDARY, N_MORNING, ITEM_NONE, OUT_BOUNDARY,
+     OPEN_NOTHING, PHASE_MORNING},
+    {NPC_SUMI, 0, 0, 0, D_SUMI_MORNING_MEND, N_MORNING, ITEM_NONE, OUT_MEND, OPEN_NOTHING,
+     PHASE_MORNING},
+    {NPC_MIO, 0, 0, 0, D_MIO_MORNING_FIGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT, OPEN_NOTHING,
+     PHASE_MORNING},
+    {NPC_MIO, 0, 0, 0, D_MIO_MORNING_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY,
+     OPEN_NOTHING, PHASE_MORNING},
+    {NPC_MIO, 0, 0, 0, D_MIO_MORNING_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND, OPEN_NOTHING,
+     PHASE_MORNING},
+    {NPC_DAIGO, 0, 0, 0, D_DAIGO_MORNING_FIGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT,
+     OPEN_NOTHING, PHASE_MORNING},
+    {NPC_DAIGO, 0, 0, 0, D_DAIGO_MORNING_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY,
+     OPEN_NOTHING, PHASE_MORNING},
+    {NPC_DAIGO, 0, 0, 0, D_DAIGO_MORNING_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND,
+     OPEN_NOTHING, PHASE_MORNING},
     /* Sumi: the task and the bowl's story must stay reachable, so they come
      * before her reaction to an outcome. */
     {NPC_SUMI, 0, OBS(OBS_ASKED_BY_SUMI), OBS(OBS_ASKED_BY_SUMI), D_SUMI_TASK, N_ASKED,
-     ITEM_NONE, OUT_NONE, OPEN_NOTHING},
+     ITEM_NONE, OUT_NONE, OPEN_NOTHING, PHASE_ANY},
     {NPC_SUMI, MARKS, OBS(OBS_BOWL_OWNER), OBS(OBS_BOWL_OWNER), D_SUMI_OWNER, N_OWNER,
-     ITEM_NONE, OUT_ANY, OPEN_NOTHING},
-    {NPC_SUMI, 0, 0, 0, D_SUMI_FOUGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT, OPEN_NOTHING},
-    {NPC_SUMI, 0, 0, 0, D_SUMI_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY,
-     OPEN_NOTHING},
-    {NPC_SUMI, 0, 0, 0, D_SUMI_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND, OPEN_NOTHING},
+     ITEM_NONE, OUT_ANY, OPEN_NOTHING, PHASE_ANY},
+    {NPC_SUMI, 0, 0, 0, D_SUMI_FOUGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT, OPEN_NOTHING,
+     PHASE_ANY},
+    {NPC_SUMI, 0, 0, 0, D_SUMI_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY, OPEN_NOTHING,
+     PHASE_ANY},
+    {NPC_SUMI, 0, 0, 0, D_SUMI_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND, OPEN_NOTHING,
+     PHASE_ANY},
     {NPC_SUMI, OBS(OBS_BOWL_OWNER), 0, 0, D_SUMI_OWNER_KNOWN, NOTE_NONE, ITEM_NONE,
-     OUT_ANY, OPEN_NOTHING},
+     OUT_ANY, OPEN_NOTHING, PHASE_ANY},
     {NPC_SUMI, OBS(OBS_ASKED_BY_SUMI), 0, 0, D_SUMI_WAITING, NOTE_NONE, ITEM_NONE,
-     OUT_ANY, OPEN_NOTHING},
+     OUT_ANY, OPEN_NOTHING, PHASE_ANY},
     {NPC_ORIHA, OBS(OBS_BOWL_READY), 0, 0, D_ORIHA_READY, N_BOWL_READY, ITEM_BOWL,
-     OUT_ANY, OPEN_NOTHING},
+     OUT_ANY, OPEN_NOTHING, PHASE_ANY},
     {NPC_ORIHA, OBS(OBS_BOWL_READY), 0, 0, D_ORIHA_AFTER, NOTE_NONE, ITEM_NONE, OUT_ANY,
-     OPEN_NOTHING},
+     OPEN_NOTHING, PHASE_ANY},
     {NPC_ORIHA, OBS(OBS_BOWL_DRYING), 0, 0, D_ORIHA_DRYING, NOTE_NONE, ITEM_NONE, OUT_ANY,
-     OPEN_NOTHING},
+     OPEN_NOTHING, PHASE_ANY},
     {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | OBS(OBS_BOWL_OWNER), 0, 0, D_ORIHA_MEND, NOTE_NONE,
-     ITEM_NONE, OUT_ANY, OPEN_MEND},
+     ITEM_NONE, OUT_ANY, OPEN_MEND, PHASE_ANY},
     {NPC_ORIHA, OBS(OBS_BOWL_SHARDS), 0, 0, D_ORIHA_SHARDS, NOTE_NONE, ITEM_NONE, OUT_ANY,
-     OPEN_NOTHING},
-    {NPC_ORIHA, 0, 0, 0, D_ORIHA, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
+     OPEN_NOTHING, PHASE_ANY},
+    {NPC_ORIHA, 0, 0, 0, D_ORIHA, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING, PHASE_ANY},
     {NPC_MIO, OBS(OBS_FOX_TENDED), 0, 0, D_MIO_THANKS, NOTE_NONE, ITEM_NONE, OUT_ANY,
-     OPEN_NOTHING},
+     OPEN_NOTHING, PHASE_ANY},
     /* Mio keeps helping while the fox is hurt: the herb can be used up elsewhere. */
     {NPC_MIO, OBS(OBS_FOX_WOUNDED), OBS(OBS_MIO_HERB), OBS(OBS_MIO_HERB), D_MIO_HERB,
-     N_HERB, ITEM_HERB, OUT_ANY, OPEN_NOTHING},
+     N_HERB, ITEM_HERB, OUT_ANY, OPEN_NOTHING, PHASE_ANY},
     {NPC_MIO, OBS(OBS_FOX_WOUNDED), 0, 0, D_MIO_HERB_MORE, NOTE_NONE, ITEM_HERB, OUT_ANY,
-     OPEN_NOTHING},
+     OPEN_NOTHING, PHASE_ANY},
     {NPC_MIO, OBS(OBS_MIO_HERB), 0, 0, D_MIO_HERB_AGAIN, NOTE_NONE, ITEM_NONE, OUT_ANY,
-     OPEN_NOTHING},
-    {NPC_MIO, 0, 0, 0, D_MIO, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
+     OPEN_NOTHING, PHASE_ANY},
+    {NPC_MIO, 0, 0, 0, D_MIO, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING, PHASE_ANY},
     {NPC_KENTA, OBS(OBS_KENTA_STARE), 0, 0, D_KENTA_AGAIN, NOTE_NONE, ITEM_NONE, OUT_ANY,
-     OPEN_NOTHING},
+     OPEN_NOTHING, PHASE_ANY},
     {NPC_KENTA, 0, 0, OBS(OBS_KENTA_STARE), D_KENTA, N_KENTA, ITEM_NONE, OUT_ANY,
-     OPEN_NOTHING},
+     OPEN_NOTHING, PHASE_ANY},
     {NPC_DAIGO, 0, 0, 0, D_DAIGO_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY,
-     OPEN_NOTHING},
-    {NPC_DAIGO, 0, 0, 0, D_DAIGO_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND, OPEN_NOTHING},
+     OPEN_NOTHING, PHASE_ANY},
+    {NPC_DAIGO, 0, 0, 0, D_DAIGO_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND, OPEN_NOTHING,
+     PHASE_ANY},
     /* The compromise: he comes along once the kami sits and the tracks are known. */
     {NPC_DAIGO, OBS(OBS_KAMI_CALMED) | OBS(OBS_TRACKS) | OBS(OBS_LEDGER_DEBT),
      OBS(OBS_DAIGO_DEAL), OBS(OBS_DAIGO_DEAL), D_DAIGO_OFFER, N_DEAL, ITEM_NONE, OUT_ANY,
-     OPEN_FOLLOW},
+     OPEN_FOLLOW, PHASE_ANY},
     {NPC_DAIGO, OBS(OBS_DAIGO_DEAL), 0, 0, D_DAIGO_WALKING, NOTE_NONE, ITEM_NONE, OUT_ANY,
-     OPEN_FOLLOW},
+     OPEN_FOLLOW, PHASE_ANY},
     {NPC_DAIGO, OBS(OBS_LEDGER_DEBT), 0, 0, D_DAIGO_LEDGER, NOTE_NONE, ITEM_NONE, OUT_ANY,
-     OPEN_NOTHING},
-    {NPC_DAIGO, 0, 0, 0, D_DAIGO, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
+     OPEN_NOTHING, PHASE_ANY},
+    {NPC_DAIGO, 0, 0, 0, D_DAIGO, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING, PHASE_ANY},
 };
 const int dialogue_rule_count = (int)(sizeof dialogue_rules / sizeof dialogue_rules[0]);
 
@@ -359,6 +443,13 @@ const ExaminePoint examine_points[] = {
     {.kind = POINT_SYMBOL,
      .map = MAP_FOREST,
      .symbol = 'O',
+     .needs = OBS(OBS_GREY_TRACE),
+     .grants = OBS(OBS_SHRINE_INSCRIPTION),
+     .dialogue = D_X_INSCRIPTION_LATE,
+     .note = N_VISITOR},
+    {.kind = POINT_SYMBOL,
+     .map = MAP_FOREST,
+     .symbol = 'O',
      .grants = OBS(OBS_SHRINE_INSCRIPTION),
      .dialogue = D_X_INSCRIPTION,
      .note = N_INSCRIPTION},
@@ -395,6 +486,30 @@ const ExaminePoint examine_points[] = {
      .grants = OBS(OBS_TRACKS),
      .dialogue = D_X_TRACKS,
      .note = N_TRACKS},
+    /* The night at the inn, once something has been decided. */
+    {.kind = POINT_SYMBOL,
+     .map = MAP_VILLAGE,
+     .symbol = 'u',
+     .needs = OBS(OBS_MORNING),
+     .dialogue = D_X_FUTON_MORNING},
+    {.kind = POINT_SYMBOL,
+     .map = MAP_VILLAGE,
+     .symbol = 'u',
+     .dialogue = D_X_FUTON_AWAKE},
+    /* The shrine after an outcome: a grey patch, and a line further down. */
+    {.kind = POINT_SYMBOL,
+     .map = MAP_FOREST,
+     .symbol = 'v',
+     .needs = OBS(OBS_FOX_TENDED),
+     .grants = OBS(OBS_GREY_TRACE),
+     .dialogue = D_X_TRACE_TRACKS,
+     .note = N_TRACE},
+    {.kind = POINT_SYMBOL,
+     .map = MAP_FOREST,
+     .symbol = 'v',
+     .grants = OBS(OBS_GREY_TRACE),
+     .dialogue = D_X_TRACE,
+     .note = N_TRACE},
     /* Items */
     {.kind = POINT_ITEM,
      .map = MAP_FOREST,
@@ -419,12 +534,13 @@ const ExaminePoint examine_points[] = {
 };
 const int examine_point_count = (int)(sizeof examine_points / sizeof examine_points[0]);
 
-#define TRACK(x, y) {MAP_FOREST, x, y, 't', OBS(OBS_FOX_TENDED)}
+#define TRACK(x, y)                                                                      \
+  {MAP_FOREST, x, y, 't', OBS(OBS_FOX_TENDED), OUT_ANY, PHASE_ANY, TAG_NEUTRAL}
 const TileOverride tile_overrides[] = {
     /* Orihas shelf: the bowl rests there while the lacquer dries. */
-    {MAP_VILLAGE, 22, 4, 'q', OBS(OBS_BOWL_READY)},
-    {MAP_VILLAGE, 22, 4, 'b', OBS(OBS_BOWL_DRYING)},
-    {MAP_FOREST, 5, 20, 'f', OBS(OBS_FOX_TENDED)},
+    {MAP_VILLAGE, 22, 4, 'q', OBS(OBS_BOWL_READY), OUT_ANY, PHASE_ANY, TAG_NEUTRAL},
+    {MAP_VILLAGE, 22, 4, 'b', OBS(OBS_BOWL_DRYING), OUT_ANY, PHASE_ANY, TAG_NEUTRAL},
+    {MAP_FOREST, 5, 20, 'f', OBS(OBS_FOX_TENDED), OUT_ANY, PHASE_ANY, TAG_NEUTRAL},
     /* Paw prints: around the camp, along the grove edge, to the stone gap. */
     TRACK(8, 19),
     TRACK(9, 18),
@@ -442,6 +558,43 @@ const TileOverride tile_overrides[] = {
     TRACK(32, 14),
     TRACK(34, 13),
 };
+/* What each outcome changes, at once and again the next morning. Every outcome
+ * shows a gain and a loss in both phases; a test checks that. */
+#define CHANGE(map, x, y, sym, out, ph, tag) {map, x, y, sym, 0, out, ph, tag}
+const TileOverride outcome_changes[] = {
+    /* Bekaempfen: the village has wood, the grove and the fox are gone. */
+    CHANGE(MAP_VILLAGE, 23, 13, 'W', OUT_FIGHT, PHASE_ANY, TAG_GAIN),
+    CHANGE(MAP_VILLAGE, 24, 13, 'W', OUT_FIGHT, PHASE_ANY, TAG_GAIN),
+    CHANGE(MAP_FOREST, 20, 6, 'x', OUT_FIGHT, PHASE_ANY, TAG_LOSS),
+    CHANGE(MAP_FOREST, 24, 7, 'x', OUT_FIGHT, PHASE_ANY, TAG_LOSS),
+    CHANGE(MAP_FOREST, 5, 20, 'e', OUT_FIGHT, PHASE_ANY, TAG_LOSS),
+    CHANGE(MAP_VILLAGE, 25, 13, 'W', OUT_FIGHT, PHASE_MORNING, TAG_GAIN),
+    CHANGE(MAP_FOREST, 16, 4, 'x', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
+    CHANGE(MAP_FOREST, 30, 4, 'x', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
+    /* Alte Grenze: the grove is kept, the camp loses its ground. */
+    CHANGE(MAP_FOREST, 16, 11, 'h', OUT_BOUNDARY, PHASE_ANY, TAG_GAIN),
+    CHANGE(MAP_FOREST, 14, 28, '.', OUT_BOUNDARY, PHASE_ANY, TAG_LOSS),
+    CHANGE(MAP_FOREST, 20, 11, 'j', OUT_BOUNDARY, PHASE_MORNING, TAG_GAIN),
+    CHANGE(MAP_FOREST, 29, 11, 'j', OUT_BOUNDARY, PHASE_MORNING, TAG_GAIN),
+    CHANGE(MAP_FOREST, 7, 28, '.', OUT_BOUNDARY, PHASE_MORNING, TAG_LOSS),
+    CHANGE(MAP_FOREST, 8, 28, '.', OUT_BOUNDARY, PHASE_MORNING, TAG_LOSS),
+    CHANGE(MAP_FOREST, 15, 28, '.', OUT_BOUNDARY, PHASE_MORNING, TAG_LOSS),
+    CHANGE(MAP_FOREST, 12, 30, '.', OUT_BOUNDARY, PHASE_MORNING, TAG_LOSS),
+    /* Kompromiss: deadwood and saplings, but the old edge stays cut. */
+    CHANGE(MAP_FOREST, 13, 30, 'W', OUT_MEND, PHASE_ANY, TAG_GAIN),
+    CHANGE(MAP_FOREST, 18, 10, 'x', OUT_MEND, PHASE_ANY, TAG_LOSS),
+    CHANGE(MAP_VILLAGE, 23, 13, 'W', OUT_MEND, PHASE_MORNING, TAG_GAIN),
+    CHANGE(MAP_FOREST, 16, 11, 'j', OUT_MEND, PHASE_MORNING, TAG_GAIN),
+    CHANGE(MAP_FOREST, 5, 20, 'g', OUT_MEND, PHASE_MORNING, TAG_GAIN),
+    CHANGE(MAP_FOREST, 31, 10, 'x', OUT_MEND, PHASE_MORNING, TAG_LOSS),
+    CHANGE(MAP_VILLAGE, 22, 13, 's', OUT_MEND, PHASE_MORNING, TAG_LOSS),
+    /* The grey patch by the shrine appears whatever was decided. */
+    {MAP_FOREST, 37, 19, 'v', 0, OUT_FIGHT, PHASE_ANY, TAG_NEUTRAL},
+    {MAP_FOREST, 37, 19, 'v', 0, OUT_BOUNDARY, PHASE_ANY, TAG_NEUTRAL},
+    {MAP_FOREST, 37, 19, 'v', 0, OUT_MEND, PHASE_ANY, TAG_NEUTRAL},
+};
+const int outcome_change_count =
+    (int)(sizeof outcome_changes / sizeof outcome_changes[0]);
 const int tile_override_count = (int)(sizeof tile_overrides / sizeof tile_overrides[0]);
 
 const char *const mood_names[MOOD_COUNT] = {"ZORNIG", "MISSTRAUISCH", "RUHIG"};
