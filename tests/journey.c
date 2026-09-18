@@ -68,7 +68,9 @@ static bool use(Game *g, int tx, int ty) {
   return g->state == GAME_DIALOGUE;
 }
 static bool talk_to(Game *g, NpcId n) {
-  return g->map == npcs[n].map && use(g, npcs[n].x, npcs[n].y) && g->npc == (int)n;
+  int x, y;
+  game_npc_pos(g, n, &x, &y); /* the foreman moves while he follows */
+  return g->map == npcs[n].map && use(g, x, y) && g->npc == (int)n;
 }
 static void close_dialogue(Game *g) {
   for (int i = 0; i < DIALOGUE_PAGES + 1 && g->state == GAME_DIALOGUE; i++)
@@ -326,5 +328,27 @@ bool journey_mend(Game *g, JourneyObserver observer, void *context) {
   REQUIRE(pick(g, ENC_OFFER));
   REQUIRE(g->mood == MOOD_CALM && game_knows(g, OBS_KAMI_CALMED));
   see(g, observer, context, "21-bowl-offered");
+  REQUIRE(pick(g, ENC_RETREAT));
+  REQUIRE(g->state == GAME_EXPLORATION);
+
+  /* Stage 3E: Daigo stakes out the new boundary along the tracks. */
+  REQUIRE(talk_to(g, NPC_DAIGO));
+  REQUIRE(g->dialogue == D_DAIGO_OFFER);
+  see(g, observer, context, "22-daigo-offer");
+  close_dialogue(g);
+  REQUIRE(g->daigo_follows);
+  for (int i = 0; i < STAKE_COUNT; i++) {
+    REQUIRE(walk(g, stakes[i].x, stakes[i].y));
+    game_action(g, ACT_CONFIRM);
+    REQUIRE(g->state == GAME_DIALOGUE);
+    close_dialogue(g);
+  }
+  REQUIRE(g->outcome == OUT_MEND && !g->daigo_follows);
+  see(g, observer, context, "23-new-boundary");
+  REQUIRE(walk(g, 24, 39) || g->map == MAP_VILLAGE);
+  REQUIRE(talk_to(g, NPC_SUMI));
+  REQUIRE(g->dialogue == D_SUMI_MEND);
+  see(g, observer, context, "24-sumi-mend");
+  close_dialogue(g);
   return true;
 }

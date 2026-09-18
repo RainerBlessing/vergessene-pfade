@@ -9,6 +9,8 @@ bool game_init(Game *g, const char *assets) {
   g->dy = -1;
   g->stone_x = STONE_START_X;
   g->stone_y = STONE_START_Y;
+  g->daigo_x = npcs[NPC_DAIGO].x;
+  g->daigo_y = npcs[NPC_DAIGO].y;
   g->npc = SPEAKER_SCENE;
   g->scene = "Unterwegs";
   g->dialogue = D_SCENE_ARRIVAL;
@@ -21,10 +23,17 @@ bool game_init(Game *g, const char *assets) {
   snprintf(path, sizeof path, "%s/maps/forest.map", assets);
   return map_load(&g->maps[MAP_FOREST], path);
 }
+void game_npc_pos(const Game *g, int npc, int *x, int *y) {
+  *x = npc == NPC_DAIGO ? g->daigo_x : npcs[npc].x;
+  *y = npc == NPC_DAIGO ? g->daigo_y : npcs[npc].y;
+}
 int game_npc_at(const Game *g, int x, int y) {
-  for (int i = 0; i < NPC_COUNT; i++)
-    if (npcs[i].map == g->map && npcs[i].x == x && npcs[i].y == y)
+  for (int i = 0; i < NPC_COUNT; i++) {
+    int nx, ny;
+    game_npc_pos(g, i, &nx, &ny);
+    if (npcs[i].map == g->map && nx == x && ny == y)
       return i;
+  }
   return -1;
 }
 bool game_knows(const Game *g, ObsId o) { return (g->obs & OBS(o)) != 0; }
@@ -34,6 +43,10 @@ static bool matches(const Game *g, Obs needs, Obs forbids) {
 char game_tile(const Game *g, int map, int x, int y) {
   if (map == MAP_FOREST && x == g->stone_x && y == g->stone_y)
     return 'G';
+  if (map == MAP_FOREST)
+    for (int i = 0; i < STAKE_COUNT; i++)
+      if ((g->staked & (1u << i)) && stakes[i].x == x && stakes[i].y == y)
+        return 'p';
   for (int i = 0; i < tile_override_count; i++) {
     const TileOverride *o = &tile_overrides[i];
     if (o->map == map && o->x == x && o->y == y && matches(g, o->needs, 0))
@@ -160,6 +173,8 @@ static const ExaminePoint *point_for_item(const Game *g, ItemId item) {
 static void reset_stone(Game *g) {
   g->stone_x = STONE_START_X;
   g->stone_y = STONE_START_Y;
+  g->daigo_x = npcs[NPC_DAIGO].x;
+  g->daigo_y = npcs[NPC_DAIGO].y;
   g->obs &= ~OBS(OBS_STONE_MOVED);
   emit(g, EV_STONE_PUSH, g->stone_x, g->stone_y);
 }
@@ -189,8 +204,11 @@ static void examine_nothing(Game *g, int x, int y) {
   emit(g, EV_EXAMINE_NOTHING, symbol, last->valid ? last->repeat : 0);
   *last = (NothingTarget){true, g->map, x, y, g->dx, g->dy, 0};
 }
+static bool stake_here(Game *g);
 /* Facing tile first, then the tile underfoot (passable points cannot be faced). */
 static void examine(Game *g) {
+  if (stake_here(g))
+    return;
   int fx = g->x + g->dx, fy = g->y + g->dy;
   const ExaminePoint *p = point_at(g, fx, fy);
   if (p) {
@@ -370,6 +388,31 @@ static void mend_action(Game *g, Action a) {
     open_scene(g, "In Orihas Werkstatt", D_MEND_DONE);
   }
 }
+/* Driving in a stake: only where the tracks run, and only with Daigo there. */
+static bool stake_here(Game *g) {
+  int near = (g->daigo_x - g->x) * (g->daigo_x - g->x) +
+             (g->daigo_y - g->y) * (g->daigo_y - g->y);
+  if (!g->daigo_follows || g->map != MAP_FOREST || near > 1)
+    return false; /* the two of them drive it in together */
+  for (int i = 0; i < STAKE_COUNT; i++) {
+    if (stakes[i].x != g->x || stakes[i].y != g->y || (g->staked & (1u << i)))
+      continue;
+    g->staked |= (uint8_t)(1u << i);
+    int count = 0;
+    for (int k = 0; k < STAKE_COUNT; k++)
+      count += (g->staked >> k) & 1u;
+    emit(g, EV_STAKE, count, 0);
+    if (count == STAKE_COUNT) {
+      g->daigo_follows = false;
+      learn(g, 0, N_MEND);
+      finish(g, OUT_MEND);
+      open_scene(g, "Die neue Grenze", D_SCENE_MEND);
+    } else
+      open_scene(g, "Entlang der Spuren", D_STAKE_SET);
+    return true;
+  }
+  return false;
+}
 static void encounter_action(Game *g, Action a) {
   int options[ENCOUNTER_OPTION_LIMIT];
   int count = game_encounter_options(g, options);
@@ -451,8 +494,13 @@ static void move(Game *g, int dx, int dy) {
     begin_encounter(g);
     return;
   }
+  int from_x = g->x, from_y = g->y;
   g->x += dx;
   g->y += dy;
+  if (g->daigo_follows) { /* he walks in your footsteps */
+    g->daigo_x = from_x;
+    g->daigo_y = from_y;
+  }
   if (!tile->transition)
     return;
   for (int i = 0; i < TRANSITION_COUNT; i++) {
@@ -465,6 +513,11 @@ static void move(Game *g, int dx, int dy) {
       /* The lacquer needs rest: it has dried by the time you are back. */
       if (from_forest && g->map == MAP_VILLAGE && game_knows(g, OBS_BOWL_DRYING))
         learn(g, OBS(OBS_BOWL_READY), NOTE_NONE);
+      if (g->daigo_follows) { /* he stays in the forest, at his camp */
+        g->daigo_follows = false;
+        g->daigo_x = npcs[NPC_DAIGO].x;
+        g->daigo_y = npcs[NPC_DAIGO].y;
+      }
       return;
     }
   }
@@ -488,11 +541,13 @@ void game_action(Game *g, Action a) {
       return;
     g->state = GAME_EXPLORATION;
     if (g->opens == OPEN_MEND) { /* the conversation leads into the workshop */
-      g->opens = OPEN_NOTHING;
       g->state = GAME_MEND;
       g->selection = 0;
       g->message[0] = 0;
     }
+    if (g->opens == OPEN_FOLLOW)
+      g->daigo_follows = true;
+    g->opens = OPEN_NOTHING;
     return;
   case GAME_INVENTORY:
     inventory_action(g, a);

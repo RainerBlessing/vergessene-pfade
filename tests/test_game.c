@@ -747,6 +747,92 @@ static int test_mend(const char *assets) {
   return 0;
 }
 
+/* Put the player on a spot with Daigo right behind, as following would. */
+static void stand_with_daigo(Game *g, int x, int y) {
+  stand(g, MAP_FOREST, x, y, 0, -1);
+  g->daigo_x = x;
+  g->daigo_y = y + 1;
+}
+static int test_compromise(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  /* Daigo only comes along once the kami sits and the tracks are known. */
+  stand(&g, MAP_FOREST, 12, 31, -1, 0);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_DAIGO && !g.daigo_follows);
+  game_action(&g, ACT_CANCEL);
+  g.obs |= OBS(OBS_KAMI_CALMED) | OBS(OBS_TRACKS);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_DAIGO && !g.daigo_follows); /* his ledger is still unread */
+  game_action(&g, ACT_CANCEL);
+  g.obs |= OBS(OBS_LEDGER_DEBT);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_DAIGO_OFFER && !g.daigo_follows);
+  CHECK(g.notes[g.note_count - 1] == N_DEAL);
+  for (int i = 0; i < DIALOGUE_PAGES && g.state == GAME_DIALOGUE; i++)
+    game_action(&g, ACT_CONFIRM);
+  CHECK(g.daigo_follows && game_knows(&g, OBS_DAIGO_DEAL));
+  /* He walks in the player's footsteps and never blocks the way. */
+  int px = g.x, py = g.y;
+  game_action(&g, ACT_DOWN);
+  CHECK(g.y == py + 1 && g.daigo_x == px && g.daigo_y == py);
+  CHECK(game_npc_at(&g, px, py) == NPC_DAIGO);
+  /* Stakes go in only where the tracks run. */
+  stand_with_daigo(&g, stakes[0].x, stakes[0].y + 2);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.staked == 0);
+  game_action(&g, ACT_CANCEL);
+  /* And only with Daigo at hand. */
+  stand(&g, MAP_FOREST, stakes[0].x, stakes[0].y, 0, -1);
+  g.daigo_x = stakes[0].x + 4;
+  g.daigo_y = stakes[0].y;
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.staked == 0);
+  game_action(&g, ACT_CANCEL);
+  stand_with_daigo(&g, stakes[0].x, stakes[0].y);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.staked == 1 && g.dialogue == D_STAKE_SET && g.outcome == OUT_NONE);
+  CHECK(game_tile(&g, MAP_FOREST, stakes[0].x, stakes[0].y) == 'p');
+  game_action(&g, ACT_CANCEL);
+  /* A stake is driven in once. */
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.staked == 1 && g.state != GAME_DIALOGUE);
+  stand_with_daigo(&g, stakes[1].x, stakes[1].y);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.staked == 3 && g.outcome == OUT_NONE);
+  game_action(&g, ACT_CANCEL);
+  stand_with_daigo(&g, stakes[2].x, stakes[2].y);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.outcome == OUT_MEND && g.dialogue == D_SCENE_MEND);
+  CHECK(!g.daigo_follows && g.notes[g.note_count - 1] == N_MEND);
+  CHECK(count_events(&g, EV_OUTCOME) == 1);
+  game_action(&g, ACT_CANCEL);
+  /* Both weigh the compromise, each with a cost. */
+  stand(&g, MAP_VILLAGE, 5, 5, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_SUMI_TASK);
+  game_action(&g, ACT_CANCEL);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_SUMI_MEND);
+  return 0;
+}
+/* Leaving the forest sends the foreman back to his camp. */
+static int test_daigo_stays(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  g.obs |= OBS(OBS_KAMI_CALMED) | OBS(OBS_TRACKS) | OBS(OBS_LEDGER_DEBT);
+  stand(&g, MAP_FOREST, 12, 31, -1, 0);
+  game_action(&g, ACT_CONFIRM);
+  for (int i = 0; i < DIALOGUE_PAGES && g.state == GAME_DIALOGUE; i++)
+    game_action(&g, ACT_CONFIRM);
+  CHECK(g.daigo_follows);
+  stand(&g, MAP_FOREST, 24, 38, 0, 1);
+  game_action(&g, ACT_DOWN);
+  CHECK(g.map == MAP_VILLAGE && !g.daigo_follows);
+  CHECK(g.daigo_x == npcs[NPC_DAIGO].x && g.daigo_y == npcs[NPC_DAIGO].y);
+  return 0;
+}
+
 static int test_combat(void) {
   for (int a = 0; a < 12; a++)
     for (int d = 0; d < 12; d++)
@@ -776,8 +862,8 @@ int main(int argc, char **argv) {
       test_content(argv[1]) || test_fox_and_tracks(argv[1]) || test_encounter(argv[1]) ||
       test_fight(argv[1]) || test_outcome_keeps_threads(argv[1]) ||
       test_defeat(argv[1]) || test_boundary(argv[1]) || test_mend(argv[1]) ||
-      test_combat())
+      test_compromise(argv[1]) || test_daigo_stays(argv[1]) || test_combat())
     return 1;
-  puts("World, dialogue, examining, fox, encounter, fight, boundary, mending pass.");
+  puts("World, examining, fox, encounter, fight, boundary, mending, stakes pass.");
   return 0;
 }

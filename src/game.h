@@ -37,7 +37,8 @@ typedef enum {
   EV_ENCOUNTER_ACTION, /* a = EncounterAction, b = Mood afterwards */
   EV_OUTCOME,          /* a = Outcome */
   EV_STONE_PUSH,       /* a,b = the stone's position after moving it */
-  EV_MEND              /* a = pieces in place, b = 1 when the piece fitted */
+  EV_MEND,             /* a = pieces in place, b = 1 when the piece fitted */
+  EV_STAKE             /* a = stakes set */
 } EventType;
 typedef struct {
   EventType type;
@@ -66,7 +67,10 @@ typedef struct {
   Mood mood;
   int stone_x, stone_y; /* the boundary stone the loggers moved */
   int mend_placed;      /* pieces of the bowl already set */
-  DialogueOpens opens;  /* what the open conversation leads to */
+  int daigo_x, daigo_y; /* the foreman walks along while staking the boundary */
+  bool daigo_follows;
+  uint8_t staked;      /* bit per stake already driven in */
+  DialogueOpens opens; /* what the open conversation leads to */
   Combat combat;
   bool fighting;
   Outcome outcome;
@@ -80,6 +84,7 @@ typedef struct {
 bool game_init(Game *g, const char *assets);
 void game_action(Game *g, Action a);
 int game_npc_at(const Game *g, int x, int y);
+void game_npc_pos(const Game *g, int npc, int *x, int *y);
 void game_camera(const Game *g, int *x, int *y);
 /* Map tile after applying overrides for what the player has observed. */
 char game_tile(const Game *g, int map, int x, int y);

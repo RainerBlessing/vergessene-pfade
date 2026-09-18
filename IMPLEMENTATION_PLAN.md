@@ -269,7 +269,16 @@ Der Log wird im Core als Ereignispuffer geführt; `main.c` schreibt die Datei.
 - Unit: Angebot nur mit allen drei Bedingungen; Nachlaufen blockiert nicht und durchquert keine Wände; Pfahl nur an den vorgesehenen Stellen und nur mit Daigo in der Nähe; Ausgang erst beim dritten Pfahl.
 - `journey_mend` grün; alle bisherigen Journeys grün.
 - Test: Kein Ausgang ist ohne seine Voraussetzungen erreichbar (alle drei Wege).
-**Status**: Not Started
+**Status**: Complete (2026-09-18).
+- Build ohne Warnungen (vollständig neu übersetzt), `ctest` 2/2, `--verify --log` und `--smoke` mit Exit 0, Screenshots angesehen.
+- Probeweise eingebaute Fehler (Pfahl ohne Daigo, Nachlaufen abgeschaltet) werden erkannt.
+- Umsetzung:
+  - Daigos Angebot kommt erst mit ruhigem Kami, bekannten Fährten und gelesenem Auftragsbuch; das Regelfeld `opens` startet das Nachlaufen.
+  - Er übernimmt jeweils das zuletzt verlassene Feld der Spielfigur und blockiert nie den Weg. Verlässt man den Wald, kehrt er ans Lager zurück.
+  - Ein Pfahl geht nur an den drei Stellen entlang der Fährten und nur mit Daigo daneben.
+  - Der dritte Pfahl setzt `OUT_MEND`; Sumi und Daigo bewerten es unterschiedlich (weniger Holz, jährliche Gabe, dafür Ruhe).
+  - `journey_mend` führt jetzt bis zum Ausgang; neues Log-Ereignis `stake`.
+- Anmerkung: Das Protokoll hatte den Pfahl-Fall zwischenzeitlich nicht geschrieben (verlorene Änderung); behoben und mit vollständigem Neubau geprüft.
 
 ## Stage 4: Konsequenzen, Zeitfortschritt, Leerer-Gast-Hook
 **Goal**: Jeder Ausgang verändert die Welt sofort und am nächsten Morgen, mit Gewinn und Verlust. Eine Spur weckt Neugier, ohne zu erklären.

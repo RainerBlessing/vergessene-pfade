@@ -9,16 +9,16 @@ Narrativer Retro-RPG-Prototyp (C11 / SDL3). Er prüft, ob der Loop
 - Kulturelle Notizen und Quellen: [docs/culture-notes.md](docs/culture-notes.md)
 - Herkunft des Codes: Emberpost (Japan-/Deutsch-Fassung), siehe [docs/emberpost/](docs/emberpost/)
 
-**Aktueller Stand (Stage 3D):**
+**Aktueller Stand (Stage 3E): alle drei Lösungswege sind spielbar.**
 - Das Spiel beginnt mit der Ankunftsszene im Wald. Danach sind das Dorf Kiriyama und der Wald begehbar.
 - Fünf Figuren sprechen nach einer Regeltabelle, die Umgebung lässt sich untersuchen, und Beobachtungen landen diegetisch im Notizbuch.
 - Der verletzte Fuchs lässt sich mit Mios Heilkraut versorgen. Danach sieht die Figur Tierfährten („Tierzeichen“).
 - Am Hainrand erscheint der Waldkami. Stehen bleiben, Darbringen, Angreifen und Zurückweichen verändern sein Gemüt, das er sich merkt.
-- **Zwei Ausgänge:**
+- **Die drei Ausgänge:**
   - *Bekämpfen:* Der Kampf ist zu Ende zu führen. Eine Niederlage entscheidet nichts.
   - *Alte Grenze wiederherstellen:* Wer Schleifspur und Mulde bemerkt hat, kann den versetzten Grenzstein zurückschieben.
-- **Kintsugi:** Oriha öffnet den Goldlack erst, wenn sie die Geschichte der Schale kennt. In der Reparaturansicht wird jedes Stück in seine Bruchstelle gesetzt; der Lack trocknet, während man im Wald ist. Die geflickte Schale beruhigt den Kami.
-- Der Kompromiss mit Daigo folgt in Stage 3E.
+  - *Kintsugi und Kompromiss:* Schale flicken, dem Kami darbringen, dann mit Daigo drei Pfähle entlang der Tierspuren setzen.
+- Es fehlen noch die Konsequenzen, der Zeitfortschritt und der Hinweis am Schrein (Stage 4).
 
 ## Bauen (Linux)
 
@@ -48,14 +48,14 @@ Alle Modi aus einem beschreibbaren Arbeitsverzeichnis starten:
 
 - `vergessene_pfade --smoke`: 10 Frames rendern, `smoke.bmp` schreiben, beenden.
 - `vergessene_pfade --verify`: alle Journey-Tests (Erkundung, Kampf, alte Grenze,
-  Kintsugi) im
+  Kintsugi mit Kompromiss) im
   echten Fenster spielen und nummerierte BMP-Screenshots schreiben. Exit 0 nur bei Erfolg.
 - `vergessene_pfade --log sitzung.log`: Sitzungsprotokoll für Playtests, auch
   zusammen mit `--verify`. Jede Zeile hat die Spalten
   `zeit_ms  karte  x,y  ereignis  details`.
   - Ereignisse: `observe`, `examine`, `examine_nothing`, `npc_talk`, `notebook_open`,
     `action_attempt` (Gegenstand benutzt, `ok=0/1`), `encounter`, `encounter_action`,
-    `outcome`, `stone_push`, `mend`.
+    `outcome`, `stone_push`, `mend`, `stake`.
   - Wiederholte erfolglose Untersuchungen desselben Ziels erzeugen keine eigene
     Zeile. Ihre Anzahl steht als `repeat=n` in der nächsten
     `examine_nothing`-Zeile.

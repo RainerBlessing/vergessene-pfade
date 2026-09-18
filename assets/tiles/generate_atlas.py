@@ -4,7 +4,7 @@ import struct
 # Ink, moss, jade, bamboo, straw, washi, cedar, ochre, indigo,
 # water, slate, white, vermilion, sakura, skin, transparent.
 pal=[(24,25,34),(36,57,47),(55,85,56),(104,135,75),(177,161,105),(234,219,176),(88,57,46),(168,112,62),(45,56,81),(72,116,135),(112,130,139),(247,238,210),(183,63,52),(219,146,162),(220,167,119),(255,0,255)]
-w,h=46*16,16
+w,h=47*16,16
 pix=[[15]*w for _ in range(h)]
 def rect(t,x,y,ww,hh,c):
  for yy in range(max(0,y),min(16,y+hh)):
@@ -126,6 +126,9 @@ for t in [44,45]:
  shapes(t,[(0,2,16,2,7),(0,9,16,2,7),(1,11,14,4,4)])
 shapes(44,[(4,5,8,4,10),(5,4,6,1,10),(6,6,1,3,0),(9,6,1,2,0)])
 shapes(45,[(4,5,8,4,5),(5,4,6,1,5),(6,6,1,3,7),(9,6,1,2,7),(7,5,1,4,7)])
+# Boundary stake driven in beside the tracks.
+grass(46)
+shapes(46,[(7,2,2,13,6),(6,3,4,1,7),(5,14,6,1,4)])
 rows=bytearray()
 for row in reversed(pix):
  for c in row:rows.extend(bytes(pal[c][::-1]))

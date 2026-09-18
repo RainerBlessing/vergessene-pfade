@@ -5,7 +5,7 @@ const char *const obs_names[OBS_COUNT] = {
     "BOWL_SHARDS",   "BOWL_MARK",          "HOUSE_MARK",      "BOWL_OWNER",
     "LEDGER_DEBT",   "FOX_WOUNDED",        "MIO_HERB",        "FOX_TENDED",
     "TRACKS",        "KAMI_SEEN",          "KAMI_ANGERED",    "STONE_MOVED",
-    "BOWL_DRYING",   "BOWL_READY",         "KAMI_CALMED"};
+    "BOWL_DRYING",   "BOWL_READY",         "KAMI_CALMED",     "DAIGO_DEAL"};
 const char *const outcome_names[OUTCOME_COUNT] = {"NONE", "FIGHT", "BOUNDARY", "MEND"};
 
 const Npc npcs[NPC_COUNT] = {{MAP_VILLAGE, 5, 4, 0, "SUMI", "Sumi / Dorfaelteste"},
@@ -181,6 +181,28 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
                            "Naehte\nfangen das Licht.",
                            "Der Kami beugt sich darueber.\nDas Knurren hoert auf. "
                            "Es setzt\nsich neben die Schale."}},
+    [D_DAIGO_OFFER] = {2,
+                       {"Es sitzt neben einer Schale und\nruehrt sich nicht? Und die "
+                        "Tiere\nlaufen alle diesen Bogen?",
+                        "Gut. Zeig mir, wo die Spuren\nlaufen. Dort stecken wir die "
+                        "neue\nGrenze ab. Ich komme mit."}},
+    [D_DAIGO_WALKING] = {1,
+                         {"Geh voran. Drei Pfaehle, dann ist\nSchluss mit dem "
+                          "Streit."}},
+    [D_DAIGO_MEND] = {1,
+                      {"Bis zu den Pfaehlen also. Das ist\nweniger Holz. Aber es "
+                       "ist Holz,\num das niemand streitet."}},
+    [D_SUMI_MEND] = {2,
+                     {"Ihr habt eine neue Grenze\nabgesteckt? Und der Hain laesst\nuns "
+                      "das Totholz?",
+                      "Wir werden sparsam heizen muessen.\nUnd jedes Jahr eine Gabe "
+                      "bringen.\nGrossmutter haette gelacht."}},
+    [D_STAKE_SET] = {1, {"Ihr treibt einen Pfahl in den\nBoden, neben die Spuren."}},
+    [D_SCENE_MEND] = {2,
+                      {"Der dritte Pfahl steht. Daigo\ntritt die Erde fest und sagt "
+                       "lange\nnichts.",
+                       "Zwischen den Staemmen sitzt der\nKami bei der Schale. Es "
+                       "sieht\neuch zu und bleibt sitzen."}},
     [D_I_BOWL_MARK] = {1, {"Auf dem Boden einer Scherbe ist\nein Zeichen eingebrannt."}},
     [D_I_BOWL_MARK_MATCH] = {1,
                              {"Auf dem Boden einer Scherbe ist\nein Zeichen "
@@ -215,6 +237,8 @@ const char *const notes[NOTE_COUNT] = {
     [N_MENDED] = "Oriha und ich haben die Schale\ngeflickt. Der Lack trocknet.",
     [N_BOWL_READY] = "Die Schale ist trocken. Die Naehte\nglaenzen golden.",
     [N_KAMI_CALM] = "Vor der geflickten Schale hat der\nKami sich hingesetzt.",
+    [N_DEAL] = "Daigo will mit mir eine neue\nGrenze abstecken.",
+    [N_MEND] = "Drei Pfaehle stehen entlang der\nSpuren. Der Kami blieb sitzen.",
 };
 
 #define MARKS (OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK))
@@ -228,6 +252,7 @@ const DialogueRule dialogue_rules[] = {
     {NPC_SUMI, 0, 0, 0, D_SUMI_FOUGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT, OPEN_NOTHING},
     {NPC_SUMI, 0, 0, 0, D_SUMI_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY,
      OPEN_NOTHING},
+    {NPC_SUMI, 0, 0, 0, D_SUMI_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND, OPEN_NOTHING},
     {NPC_SUMI, OBS(OBS_BOWL_OWNER), 0, 0, D_SUMI_OWNER_KNOWN, NOTE_NONE, ITEM_NONE,
      OUT_NONE, OPEN_NOTHING},
     {NPC_SUMI, OBS(OBS_ASKED_BY_SUMI), 0, 0, D_SUMI_WAITING, NOTE_NONE, ITEM_NONE,
@@ -257,6 +282,13 @@ const DialogueRule dialogue_rules[] = {
      OPEN_NOTHING},
     {NPC_DAIGO, 0, 0, 0, D_DAIGO_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY,
      OPEN_NOTHING},
+    {NPC_DAIGO, 0, 0, 0, D_DAIGO_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND, OPEN_NOTHING},
+    /* The compromise: he comes along once the kami sits and the tracks are known. */
+    {NPC_DAIGO, OBS(OBS_KAMI_CALMED) | OBS(OBS_TRACKS) | OBS(OBS_LEDGER_DEBT),
+     OBS(OBS_DAIGO_DEAL), OBS(OBS_DAIGO_DEAL), D_DAIGO_OFFER, N_DEAL, ITEM_NONE, OUT_NONE,
+     OPEN_FOLLOW},
+    {NPC_DAIGO, OBS(OBS_DAIGO_DEAL), 0, 0, D_DAIGO_WALKING, NOTE_NONE, ITEM_NONE,
+     OUT_NONE, OPEN_FOLLOW},
     {NPC_DAIGO, OBS(OBS_LEDGER_DEBT), 0, 0, D_DAIGO_LEDGER, NOTE_NONE, ITEM_NONE,
      OUT_NONE, OPEN_NOTHING},
     {NPC_DAIGO, 0, 0, 0, D_DAIGO, NOTE_NONE, ITEM_NONE, OUT_NONE, OPEN_NOTHING},
@@ -456,3 +488,6 @@ const MendPiece mend_pieces[MEND_PIECES] = {
     {"Stueck mit dem Zeichen", "Neben dem Zeichen klafft ein Riss."},
 };
 const int mend_display[MEND_PIECES] = {2, 0, 3, 1};
+
+/* The stakes stand on the animal tracks, between the old stones. */
+const StakeSpot stakes[STAKE_COUNT] = {{14, 14}, {22, 15}, {30, 14}};

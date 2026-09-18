@@ -29,6 +29,7 @@ typedef enum {
   OBS_BOWL_DRYING,
   OBS_BOWL_READY,
   OBS_KAMI_CALMED,
+  OBS_DAIGO_DEAL,
   OBS_COUNT
 } ObsId;
 typedef enum { OUT_NONE, OUT_FIGHT, OUT_BOUNDARY, OUT_MEND, OUTCOME_COUNT } Outcome;
@@ -106,6 +107,12 @@ typedef enum {
   D_MEND_WRONG,
   D_MEND_DONE,
   D_ENC_OFFER_BOWL,
+  D_DAIGO_OFFER,
+  D_DAIGO_WALKING,
+  D_DAIGO_MEND,
+  D_SUMI_MEND,
+  D_STAKE_SET,
+  D_SCENE_MEND,
   D_I_BOWL_MARK,
   D_I_BOWL_MARK_MATCH,
   DIALOGUE_COUNT
@@ -145,13 +152,15 @@ typedef enum {
   N_MENDED,
   N_BOWL_READY,
   N_KAMI_CALM,
+  N_DEAL,
+  N_MEND,
   NOTE_COUNT
 } NoteId;
 extern const char *const notes[NOTE_COUNT];
 
 /* First matching rule wins. */
 /* What a conversation opens once its last page is read. */
-typedef enum { OPEN_NOTHING, OPEN_MEND } DialogueOpens;
+typedef enum { OPEN_NOTHING, OPEN_MEND, OPEN_FOLLOW } DialogueOpens;
 typedef struct {
   NpcId npc;
   Obs needs, forbids, grants;
@@ -232,6 +241,13 @@ extern const DialogueId encounter_lines[ENC_COUNT][MOOD_COUNT];
 #define STONE_START_Y 16
 #define STONE_HOLLOW_X 24
 #define STONE_HOLLOW_Y 12
+
+/* Where the new boundary is staked out, along the animal tracks. */
+#define STAKE_COUNT 3
+typedef struct {
+  int x, y;
+} StakeSpot;
+extern const StakeSpot stakes[STAKE_COUNT];
 
 /* Kintsugi: the pieces in the order they go back, each with the gap it fills. */
 #define MEND_PIECES 4

@@ -77,10 +77,10 @@ bool renderer_init(Renderer *r, SDL_Renderer *sdl, const char *assets) {
 }
 void renderer_destroy(Renderer *r) { SDL_DestroyTexture(r->atlas); }
 static int tile_art(char t) {
-  static const char symbols[] = ".,~T^#H_+><*SBr=Rls[]GxOoYmdAkWMhFftbq";
+  static const char symbols[] = ".,~T^#H_+><*SBr=Rls[]GxOoYmdAkWMhFftbqp";
   static const int art[] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 19,
                             20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
-                            33, 34, 35, 36, 37, 38, 39, 41, 42, 43, 44, 45};
+                            33, 34, 35, 36, 37, 38, 39, 41, 42, 43, 44, 45, 46};
   const char *at = strchr(symbols, t);
   return at ? art[at - symbols] : 4;
 }
@@ -97,9 +97,11 @@ static void world(Renderer *r, const Game *g) {
   SDL_Rect clip = {0, 16, 320, 160};
   SDL_SetRenderClipRect(r->sdl, &clip);
   for (int i = 0; i < NPC_COUNT; i++)
-    if (npcs[i].map == g->map)
-      sprite(r, npc_art[npcs[i].sprite], (npcs[i].x - cx) * 16,
-             16 + (npcs[i].y - cy) * 16, 1);
+    if (npcs[i].map == g->map) {
+      int nx, ny;
+      game_npc_pos(g, i, &nx, &ny);
+      sprite(r, npc_art[npcs[i].sprite], (nx - cx) * 16, 16 + (ny - cy) * 16, 1);
+    }
   sprite(r, 12, (g->x - cx) * 16, 16 + (g->y - cy) * 16, 1);
   box(r, (g->x - cx) * 16 + 7 + g->dx * 6, 16 + (g->y - cy) * 16 + 7 + g->dy * 6, 2, 2,
       2);

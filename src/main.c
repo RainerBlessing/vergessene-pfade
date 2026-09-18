@@ -79,6 +79,9 @@ static void drain_events(Game *g, FILE *log, Uint64 ms) {
     case EV_MEND:
       fprintf(log, "mend\tplaced=%d fits=%d\n", e->a, e->b);
       break;
+    case EV_STAKE:
+      fprintf(log, "stake\tset=%d\n", e->a);
+      break;
     case EV_OUTCOME:
       fprintf(log, "outcome\t%s\n", outcome_names[e->a]);
       break;
