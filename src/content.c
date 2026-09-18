@@ -4,7 +4,7 @@ const char *const obs_names[OBS_COUNT] = {
     "BROKEN_ROPE",   "SHRINE_INSCRIPTION", "STONE_DRAGGED",   "STONE_HOLLOW",
     "BOWL_SHARDS",   "BOWL_MARK",          "HOUSE_MARK",      "BOWL_OWNER",
     "LEDGER_DEBT",   "FOX_WOUNDED",        "MIO_HERB",        "FOX_TENDED",
-    "TRACKS",        "KAMI_SEEN",          "KAMI_ANGERED"};
+    "TRACKS",        "KAMI_SEEN",          "KAMI_ANGERED",    "STONE_MOVED"};
 const char *const outcome_names[OUTCOME_COUNT] = {"NONE", "FIGHT", "BOUNDARY", "MEND"};
 
 const Npc npcs[NPC_COUNT] = {{MAP_VILLAGE, 5, 4, 0, "SUMI", "Sumi / Dorfaelteste"},
@@ -144,6 +144,21 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
         {2,
          {"Du hast ihn vertrieben? Dann\nkoennen die Leute wieder\narbeiten. Gut.",
           "Komisch. Ich dachte, ich waere\nerleichtert."}},
+    [D_SUMI_BOUNDARY] = {2,
+                         {"Der alte Stein steht wieder da,\nwo er hingehoert? Dann "
+                          "bleibt\nder Hain ihrer.",
+                          "Daigo wird toben. Das Holz an\nder Grenze war das beste."}},
+    [D_DAIGO_BOUNDARY] = {1,
+                          {"Du hast den Stein zurueckgerollt.\nWeisst du, was das "
+                           "kostet? Nein.\nWoher auch."}},
+    [D_X_STONE_STUCK] = {1,
+                         {"Der Stein steht schief im Weg.\nDu rollst ihn zurueck "
+                          "an den\nAnfang der Schleifspur."}},
+    [D_SCENE_BOUNDARY] = {2,
+                          {"Der Stein rutscht in die Mulde,\nals haette er nie "
+                           "woanders\ngelegen. Das Moos passt genau.",
+                           "Im Hain wird es leiser. Etwas\nzieht sich zwischen die "
+                           "Staemme\nzurueck und bleibt dort."}},
     [D_I_BOWL_MARK] = {1, {"Auf dem Boden einer Scherbe ist\nein Zeichen eingebrannt."}},
     [D_I_BOWL_MARK_MATCH] = {1,
                              {"Auf dem Boden einer Scherbe ist\nein Zeichen "
@@ -174,12 +189,15 @@ const char *const notes[NOTE_COUNT] = {
     [N_KAMI] = "Etwas mit einem Geweih aus Aesten\nbewacht den Rand des Hains.",
     [N_KAMI_SHARDS] = "Als ich die Scherben zeigte, wurde\nder Kami zorniger.",
     [N_FOUGHT] = "Der Kami ist zerfallen. Im Hain\nist es sehr still.",
+    [N_BOUNDARY] = "Der Stein liegt wieder in seiner\nMulde. Der Kami blieb im Hain.",
 };
 
 #define MARKS (OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK))
 const DialogueRule dialogue_rules[] = {
     /* Reactions to an outcome come first. */
     {NPC_SUMI, 0, 0, 0, D_SUMI_FOUGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT},
+    {NPC_SUMI, 0, 0, 0, D_SUMI_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY},
+    {NPC_DAIGO, 0, 0, 0, D_DAIGO_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY},
     {NPC_SUMI, MARKS, OBS(OBS_BOWL_OWNER), OBS(OBS_BOWL_OWNER), D_SUMI_OWNER, N_OWNER,
      ITEM_NONE, OUT_NONE},
     {NPC_SUMI, OBS(OBS_BOWL_OWNER), 0, 0, D_SUMI_OWNER_KNOWN, NOTE_NONE, ITEM_NONE,
@@ -228,10 +246,10 @@ const ExaminePoint examine_points[] = {
      .note = N_HOUSE_MARK},
     {.kind = POINT_SYMBOL, .map = MAP_VILLAGE, .symbol = 'W', .dialogue = D_X_WOOD},
     /* Forest: the moved stone comes before the generic stone rule. */
-    {.kind = POINT_AT,
-     .map = MAP_FOREST,
-     .x = 24,
-     .y = 16,
+    /* The moved stone, wherever it stands: stuck away from both ends, it is
+     * rolled back to the drag marks instead. */
+    {.kind = POINT_STONE, .needs = OBS(OBS_STONE_MOVED), .dialogue = D_X_STONE_STUCK},
+    {.kind = POINT_STONE,
      .grants = OBS(OBS_STONE_DRAGGED),
      .dialogue = D_X_DRAGGED,
      .note = N_DRAGGED},

@@ -561,6 +561,70 @@ static int test_defeat(const char *assets) {
   return 0;
 }
 
+static int test_boundary(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  CHECK(g.stone_x == STONE_START_X && g.stone_y == STONE_START_Y);
+  CHECK(game_tile(&g, MAP_FOREST, STONE_START_X, STONE_START_Y) == 'G');
+  /* Without both observations the stone is just a stone in the way. */
+  CHECK(!game_can_push(&g));
+  stand(&g, MAP_FOREST, 24, 17, 0, -1);
+  game_action(&g, ACT_UP);
+  CHECK(g.y == 17 && g.stone_y == STONE_START_Y);
+  /* Examining it gives the drag marks; that alone does not unlock pushing. */
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_DRAGGED && game_knows(&g, OBS_STONE_DRAGGED));
+  game_action(&g, ACT_CANCEL);
+  CHECK(!game_can_push(&g));
+  g.obs |= OBS(OBS_STONE_HOLLOW);
+  CHECK(game_can_push(&g));
+  /* Pushing moves stone and player one tile each. */
+  game_action(&g, ACT_UP);
+  CHECK(g.stone_y == STONE_START_Y - 1 && g.y == STONE_START_Y);
+  CHECK(game_knows(&g, OBS_STONE_MOVED) && count_events(&g, EV_STONE_PUSH) == 1);
+  /* A blocked push moves nothing: the player pushes it sideways into a tree. */
+  int sx = g.stone_x, sy = g.stone_y;
+  stand(&g, MAP_FOREST, sx + 1, sy, -1, 0);
+  while (game_passable(&g, MAP_FOREST, g.stone_x - 1, g.stone_y) && g.stone_x > 2)
+    game_action(&g, ACT_LEFT);
+  CHECK(!game_passable(&g, MAP_FOREST, g.stone_x - 1, g.stone_y));
+  int blocked_x = g.stone_x, px = g.x;
+  game_action(&g, ACT_LEFT);
+  CHECK(g.stone_x == blocked_x && g.x == px);
+  /* The stuck stone can be rolled back to the start of the drag marks. */
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_STONE_STUCK);
+  CHECK(g.stone_x == STONE_START_X && g.stone_y == STONE_START_Y);
+  CHECK(!game_knows(&g, OBS_STONE_MOVED));
+  game_action(&g, ACT_CANCEL);
+  /* Pushing it home settles the boundary. */
+  stand(&g, MAP_FOREST, 24, 17, 0, -1);
+  for (int i = 0; i < 4; i++)
+    game_action(&g, ACT_UP);
+  CHECK(g.stone_x == STONE_HOLLOW_X && g.stone_y == STONE_HOLLOW_Y);
+  CHECK(g.outcome == OUT_BOUNDARY && g.mood == MOOD_CALM);
+  CHECK(g.state == GAME_DIALOGUE && g.dialogue == D_SCENE_BOUNDARY);
+  CHECK(g.notes[g.note_count - 1] == N_BOUNDARY && !game_knows(&g, OBS_STONE_MOVED));
+  game_action(&g, ACT_CANCEL);
+  /* Settled means settled: no more pushing, and the grove is open. */
+  CHECK(!game_can_push(&g));
+  stand(&g, MAP_FOREST, 24, 13, 0, -1);
+  game_action(&g, ACT_UP);
+  CHECK(g.stone_y == STONE_HOLLOW_Y && g.y == 13);
+  stand(&g, MAP_FOREST, 23, 12, 0, -1);
+  game_action(&g, ACT_UP);
+  CHECK(g.y == 11 && g.state == GAME_EXPLORATION);
+  /* Sumi and Daigo weigh it differently. */
+  stand(&g, MAP_VILLAGE, 5, 5, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_SUMI_BOUNDARY);
+  game_action(&g, ACT_CANCEL);
+  stand(&g, MAP_FOREST, 12, 31, -1, 0);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_DAIGO_BOUNDARY);
+  return 0;
+}
+
 static int test_combat(void) {
   for (int a = 0; a < 12; a++)
     for (int d = 0; d < 12; d++)
@@ -588,8 +652,9 @@ int main(int argc, char **argv) {
   if (test_world(argv[1]) || test_dialogue_rules(argv[1]) || test_examine(argv[1]) ||
       test_examine_nothing(argv[1]) || test_inventory_and_notebook(argv[1]) ||
       test_content(argv[1]) || test_fox_and_tracks(argv[1]) || test_encounter(argv[1]) ||
-      test_fight(argv[1]) || test_defeat(argv[1]) || test_combat())
+      test_fight(argv[1]) || test_defeat(argv[1]) || test_boundary(argv[1]) ||
+      test_combat())
     return 1;
-  puts("World, dialogue, examining, notebook, content, fox, encounter, fight pass.");
+  puts("World, dialogue, examining, notebook, fox, encounter, fight, boundary pass.");
   return 0;
 }

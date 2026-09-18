@@ -226,7 +226,16 @@ Der Log wird im Core als Ereignispuffer geführt; `main.c` schreibt die Datei.
 **Tests**:
 - Unit: Schieben ohne Freischaltung wirkungslos; Kollision beim Schieben; Zurücksetzen; Ausgang nur in der Mulde.
 - `journey_boundary` grün; alle bisherigen Journeys grün.
-**Status**: Not Started
+**Status**: Complete (2026-09-18).
+- Build ohne Warnungen (`grep -c warning` = 0), `ctest` 2/2, `--verify --log` mit Exit 0, Screenshots angesehen.
+- Probeweise eingebaute Fehler (Schieben ohne Beobachtungen, Schieben ohne Zielprüfung) werden erkannt.
+- Umsetzung:
+  - Der versetzte Stein steht nicht mehr in der Karte, sondern ist Spielzustand (`stone_x/stone_y`); `game_tile` blendet ihn ein. Deshalb gibt es die neue Punktart `POINT_STONE`, die ihn überall untersuchbar macht.
+  - Schieben ist erst mit `STONE_DRAGGED` **und** `STONE_HOLLOW` möglich. Vorher ist der Stein nur ein Hindernis; kein Text erklärt die Verbindung.
+  - Ein verklemmter Stein wird beim Untersuchen an den Anfang der Schleifspur zurückgerollt.
+  - In der Mulde: `OUT_BOUNDARY`, Kami wird RUHIG, Hain offen, Sumi und Daigo bewerten es gegensätzlich (Gewinn und Verlust).
+  - `journey_boundary` als dritter Journey-Test; `--verify` spielt alle drei.
+  - Neues Log-Ereignis: `stone_push` mit der Position des Steins.
 
 ## Stage 3D: Kintsugi – von den Scherben zur geflickten Schale
 **Goal**: Reparatur als bedeutungsvoller Vorgang, nicht als Rezept. Diese Stufe endet mit einer fertigen, darbringbaren Schale, noch ohne Ausgang.

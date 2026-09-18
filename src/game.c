@@ -7,6 +7,8 @@ bool game_init(Game *g, const char *assets) {
   g->x = 24;
   g->y = 19;
   g->dy = -1;
+  g->stone_x = STONE_START_X;
+  g->stone_y = STONE_START_Y;
   g->npc = SPEAKER_SCENE;
   g->scene = "Unterwegs";
   g->dialogue = D_SCENE_ARRIVAL;
@@ -30,6 +32,8 @@ static bool matches(const Game *g, Obs needs, Obs forbids) {
   return (g->obs & needs) == needs && !(g->obs & forbids);
 }
 char game_tile(const Game *g, int map, int x, int y) {
+  if (map == MAP_FOREST && x == g->stone_x && y == g->stone_y)
+    return 'G';
   for (int i = 0; i < tile_override_count; i++) {
     const TileOverride *o = &tile_overrides[i];
     if (o->map == map && o->x == x && o->y == y && matches(g, o->needs, 0))
@@ -111,11 +115,21 @@ static void talk(Game *g, int npc) {
     return;
   }
 }
+static bool stone_at(const Game *g, int x, int y) {
+  return g->map == MAP_FOREST && x == g->stone_x && y == g->stone_y;
+}
 static const ExaminePoint *point_at(const Game *g, int x, int y) {
   char symbol = game_tile(g, g->map, x, y);
   for (int i = 0; i < examine_point_count; i++) {
     const ExaminePoint *p = &examine_points[i];
-    if (p->kind == POINT_ITEM || p->map != g->map || !matches(g, p->needs, 0))
+    if (p->kind == POINT_ITEM || !matches(g, p->needs, 0))
+      continue;
+    if (p->kind == POINT_STONE) {
+      if (stone_at(g, x, y))
+        return p;
+      continue;
+    }
+    if (p->map != g->map)
       continue;
     if (p->kind == POINT_AT ? p->x == x && p->y == y : p->symbol == symbol)
       return p;
@@ -133,7 +147,16 @@ static const ExaminePoint *point_for_item(const Game *g, ItemId item) {
   }
   return NULL;
 }
+/* Rolling the stuck stone back to where the drag marks start. */
+static void reset_stone(Game *g) {
+  g->stone_x = STONE_START_X;
+  g->stone_y = STONE_START_Y;
+  g->obs &= ~OBS(OBS_STONE_MOVED);
+  emit(g, EV_STONE_PUSH, g->stone_x, g->stone_y);
+}
 static void use_point(Game *g, const ExaminePoint *p, char examined) {
+  if (p->kind == POINT_STONE && p->dialogue == D_X_STONE_STUCK)
+    reset_stone(g);
   if (p->takes != ITEM_NONE)
     inventory_remove(&g->player.inventory, p->takes, 1);
   if (p->gives != ITEM_NONE)
@@ -334,9 +357,44 @@ static void encounter_action(Game *g, Action a) {
     g->state = GAME_EXPLORATION;
   }
 }
+bool game_can_push(const Game *g) {
+  return matches(g, OBS(OBS_STONE_DRAGGED) | OBS(OBS_STONE_HOLLOW), 0) &&
+         g->outcome == OUT_NONE;
+}
+/* Pushing the stone one tile. Nothing here knows why it matters: the inscription
+ * and the empty hollow say that, and the player draws the line. */
+static bool push_stone(Game *g, int dx, int dy) {
+  int tx = g->stone_x + dx, ty = g->stone_y + dy;
+  const TileDef *target = tile_def(game_tile(g, MAP_FOREST, tx, ty));
+  if (!game_can_push(g) || !target || !target->passable || target->guarded ||
+      target->transition || game_npc_at(g, tx, ty) >= 0)
+    return false;
+  g->stone_x = tx;
+  g->stone_y = ty;
+  bool settled = tx == STONE_HOLLOW_X && ty == STONE_HOLLOW_Y;
+  if (settled)
+    g->obs &= ~OBS(OBS_STONE_MOVED);
+  else
+    g->obs |= OBS(OBS_STONE_MOVED);
+  emit(g, EV_STONE_PUSH, g->stone_x, g->stone_y);
+  if (settled) {
+    g->mood = MOOD_CALM;
+    learn(g, 0, N_BOUNDARY);
+    finish(g, OUT_BOUNDARY);
+    open_scene(g, "Die alte Grenze", D_SCENE_BOUNDARY);
+  }
+  return true;
+}
 static void move(Game *g, int dx, int dy) {
   g->dx = dx;
   g->dy = dy;
+  if (stone_at(g, g->x + dx, g->y + dy)) {
+    if (push_stone(g, dx, dy)) {
+      g->x += dx;
+      g->y += dy;
+    }
+    return;
+  }
   if (!can_enter(g, g->x + dx, g->y + dy))
     return;
   const TileDef *tile = tile_def(game_tile(g, g->map, g->x + dx, g->y + dy));

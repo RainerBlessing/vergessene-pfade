@@ -264,3 +264,25 @@ bool journey_fight(Game *g, JourneyObserver observer, void *context) {
   close_dialogue(g);
   return true;
 }
+
+/* Outcome "Alte Grenze wiederherstellen": push the moved stone back home. */
+bool journey_boundary(Game *g, JourneyObserver observer, void *context) {
+  REQUIRE(explore(g, observer, context));
+  REQUIRE(g->map == MAP_VILLAGE);
+  REQUIRE(walk(g, 16, 0) || g->map == MAP_FOREST);
+  REQUIRE(game_can_push(g)); /* both observations came from exploring */
+  REQUIRE(walk(g, STONE_START_X, STONE_START_Y + 1));
+  see(g, observer, context, "15-stone");
+  for (int step = 0; step < 6 && g->outcome == OUT_NONE; step++)
+    game_action(g, ACT_UP);
+  REQUIRE(g->stone_x == STONE_HOLLOW_X && g->stone_y == STONE_HOLLOW_Y);
+  REQUIRE(g->outcome == OUT_BOUNDARY && g->state == GAME_DIALOGUE);
+  see(g, observer, context, "16-boundary");
+  close_dialogue(g);
+  REQUIRE(walk(g, 24, 39) || g->map == MAP_VILLAGE);
+  REQUIRE(talk_to(g, NPC_SUMI));
+  REQUIRE(g->dialogue == D_SUMI_BOUNDARY);
+  see(g, observer, context, "17-sumi-boundary");
+  close_dialogue(g);
+  return true;
+}

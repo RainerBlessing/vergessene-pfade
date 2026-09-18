@@ -34,7 +34,8 @@ typedef enum {
   EV_ITEM_USE,         /* a = ItemId, b = DialogueId, or D_NONE when nothing happened */
   EV_ENCOUNTER,        /* a = Mood at the start */
   EV_ENCOUNTER_ACTION, /* a = EncounterAction, b = Mood afterwards */
-  EV_OUTCOME           /* a = Outcome */
+  EV_OUTCOME,          /* a = Outcome */
+  EV_STONE_PUSH        /* a,b = the stone's position after moving it */
 } EventType;
 typedef struct {
   EventType type;
@@ -61,6 +62,7 @@ typedef struct {
   NoteId notes[NOTE_LIMIT];
   int note_count;
   Mood mood;
+  int stone_x, stone_y; /* the boundary stone the loggers moved */
   Combat combat;
   bool fighting;
   Outcome outcome;
@@ -79,6 +81,8 @@ void game_camera(const Game *g, int *x, int *y);
 char game_tile(const Game *g, int map, int x, int y);
 bool game_passable(const Game *g, int map, int x, int y);
 bool game_knows(const Game *g, ObsId o);
+/* May the player push the boundary stone? Observations unlock it, not the plot. */
+bool game_can_push(const Game *g);
 /* Items the player owns, in display order; returns the count. */
 int game_owned_items(const Game *g, ItemId *out);
 int game_take_events(Game *g, GameEvent *out, int max);

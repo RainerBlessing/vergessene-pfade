@@ -25,6 +25,7 @@ typedef enum {
   OBS_TRACKS,
   OBS_KAMI_SEEN,
   OBS_KAMI_ANGERED,
+  OBS_STONE_MOVED,
   OBS_COUNT
 } ObsId;
 typedef enum { OUT_NONE, OUT_FIGHT, OUT_BOUNDARY, OUT_MEND, OUTCOME_COUNT } Outcome;
@@ -93,6 +94,10 @@ typedef enum {
   D_ENC_VICTORY,
   D_ENC_DEFEAT,
   D_SUMI_FOUGHT,
+  D_SUMI_BOUNDARY,
+  D_DAIGO_BOUNDARY,
+  D_X_STONE_STUCK,
+  D_SCENE_BOUNDARY,
   D_I_BOWL_MARK,
   D_I_BOWL_MARK_MATCH,
   DIALOGUE_COUNT
@@ -128,6 +133,7 @@ typedef enum {
   N_KAMI,
   N_KAMI_SHARDS,
   N_FOUGHT,
+  N_BOUNDARY,
   NOTE_COUNT
 } NoteId;
 extern const char *const notes[NOTE_COUNT];
@@ -144,7 +150,7 @@ typedef struct {
 extern const DialogueRule dialogue_rules[];
 extern const int dialogue_rule_count;
 
-typedef enum { POINT_AT, POINT_SYMBOL, POINT_ITEM } PointKind;
+typedef enum { POINT_AT, POINT_SYMBOL, POINT_ITEM, POINT_STONE } PointKind;
 /* First matching point wins: POINT_AT by map position, POINT_SYMBOL by tile
  * symbol on a map, POINT_ITEM by an inventory item. An item point with a symbol
  * applies only while facing that tile on its map, and consumes `takes`. */
@@ -206,6 +212,12 @@ extern const EncounterOffer encounter_offers[];
 extern const int encounter_offer_count;
 /* Text after an action, by action and the mood before it. */
 extern const DialogueId encounter_lines[ENC_COUNT][MOOD_COUNT];
+
+/* The one stone the loggers moved: start, and where it belongs. */
+#define STONE_START_X 24
+#define STONE_START_Y 16
+#define STONE_HOLLOW_X 24
+#define STONE_HOLLOW_Y 12
 
 #define SPEAKER_SCENE (-2)
 #endif
