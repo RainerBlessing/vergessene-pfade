@@ -21,7 +21,8 @@ typedef enum {
   GAME_DIALOGUE,
   GAME_INVENTORY,
   GAME_NOTEBOOK,
-  GAME_ENCOUNTER
+  GAME_ENCOUNTER,
+  GAME_MEND
 } GameState;
 
 /* Session-log events; the frontend drains them with game_take_events. */
@@ -35,7 +36,8 @@ typedef enum {
   EV_ENCOUNTER,        /* a = Mood at the start */
   EV_ENCOUNTER_ACTION, /* a = EncounterAction, b = Mood afterwards */
   EV_OUTCOME,          /* a = Outcome */
-  EV_STONE_PUSH        /* a,b = the stone's position after moving it */
+  EV_STONE_PUSH,       /* a,b = the stone's position after moving it */
+  EV_MEND              /* a = pieces in place, b = 1 when the piece fitted */
 } EventType;
 typedef struct {
   EventType type;
@@ -63,6 +65,8 @@ typedef struct {
   int note_count;
   Mood mood;
   int stone_x, stone_y; /* the boundary stone the loggers moved */
+  int mend_placed;      /* pieces of the bowl already set */
+  DialogueOpens opens;  /* what the open conversation leads to */
   Combat combat;
   bool fighting;
   Outcome outcome;
@@ -86,6 +90,8 @@ bool game_can_push(const Game *g);
 /* Items the player owns, in display order; returns the count. */
 int game_owned_items(const Game *g, ItemId *out);
 int game_take_events(Game *g, GameEvent *out, int max);
+/* Pieces still lying beside the bowl, in display order; returns the count. */
+int game_mend_pieces(const Game *g, int *out);
 /* Indices into encounter_options offered now, in display order; returns the count.
  * `out` must hold ENCOUNTER_OPTION_LIMIT entries. */
 int game_encounter_options(const Game *g, int *out);

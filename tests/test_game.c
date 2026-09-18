@@ -294,7 +294,7 @@ static int test_content(const char *assets) {
   for (int d = D_NONE + 1; d < DIALOGUE_COUNT; d++) {
     CHECK(dialogues[d].count >= 1 && dialogues[d].count <= DIALOGUE_PAGES);
     for (int page = 0; page < dialogues[d].count; page++)
-      CHECK(text_fits(dialogues[d].pages[page], 3));
+      CHECK(dialogues[d].pages[page] && text_fits(dialogues[d].pages[page], 3));
   }
   /* Notebook guard (design rule 2): no counters, fractions or checkmarks. */
   for (int n = NOTE_NONE + 1; n < NOTE_COUNT; n++) {
@@ -327,13 +327,19 @@ static int test_content(const char *assets) {
   g.obs = 0;
   for (int i = 0; i < NPC_COUNT; i++)
     CHECK(point_reachable(&g, npcs[i].map, npcs[i].x, npcs[i].y));
-  /* Overrides replace passable ground with passable ground or the fox den. */
-  for (int i = 0; i < tile_override_count; i++) {
-    const TileOverride *o = &tile_overrides[i];
-    const TileDef *base = tile_def(map_at(&g.maps[o->map], o->x, o->y));
-    const TileDef *now = tile_def(o->symbol);
-    CHECK(base && now && (base->passable == now->passable || o->symbol == 'f'));
+  /* Overrides may block ground (a shelf, the den), but nothing may become
+   * unreachable once every observation has been made. */
+  for (int i = 0; i < tile_override_count; i++)
+    CHECK(tile_def(tile_overrides[i].symbol) != NULL);
+  g.obs = ~(Obs)0;
+  for (int i = 0; i < NPC_COUNT; i++)
+    CHECK(point_reachable(&g, npcs[i].map, npcs[i].x, npcs[i].y));
+  for (int i = 0; i < examine_point_count; i++) {
+    const ExaminePoint *p = &examine_points[i];
+    if (p->kind == POINT_AT)
+      CHECK(point_reachable(&g, p->map, p->x, p->y));
   }
+  g.obs = 0;
   for (int o = 0; o < OBS_COUNT; o++)
     CHECK(obs_names[o] != NULL);
   /* Log names must cover every action, mood and outcome. */
@@ -500,6 +506,10 @@ static bool choose(Game *g, EncounterAction action) {
 static int test_fight(const char *assets) {
   Game g;
   CHECK(game_init(&g, assets));
+  stand(&g, MAP_VILLAGE, 5, 5, 0, -1); /* take the task first */
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_SUMI_TASK);
+  game_action(&g, ACT_CANCEL);
   stand(&g, MAP_FOREST, 24, 12, 0, -1);
   game_action(&g, ACT_UP);
   CHECK(g.state == GAME_ENCOUNTER && !g.fighting && g.outcome == OUT_NONE);
@@ -530,6 +540,9 @@ static int test_fight(const char *assets) {
     CHECK(choose(&g, ENC_ATTACK));
   CHECK(g.combat.won && g.outcome == OUT_FIGHT && g.state == GAME_DIALOGUE);
   CHECK(g.dialogue == D_ENC_VICTORY && g.npc == SPEAKER_SCENE);
+  /* The closing round's numbers survive into the scene. */
+  CHECK(strstr(g.message, "Schaden") != NULL &&
+        dialogues[D_ENC_VICTORY].pages[0][0] == 0);
   CHECK(g.notes[g.note_count - 1] == N_FOUGHT);
   CHECK(count_events(&g, EV_OUTCOME) == 1);
   game_action(&g, ACT_CANCEL);
@@ -538,6 +551,28 @@ static int test_fight(const char *assets) {
   CHECK(g.y == 11 && g.state == GAME_EXPLORATION); /* the grove is open now */
   /* Sumi reacts to the outcome. */
   stand(&g, MAP_VILLAGE, 5, 5, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_SUMI_FOUGHT);
+  game_action(&g, ACT_CANCEL);
+  /* An outcome must not swallow the threads it comes before: the bowl's story
+   * is still available afterwards. */
+  g.obs |= OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_SUMI_OWNER && game_knows(&g, OBS_BOWL_OWNER));
+  game_action(&g, ACT_CANCEL);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_SUMI_FOUGHT);
+  return 0;
+}
+/* A player who fights before ever speaking to Sumi can still get the task. */
+static int test_outcome_keeps_threads(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  g.outcome = OUT_FIGHT;
+  stand(&g, MAP_VILLAGE, 5, 5, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_SUMI_TASK && game_knows(&g, OBS_ASKED_BY_SUMI));
+  game_action(&g, ACT_CANCEL);
   game_action(&g, ACT_CONFIRM);
   CHECK(g.dialogue == D_SUMI_FOUGHT);
   return 0;
@@ -614,14 +649,101 @@ static int test_boundary(const char *assets) {
   stand(&g, MAP_FOREST, 23, 12, 0, -1);
   game_action(&g, ACT_UP);
   CHECK(g.y == 11 && g.state == GAME_EXPLORATION);
-  /* Sumi and Daigo weigh it differently. */
+  /* Sumi and Daigo weigh it differently (after her task, which stays reachable). */
   stand(&g, MAP_VILLAGE, 5, 5, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_SUMI_TASK);
+  game_action(&g, ACT_CANCEL);
   game_action(&g, ACT_CONFIRM);
   CHECK(g.dialogue == D_SUMI_BOUNDARY);
   game_action(&g, ACT_CANCEL);
   stand(&g, MAP_FOREST, 12, 31, -1, 0);
   game_action(&g, ACT_CONFIRM);
   CHECK(g.dialogue == D_DAIGO_BOUNDARY);
+  return 0;
+}
+
+static int test_mend(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  /* Oriha needs the shards and their story before she opens the lacquer. */
+  stand(&g, MAP_VILLAGE, 24, 5, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_ORIHA);
+  game_action(&g, ACT_CANCEL);
+  g.obs |= OBS(OBS_BOWL_SHARDS);
+  CHECK(inventory_add(&g.player.inventory, ITEM_SHARDS, 1));
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_ORIHA_SHARDS);
+  game_action(&g, ACT_CANCEL);
+  CHECK(g.state == GAME_EXPLORATION); /* no workshop without the story */
+  g.obs |= OBS(OBS_BOWL_OWNER);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_ORIHA_MEND);
+  for (int i = 0; i < DIALOGUE_PAGES && g.state == GAME_DIALOGUE; i++)
+    game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_MEND && g.mend_placed == 0);
+  /* A piece that does not fit costs nothing. */
+  int pieces[MEND_PIECES];
+  int count = game_mend_pieces(&g, pieces);
+  CHECK(count == MEND_PIECES);
+  for (int i = 0; i < count; i++)
+    if (pieces[i] != 0)
+      g.selection = i;
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.mend_placed == 0 && g.state == GAME_MEND);
+  CHECK(strcmp(g.message, dialogues[D_MEND_WRONG].pages[0]) == 0);
+  /* Leaving and coming back keeps the work so far. */
+  game_action(&g, ACT_CANCEL);
+  CHECK(g.state == GAME_EXPLORATION);
+  game_action(&g, ACT_CONFIRM);
+  for (int i = 0; i < DIALOGUE_PAGES && g.state == GAME_DIALOGUE; i++)
+    game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_MEND);
+  /* Setting all four pieces in order finishes the bowl. */
+  for (int placed = 0; placed < MEND_PIECES; placed++) {
+    count = game_mend_pieces(&g, pieces);
+    CHECK(count == MEND_PIECES - placed);
+    for (int i = 0; i < count; i++)
+      if (pieces[i] == placed)
+        g.selection = i;
+    game_action(&g, ACT_CONFIRM);
+    CHECK(g.mend_placed == placed + 1);
+  }
+  CHECK(g.state == GAME_DIALOGUE && g.dialogue == D_MEND_DONE);
+  CHECK(game_knows(&g, OBS_BOWL_DRYING) && !game_knows(&g, OBS_BOWL_READY));
+  CHECK(g.player.inventory.quantities[ITEM_SHARDS] == 0);
+  CHECK(g.notes[g.note_count - 1] == N_MENDED);
+  game_action(&g, ACT_CANCEL);
+  CHECK(game_tile(&g, MAP_VILLAGE, 22, 4) == 'b'); /* it rests on her shelf */
+  /* Walking around the village does not dry it; returning from the forest does. */
+  stand(&g, MAP_VILLAGE, 16, 2, 0, 1);
+  game_action(&g, ACT_DOWN);
+  game_action(&g, ACT_UP);
+  CHECK(!game_knows(&g, OBS_BOWL_READY));
+  stand(&g, MAP_VILLAGE, 16, 1, 0, -1);
+  game_action(&g, ACT_UP);
+  CHECK(g.map == MAP_FOREST && !game_knows(&g, OBS_BOWL_READY));
+  game_action(&g, ACT_DOWN);
+  CHECK(g.map == MAP_VILLAGE && game_knows(&g, OBS_BOWL_READY));
+  CHECK(game_tile(&g, MAP_VILLAGE, 22, 4) == 'q');
+  /* Oriha hands it over once. */
+  stand(&g, MAP_VILLAGE, 24, 5, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_ORIHA_READY && g.player.inventory.quantities[ITEM_BOWL] == 1);
+  game_action(&g, ACT_CANCEL);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.player.inventory.quantities[ITEM_BOWL] == 1);
+  game_action(&g, ACT_CANCEL);
+  /* The kami accepts the mended bowl; the shards would have angered it. */
+  stand(&g, MAP_FOREST, 24, 12, 0, -1);
+  game_action(&g, ACT_UP);
+  CHECK(g.state == GAME_ENCOUNTER && g.mood == MOOD_ANGRY);
+  CHECK(game_encounter_offer(&g) == ITEM_BOWL);
+  CHECK(choose(&g, ENC_OFFER));
+  CHECK(g.mood == MOOD_CALM && game_knows(&g, OBS_KAMI_CALMED));
+  CHECK(g.notes[g.note_count - 1] == N_KAMI_CALM);
+  CHECK(g.outcome == OUT_NONE); /* the compromise itself is Stage 3E */
   return 0;
 }
 
@@ -652,9 +774,10 @@ int main(int argc, char **argv) {
   if (test_world(argv[1]) || test_dialogue_rules(argv[1]) || test_examine(argv[1]) ||
       test_examine_nothing(argv[1]) || test_inventory_and_notebook(argv[1]) ||
       test_content(argv[1]) || test_fox_and_tracks(argv[1]) || test_encounter(argv[1]) ||
-      test_fight(argv[1]) || test_defeat(argv[1]) || test_boundary(argv[1]) ||
+      test_fight(argv[1]) || test_outcome_keeps_threads(argv[1]) ||
+      test_defeat(argv[1]) || test_boundary(argv[1]) || test_mend(argv[1]) ||
       test_combat())
     return 1;
-  puts("World, dialogue, examining, notebook, fox, encounter, fight, boundary pass.");
+  puts("World, dialogue, examining, fox, encounter, fight, boundary, mending pass.");
   return 0;
 }

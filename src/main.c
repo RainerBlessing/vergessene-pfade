@@ -76,6 +76,9 @@ static void drain_events(Game *g, FILE *log, Uint64 ms) {
     case EV_STONE_PUSH:
       fprintf(log, "stone_push\tstone=%d,%d\n", e->a, e->b);
       break;
+    case EV_MEND:
+      fprintf(log, "mend\tplaced=%d fits=%d\n", e->a, e->b);
+      break;
     case EV_OUTCOME:
       fprintf(log, "outcome\t%s\n", outcome_names[e->a]);
       break;
@@ -177,12 +180,22 @@ int main(int argc, char **argv) {
   }
   if (verify) {
     Capture c = {&r, log, true};
-    /* Both journeys: the peaceful exploration and the fight outcome. */
-    bool ok = journey(&g, capture, &c) && game_init(&g, assets) &&
-              journey_fight(&g, capture, &c) && game_init(&g, assets) &&
-              journey_boundary(&g, capture, &c);
+    /* One run per journey; each starts from a fresh game. */
+    static const struct {
+      const char *name;
+      bool (*run)(Game *, JourneyObserver, void *);
+    } runs[] = {{"exploration", journey},
+                {"fight", journey_fight},
+                {"boundary", journey_boundary},
+                {"mend", journey_mend}};
+    bool ok = true;
+    for (size_t i = 0; ok && i < sizeof runs / sizeof runs[0]; i++) {
+      if (log)
+        fprintf(log, "# run\t%s\n", runs[i].name);
+      ok = game_init(&g, assets) && runs[i].run(&g, capture, &c);
+      drain_events(&g, log, SDL_GetTicks()); /* before the next game_init clears them */
+    }
     result = ok && c.ok ? 0 : 1;
-    drain_events(&g, log, SDL_GetTicks());
     goto cleanup;
   }
   bool run = true;

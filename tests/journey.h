@@ -7,4 +7,5 @@ bool journey(Game *g, JourneyObserver observer, void *context);
 /* One journey per outcome; each explores first. */
 bool journey_fight(Game *g, JourneyObserver observer, void *context);
 bool journey_boundary(Game *g, JourneyObserver observer, void *context);
+bool journey_mend(Game *g, JourneyObserver observer, void *context);
 #endif

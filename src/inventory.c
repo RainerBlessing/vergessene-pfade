@@ -1,5 +1,6 @@
 #include "inventory.h"
-const ItemDef items[ITEM_COUNT] = {{"", 0}, {"Heilkraut", 8}, {"Scherben", 0}};
+const ItemDef items[ITEM_COUNT] = {
+    {"", 0}, {"Heilkraut", 8}, {"Scherben", 0}, {"Geflickte Schale", 0}};
 bool inventory_add(Inventory *i, ItemId item, int n) {
   if (item <= ITEM_NONE || item >= ITEM_COUNT || n <= 0 || n > 99 - i->quantities[item])
     return false;

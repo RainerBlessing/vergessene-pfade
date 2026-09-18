@@ -77,10 +77,10 @@ bool renderer_init(Renderer *r, SDL_Renderer *sdl, const char *assets) {
 }
 void renderer_destroy(Renderer *r) { SDL_DestroyTexture(r->atlas); }
 static int tile_art(char t) {
-  static const char symbols[] = ".,~T^#H_+><*SBr=Rls[]GxOoYmdAkWMhFft";
-  static const int art[] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11,
-                            19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-                            31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 42, 43};
+  static const char symbols[] = ".,~T^#H_+><*SBr=Rls[]GxOoYmdAkWMhFftbq";
+  static const int art[] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 19,
+                            20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
+                            33, 34, 35, 36, 37, 38, 39, 41, 42, 43, 44, 45};
   const char *at = strchr(symbols, t);
   return at ? art[at - symbols] : 4;
 }
@@ -124,9 +124,11 @@ static void dialogue_panel(Renderer *r, const Game *g) {
                       : g->npc == SPEAKER_SCENE ? g->scene
                       : tile                    ? tile->name
                                                 : "In deiner Tasche";
+  /* An empty page stands for the last message, e.g. the closing round's numbers. */
+  const char *page = dialogues[g->dialogue].pages[g->page];
   panel(r, 4, 105, 312, 91);
   text(r, 12, 114, 1, title);
-  text(r, 12, 132, 2, dialogues[g->dialogue].pages[g->page]);
+  text(r, 12, 132, 2, page[0] ? page : g->message);
   color(r, 3);
   if (dialogues[g->dialogue].count > 1)
     formatted(r, 12, 181, "ENTER WEITER %d/%d  ESC SCHLIESSEN", g->page + 1,
@@ -155,33 +157,53 @@ static void encounter_panel(Renderer *r, const Game *g) {
   int options[ENCOUNTER_OPTION_LIMIT];
   int count = game_encounter_options(g, options);
   panel(r, 4, 21, 312, 175);
-  text(r, 16, 31, 1, "AM RAND DES HAINS");
+  text(r, 16, 27, 1, "AM RAND DES HAINS");
   color(r, 3);
-  formatted(r, 16, 45, "DER KAMI WIRKT %s", mood_names[g->mood]);
-  sprite(r, 17, 144, 56, 2);
+  formatted(r, 16, 40, "DER KAMI WIRKT %s", mood_names[g->mood]);
+  sprite(r, 17, 144, 48, 2);
   if (g->fighting) {
     color(r, 2);
-    formatted(r, 16, 58, "KAMI %02d/%02d", g->combat.hp, kami.hp);
-    formatted(r, 232, 58, "DU %02d/%02d", g->player.hp, g->player.max_hp);
-    box(r, 16, 70, 96, 3, 3);
-    box(r, 16, 70, 96 * g->combat.hp / kami.hp, 3, 4);
-    box(r, 208, 70, 96, 3, 3);
-    box(r, 208, 70, 96 * g->player.hp / g->player.max_hp, 3, 1);
+    formatted(r, 16, 52, "KAMI %02d/%02d", g->combat.hp, kami.hp);
+    formatted(r, 232, 52, "DU %02d/%02d", g->player.hp, g->player.max_hp);
+    box(r, 16, 64, 96, 3, 3);
+    box(r, 16, 64, 96 * g->combat.hp / kami.hp, 3, 4);
+    box(r, 208, 64, 96, 3, 3);
+    box(r, 208, 64, 96 * g->player.hp / g->player.max_hp, 3, 1);
   }
-  text(r, 12, 92, 2, g->message);
+  text(r, 12, 84, 2, g->message);
   for (int i = 0; i < count; i++) {
     if (g->selection == i)
-      box(r, 12, 134 + i * 15, 296, 14, 4);
+      box(r, 12, 121 + i * 13, 296, 13, 4);
     color(r, g->selection == i ? 1 : 2);
     EncounterAction action = encounter_options[options[i]].action;
     if (action == ENC_OFFER)
-      formatted(r, 16, 137 + i * 15, "%c %s: %s", g->selection == i ? '>' : ' ',
+      formatted(r, 16, 124 + i * 13, "%c %s: %s", g->selection == i ? '>' : ' ',
                 encounter_options[options[i]].label, items[game_encounter_offer(g)].name);
     else
-      formatted(r, 16, 137 + i * 15, "%c %s", g->selection == i ? '>' : ' ',
+      formatted(r, 16, 124 + i * 13, "%c %s", g->selection == i ? '>' : ' ',
                 encounter_options[options[i]].label);
   }
   text(r, 12, 182, 3, "HOCH/RUNTER WAHL  ENTER HANDELN");
+}
+static void mend_panel(Renderer *r, const Game *g) {
+  int pieces[MEND_PIECES];
+  int count = game_mend_pieces(g, pieces);
+  panel(r, 4, 21, 312, 175);
+  text(r, 16, 31, 1, "DIE SCHALE FLICKEN");
+  /* Seams already set, then the gap the bowl shows now. */
+  for (int i = 0; i < MEND_PIECES; i++)
+    box(r, 16 + i * 26, 46, 22, 4, i < g->mend_placed ? 4 : 3);
+  if (g->mend_placed < MEND_PIECES)
+    text(r, 16, 60, 2, mend_pieces[g->mend_placed].gap);
+  text(r, 12, 80, 2, g->message);
+  for (int i = 0; i < count; i++) {
+    if (g->selection == i)
+      box(r, 12, 104 + i * 15, 296, 14, 4);
+    color(r, g->selection == i ? 1 : 2);
+    formatted(r, 16, 107 + i * 15, "%c %s", g->selection == i ? '>' : ' ',
+              mend_pieces[pieces[i]].shard);
+  }
+  text(r, 12, 182, 3, "ENTER SETZEN  /  ESC SPAETER");
 }
 static void notebook_panel(Renderer *r, const Game *g) {
   panel(r, 4, 22, 312, 174);
@@ -211,8 +233,10 @@ void render_game(Renderer *r, const Game *g, int fps) {
     notebook_panel(r, g);
   if (g->state == GAME_ENCOUNTER)
     encounter_panel(r, g);
+  if (g->state == GAME_MEND)
+    mend_panel(r, g);
   if (g->debug) {
-    static const char *states[] = {"WELT", "DIALOG", "TASCHE", "NOTIZ", "KAMI"};
+    static const char *states[] = {"WELT", "DIALOG", "TASCHE", "NOTIZ", "KAMI", "SCHALE"};
     panel(r, 4, 16, 312, 37);
     color(r, 2);
     formatted(r, 10, 23, "KARTE %d XY %d,%d BPS %d", g->map, g->x, g->y, fps);

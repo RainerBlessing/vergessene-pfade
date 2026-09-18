@@ -10,6 +10,8 @@ int main(int argc, char **argv) {
     return 1;
   if (!game_init(&g, argv[1]) || !journey_boundary(&g, NULL, NULL))
     return 1;
-  puts("Exploration, the fight and the boundary pass using only gameplay actions.");
+  if (!game_init(&g, argv[1]) || !journey_mend(&g, NULL, NULL))
+    return 1;
+  puts("Exploration, fight, boundary and mending pass using only gameplay actions.");
   return 0;
 }

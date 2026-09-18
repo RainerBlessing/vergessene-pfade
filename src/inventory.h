@@ -2,7 +2,7 @@
 #define INVENTORY_H
 #include <stdbool.h>
 #include <stdint.h>
-typedef enum { ITEM_NONE, ITEM_HERB, ITEM_SHARDS, ITEM_COUNT } ItemId;
+typedef enum { ITEM_NONE, ITEM_HERB, ITEM_SHARDS, ITEM_BOWL, ITEM_COUNT } ItemId;
 typedef struct {
   const char *name;
   int heal;

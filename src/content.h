@@ -26,6 +26,9 @@ typedef enum {
   OBS_KAMI_SEEN,
   OBS_KAMI_ANGERED,
   OBS_STONE_MOVED,
+  OBS_BOWL_DRYING,
+  OBS_BOWL_READY,
+  OBS_KAMI_CALMED,
   OBS_COUNT
 } ObsId;
 typedef enum { OUT_NONE, OUT_FIGHT, OUT_BOUNDARY, OUT_MEND, OUTCOME_COUNT } Outcome;
@@ -90,7 +93,6 @@ typedef enum {
   D_ENC_ATTACK,
   D_ENC_RETREAT,
   D_ENC_OFFER_SHARDS,
-  D_ENC_FIGHT,
   D_ENC_VICTORY,
   D_ENC_DEFEAT,
   D_SUMI_FOUGHT,
@@ -98,6 +100,12 @@ typedef enum {
   D_DAIGO_BOUNDARY,
   D_X_STONE_STUCK,
   D_SCENE_BOUNDARY,
+  D_ORIHA_MEND,
+  D_ORIHA_DRYING,
+  D_ORIHA_READY,
+  D_MEND_WRONG,
+  D_MEND_DONE,
+  D_ENC_OFFER_BOWL,
   D_I_BOWL_MARK,
   D_I_BOWL_MARK_MATCH,
   DIALOGUE_COUNT
@@ -134,11 +142,16 @@ typedef enum {
   N_KAMI_SHARDS,
   N_FOUGHT,
   N_BOUNDARY,
+  N_MENDED,
+  N_BOWL_READY,
+  N_KAMI_CALM,
   NOTE_COUNT
 } NoteId;
 extern const char *const notes[NOTE_COUNT];
 
 /* First matching rule wins. */
+/* What a conversation opens once its last page is read. */
+typedef enum { OPEN_NOTHING, OPEN_MEND } DialogueOpens;
 typedef struct {
   NpcId npc;
   Obs needs, forbids, grants;
@@ -146,6 +159,7 @@ typedef struct {
   NoteId note;
   ItemId gives;
   Outcome outcome; /* OUT_NONE matches any outcome */
+  DialogueOpens opens;
 } DialogueRule;
 extern const DialogueRule dialogue_rules[];
 extern const int dialogue_rule_count;
@@ -218,6 +232,15 @@ extern const DialogueId encounter_lines[ENC_COUNT][MOOD_COUNT];
 #define STONE_START_Y 16
 #define STONE_HOLLOW_X 24
 #define STONE_HOLLOW_Y 12
+
+/* Kintsugi: the pieces in the order they go back, each with the gap it fills. */
+#define MEND_PIECES 4
+typedef struct {
+  const char *shard, *gap;
+} MendPiece;
+extern const MendPiece mend_pieces[MEND_PIECES];
+/* The order the pieces are listed in, so the right one is not simply first. */
+extern const int mend_display[MEND_PIECES];
 
 #define SPEAKER_SCENE (-2)
 #endif

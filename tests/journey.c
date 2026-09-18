@@ -197,8 +197,11 @@ static bool explore(Game *g, JourneyObserver observer, void *context) {
   see(g, observer, context, "09-owner");
   close_dialogue(g);
   REQUIRE(talk_to(g, NPC_ORIHA));
-  REQUIRE(g->dialogue == D_ORIHA_OWNER);
-  close_dialogue(g);
+  REQUIRE(g->dialogue == D_ORIHA_MEND);
+  close_dialogue(g); /* her offer leads straight into the workshop */
+  REQUIRE(g->state == GAME_MEND);
+  game_action(g, ACT_CANCEL); /* the exploration journey leaves it for later */
+  REQUIRE(g->state == GAME_EXPLORATION && g->mend_placed == 0);
   REQUIRE(talk_to(g, NPC_MIO));
   REQUIRE(g->dialogue == D_MIO_THANKS);
   close_dialogue(g);
@@ -284,5 +287,44 @@ bool journey_boundary(Game *g, JourneyObserver observer, void *context) {
   REQUIRE(g->dialogue == D_SUMI_BOUNDARY);
   see(g, observer, context, "17-sumi-boundary");
   close_dialogue(g);
+  return true;
+}
+
+/* Kintsugi (Stage 3D): mend the bowl, let it dry, calm the kami with it. */
+bool journey_mend(Game *g, JourneyObserver observer, void *context) {
+  REQUIRE(explore(g, observer, context));
+  REQUIRE(g->map == MAP_VILLAGE);
+  REQUIRE(talk_to(g, NPC_ORIHA));
+  close_dialogue(g);
+  REQUIRE(g->state == GAME_MEND);
+  see(g, observer, context, "18-mend");
+  for (int placed = 0; placed < MEND_PIECES; placed++) {
+    int pieces[MEND_PIECES];
+    int count = game_mend_pieces(g, pieces);
+    for (int i = 0; i < count; i++)
+      if (pieces[i] == placed)
+        g->selection = i;
+    game_action(g, ACT_CONFIRM);
+    REQUIRE(g->mend_placed == placed + 1);
+  }
+  REQUIRE(game_knows(g, OBS_BOWL_DRYING));
+  see(g, observer, context, "19-mended");
+  close_dialogue(g);
+  /* Into the forest and back: the lacquer has dried by then. */
+  REQUIRE(walk(g, 16, 0) || g->map == MAP_FOREST);
+  REQUIRE(walk(g, 24, 39) || g->map == MAP_VILLAGE);
+  REQUIRE(game_knows(g, OBS_BOWL_READY));
+  REQUIRE(talk_to(g, NPC_ORIHA));
+  REQUIRE(g->dialogue == D_ORIHA_READY && g->player.inventory.quantities[ITEM_BOWL] == 1);
+  see(g, observer, context, "20-bowl");
+  close_dialogue(g);
+  REQUIRE(walk(g, 16, 0) || g->map == MAP_FOREST);
+  REQUIRE(walk(g, 24, 12));
+  game_action(g, ACT_UP);
+  REQUIRE(g->state == GAME_ENCOUNTER);
+  REQUIRE(game_encounter_offer(g) == ITEM_BOWL);
+  REQUIRE(pick(g, ENC_OFFER));
+  REQUIRE(g->mood == MOOD_CALM && game_knows(g, OBS_KAMI_CALMED));
+  see(g, observer, context, "21-bowl-offered");
   return true;
 }

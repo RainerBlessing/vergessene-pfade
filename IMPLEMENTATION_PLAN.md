@@ -207,6 +207,7 @@ Der Log wird im Core als Ereignispuffer geführt; `main.c` schreibt die Datei.
 **Status**: Complete (2026-09-18).
 - Build ohne Warnungen (`grep -c warning` = 0), `ctest` 2/2, `--verify --log` und `--smoke` mit Exit 0, Screenshots angesehen.
 - Probeweise eingebaute Fehler (Wunden des Kami vergessen, Hain bleibt nach dem Sieg bewacht) werden erkannt.
+- **Nachtrag aus dem Review von 3B (2026-09-18):** Sieben Befunde behoben. Wichtig: Die vierte Option überschrieb die Fußzeile des Begegnungsfensters; die Reaktion auf einen Ausgang verdeckte Sumis Auftrag und die Schalen-Geschichte dauerhaft (jetzt stehen beide Regeln davor, mit Test); nach einer Niederlage blieb die Blickrichtung diagonal; die Niederlage nutzt jetzt die Übergangstabelle statt fester Koordinaten und nennt das richtige Tor; die Zahlen der letzten Kampfrunde waren unsichtbar (eine leere Textseite zeigt jetzt die letzte Meldung); ein ungenutzter Dialog wurde entfernt; `--verify --log` trennt die Durchläufe und sichert Ereignisse vor dem Neustart.
 - Umsetzung:
   - „Angreifen“ ist jetzt in `encounter_options`; „Heilkraut nehmen“ erscheint nur im Kampf und nur mit Kraut. Die Optionen unterscheiden über `OptionWhen` zwischen Begegnung und Kampf.
   - Der Kami trifft im Zustand ZORNIG härter (`rage`).

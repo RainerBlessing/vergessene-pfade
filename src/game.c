@@ -80,22 +80,30 @@ static void learn(Game *g, Obs grants, NoteId note) {
   if (g->note_count < NOTE_LIMIT)
     g->notes[g->note_count++] = note;
 }
+/* Keeps g->message: a scene page left empty shows it (see dialogue_panel). */
 static void open_scene(Game *g, const char *title, DialogueId dialogue) {
   g->npc = SPEAKER_SCENE;
   g->scene = title;
   g->examined = 0;
   g->dialogue = dialogue;
   g->page = 0;
-  g->message[0] = 0;
   g->state = GAME_DIALOGUE;
 }
 static void open_dialogue(Game *g, int npc, char examined, DialogueId dialogue) {
+  g->opens = OPEN_NOTHING;
   g->npc = npc;
   g->examined = examined;
   g->dialogue = dialogue;
   g->page = 0;
   g->message[0] = 0;
   g->state = GAME_DIALOGUE;
+}
+int game_mend_pieces(const Game *g, int *out) {
+  int n = 0;
+  for (int i = 0; i < MEND_PIECES; i++)
+    if (mend_display[i] >= g->mend_placed)
+      out[n++] = mend_display[i];
+  return n;
 }
 static void talk(Game *g, int npc) {
   for (int i = 0; i < dialogue_rule_count; i++) {
@@ -112,6 +120,7 @@ static void talk(Game *g, int npc) {
     learn(g, r->grants, r->note);
     emit(g, EV_NPC_TALK, npc, r->dialogue);
     open_dialogue(g, npc, 0, r->dialogue);
+    g->opens = r->opens; /* after opening: open_dialogue clears it */
     return;
   }
 }
@@ -304,9 +313,14 @@ static void fight_round(Game *g, bool herb) {
     open_scene(g, "Am Rand des Hains", D_ENC_VICTORY);
   } else if (g->combat.lost) {
     g->fighting = false;
-    g->map = MAP_VILLAGE;
-    g->x = 16;
-    g->y = 1;
+    /* Carried home through the gate, facing into the village. */
+    for (int i = 0; i < TRANSITION_COUNT; i++)
+      if (transitions[i].to_map == MAP_VILLAGE) {
+        g->map = MAP_VILLAGE;
+        g->x = transitions[i].to_x;
+        g->y = transitions[i].to_y;
+      }
+    g->dx = 0;
     g->dy = 1;
     g->player.hp = g->player.max_hp;
     combat_begin(&g->combat); /* the spirit recovers as well */
@@ -320,6 +334,41 @@ static void begin_encounter(Game *g) {
   learn(g, OBS(OBS_KAMI_SEEN), N_KAMI);
   show(g, D_ENC_APPEAR);
   emit(g, EV_ENCOUNTER, g->mood, 0);
+}
+/* Kintsugi: each piece is set into the gap it belongs to. A piece that does not
+ * fit costs nothing; the seams stay visible. */
+static void mend_action(Game *g, Action a) {
+  int pieces[MEND_PIECES];
+  int count = game_mend_pieces(g, pieces);
+  if (a == ACT_CANCEL) {
+    g->state = GAME_EXPLORATION;
+    return;
+  }
+  if (count == 0)
+    return;
+  if (a == ACT_UP)
+    g->selection = (g->selection + count - 1) % count;
+  if (a == ACT_DOWN)
+    g->selection = (g->selection + 1) % count;
+  if (a != ACT_CONFIRM)
+    return;
+  if (g->selection >= count)
+    g->selection = 0;
+  bool fits = pieces[g->selection] == g->mend_placed;
+  if (fits)
+    g->mend_placed++;
+  emit(g, EV_MEND, g->mend_placed, fits);
+  g->selection = 0;
+  if (!fits) {
+    show(g, D_MEND_WRONG);
+    return;
+  }
+  g->message[0] = 0;
+  if (g->mend_placed == MEND_PIECES) {
+    inventory_remove(&g->player.inventory, ITEM_SHARDS, 1);
+    learn(g, OBS(OBS_BOWL_DRYING), N_MENDED);
+    open_scene(g, "In Orihas Werkstatt", D_MEND_DONE);
+  }
 }
 static void encounter_action(Game *g, Action a) {
   int options[ENCOUNTER_OPTION_LIMIT];
@@ -409,9 +458,13 @@ static void move(Game *g, int dx, int dy) {
   for (int i = 0; i < TRANSITION_COUNT; i++) {
     const Transition *t = &transitions[i];
     if (g->map == t->map && g->x == t->x && g->y == t->y) {
+      bool from_forest = g->map == MAP_FOREST;
       g->map = t->to_map;
       g->x = t->to_x;
       g->y = t->to_y;
+      /* The lacquer needs rest: it has dried by the time you are back. */
+      if (from_forest && g->map == MAP_VILLAGE && game_knows(g, OBS_BOWL_DRYING))
+        learn(g, OBS(OBS_BOWL_READY), NOTE_NONE);
       return;
     }
   }
@@ -430,15 +483,25 @@ void game_action(Game *g, Action a) {
     notebook_action(g, a);
     return;
   case GAME_DIALOGUE:
-    if (a == ACT_CANCEL ||
-        (a == ACT_CONFIRM && ++g->page >= dialogues[g->dialogue].count))
-      g->state = GAME_EXPLORATION;
+    if (a != ACT_CANCEL &&
+        !(a == ACT_CONFIRM && ++g->page >= dialogues[g->dialogue].count))
+      return;
+    g->state = GAME_EXPLORATION;
+    if (g->opens == OPEN_MEND) { /* the conversation leads into the workshop */
+      g->opens = OPEN_NOTHING;
+      g->state = GAME_MEND;
+      g->selection = 0;
+      g->message[0] = 0;
+    }
     return;
   case GAME_INVENTORY:
     inventory_action(g, a);
     return;
   case GAME_ENCOUNTER:
     encounter_action(g, a);
+    return;
+  case GAME_MEND:
+    mend_action(g, a);
     return;
   case GAME_EXPLORATION:
     break;
