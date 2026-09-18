@@ -328,9 +328,37 @@ static int test_content(const char *assets) {
   for (int i = 0; i < NPC_COUNT; i++)
     CHECK(point_reachable(&g, npcs[i].map, npcs[i].x, npcs[i].y));
   /* Overrides may block ground (a shelf, the den), but nothing may become
-   * unreachable once every observation has been made. */
-  for (int i = 0; i < tile_override_count; i++)
-    CHECK(tile_def(tile_overrides[i].symbol) != NULL);
+   * unreachable - neither with every observation made, nor with only the ones
+   * a single override asks for. */
+  for (int i = 0; i < tile_override_count; i++) {
+    const TileOverride *o = &tile_overrides[i];
+    CHECK(tile_def(o->symbol) != NULL);
+    g.obs = o->needs;
+    for (int k = 0; k < NPC_COUNT; k++)
+      CHECK(point_reachable(&g, npcs[k].map, npcs[k].x, npcs[k].y));
+    for (int k = 0; k < examine_point_count; k++)
+      if (examine_points[k].kind == POINT_AT)
+        CHECK(point_reachable(&g, examine_points[k].map, examine_points[k].x,
+                              examine_points[k].y));
+  }
+  /* The stakes and the mended-bowl pieces are content, so they are checked too. */
+  CHECK(tile_def('p') != NULL && tile_def('p')->passable);
+  for (int i = 0; i < STAKE_COUNT; i++) {
+    g.obs = 0;
+    CHECK(game_passable(&g, MAP_FOREST, stakes[i].x, stakes[i].y));
+    CHECK(point_reachable(&g, MAP_FOREST, stakes[i].x, stakes[i].y));
+    CHECK(game_npc_at(&g, stakes[i].x, stakes[i].y) < 0);
+    CHECK(!(stakes[i].x == STONE_HOLLOW_X && stakes[i].y == STONE_HOLLOW_Y));
+    for (int k = 0; k < i; k++)
+      CHECK(stakes[i].x != stakes[k].x || stakes[i].y != stakes[k].y);
+  }
+  /* The display order must be a permutation, or the puzzle breaks. */
+  for (int i = 0; i < MEND_PIECES; i++) {
+    CHECK(mend_display[i] >= 0 && mend_display[i] < MEND_PIECES);
+    CHECK(mend_pieces[i].shard && mend_pieces[i].gap);
+    for (int k = 0; k < i; k++)
+      CHECK(mend_display[i] != mend_display[k]);
+  }
   g.obs = ~(Obs)0;
   for (int i = 0; i < NPC_COUNT; i++)
     CHECK(point_reachable(&g, npcs[i].map, npcs[i].x, npcs[i].y));
@@ -547,6 +575,7 @@ static int test_fight(const char *assets) {
   CHECK(count_events(&g, EV_OUTCOME) == 1);
   game_action(&g, ACT_CANCEL);
   CHECK(g.state == GAME_EXPLORATION);
+  CHECK(g.message[0] == 0); /* the status bar does not keep the fight's last line */
   game_action(&g, ACT_UP);
   CHECK(g.y == 11 && g.state == GAME_EXPLORATION); /* the grove is open now */
   /* Sumi reacts to the outcome. */
@@ -564,14 +593,19 @@ static int test_fight(const char *assets) {
   CHECK(g.dialogue == D_SUMI_FOUGHT);
   return 0;
 }
-/* A player who fights before ever speaking to Sumi can still get the task. */
+/* After an outcome Sumi speaks about it, never about the task it settled -
+ * but the bowl's story stays reachable. */
 static int test_outcome_keeps_threads(const char *assets) {
   Game g;
   CHECK(game_init(&g, assets));
   g.outcome = OUT_FIGHT;
   stand(&g, MAP_VILLAGE, 5, 5, 0, -1);
   game_action(&g, ACT_CONFIRM);
-  CHECK(g.dialogue == D_SUMI_TASK && game_knows(&g, OBS_ASKED_BY_SUMI));
+  CHECK(g.dialogue == D_SUMI_FOUGHT && !game_knows(&g, OBS_ASKED_BY_SUMI));
+  game_action(&g, ACT_CANCEL);
+  g.obs |= OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_SUMI_OWNER && game_knows(&g, OBS_BOWL_OWNER));
   game_action(&g, ACT_CANCEL);
   game_action(&g, ACT_CONFIRM);
   CHECK(g.dialogue == D_SUMI_FOUGHT);
@@ -649,11 +683,8 @@ static int test_boundary(const char *assets) {
   stand(&g, MAP_FOREST, 23, 12, 0, -1);
   game_action(&g, ACT_UP);
   CHECK(g.y == 11 && g.state == GAME_EXPLORATION);
-  /* Sumi and Daigo weigh it differently (after her task, which stays reachable). */
+  /* Sumi and Daigo weigh it differently. */
   stand(&g, MAP_VILLAGE, 5, 5, 0, -1);
-  game_action(&g, ACT_CONFIRM);
-  CHECK(g.dialogue == D_SUMI_TASK);
-  game_action(&g, ACT_CANCEL);
   game_action(&g, ACT_CONFIRM);
   CHECK(g.dialogue == D_SUMI_BOUNDARY);
   game_action(&g, ACT_CANCEL);
@@ -733,6 +764,7 @@ static int test_mend(const char *assets) {
   CHECK(g.dialogue == D_ORIHA_READY && g.player.inventory.quantities[ITEM_BOWL] == 1);
   game_action(&g, ACT_CANCEL);
   game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_ORIHA_AFTER); /* not "the lacquer needs rest" any more */
   CHECK(g.player.inventory.quantities[ITEM_BOWL] == 1);
   game_action(&g, ACT_CANCEL);
   /* The kami accepts the mended bowl; the shards would have angered it. */
@@ -777,6 +809,9 @@ static int test_compromise(const char *assets) {
   game_action(&g, ACT_DOWN);
   CHECK(g.y == py + 1 && g.daigo_x == px && g.daigo_y == py);
   CHECK(game_npc_at(&g, px, py) == NPC_DAIGO);
+  /* Turning back is possible: the follower steps aside. */
+  game_action(&g, ACT_UP);
+  CHECK(g.x == px && g.y == py);
   /* Stakes go in only where the tracks run. */
   stand_with_daigo(&g, stakes[0].x, stakes[0].y + 2);
   game_action(&g, ACT_CONFIRM);
@@ -809,9 +844,6 @@ static int test_compromise(const char *assets) {
   game_action(&g, ACT_CANCEL);
   /* Both weigh the compromise, each with a cost. */
   stand(&g, MAP_VILLAGE, 5, 5, 0, -1);
-  game_action(&g, ACT_CONFIRM);
-  CHECK(g.dialogue == D_SUMI_TASK);
-  game_action(&g, ACT_CANCEL);
   game_action(&g, ACT_CONFIRM);
   CHECK(g.dialogue == D_SUMI_MEND);
   return 0;

@@ -123,7 +123,7 @@ static void talk(Game *g, int npc) {
     const DialogueRule *r = &dialogue_rules[i];
     if ((int)r->npc != npc || !matches(g, r->needs, r->forbids))
       continue;
-    if (r->outcome != OUT_NONE && r->outcome != g->outcome)
+    if (r->outcome != OUT_ANY && r->outcome != g->outcome)
       continue;
     /* Do not hand over something the player still carries: the next rule speaks. */
     if (r->gives != ITEM_NONE && g->player.inventory.quantities[r->gives])
@@ -173,8 +173,6 @@ static const ExaminePoint *point_for_item(const Game *g, ItemId item) {
 static void reset_stone(Game *g) {
   g->stone_x = STONE_START_X;
   g->stone_y = STONE_START_Y;
-  g->daigo_x = npcs[NPC_DAIGO].x;
-  g->daigo_y = npcs[NPC_DAIGO].y;
   g->obs &= ~OBS(OBS_STONE_MOVED);
   emit(g, EV_STONE_PUSH, g->stone_x, g->stone_y);
 }
@@ -262,8 +260,13 @@ static void notebook_action(Game *g, Action a) {
   else if (a == ACT_DOWN && g->scroll < last)
     g->scroll++;
 }
+/* The follower steps aside (they swap), everyone else blocks. */
+static bool blocking_npc(const Game *g, int x, int y) {
+  int npc = game_npc_at(g, x, y);
+  return npc >= 0 && !(npc == NPC_DAIGO && g->daigo_follows);
+}
 static bool can_enter(const Game *g, int x, int y) {
-  return game_npc_at(g, x, y) < 0 && game_passable(g, g->map, x, y);
+  return !blocking_npc(g, x, y) && game_passable(g, g->map, x, y);
 }
 /* Guarded ground pushes the player one step away, onto free, safe ground. */
 static void step_back(Game *g) {
@@ -337,6 +340,7 @@ static void fight_round(Game *g, bool herb) {
         g->map = MAP_VILLAGE;
         g->x = transitions[i].to_x;
         g->y = transitions[i].to_y;
+        break;
       }
     g->dx = 0;
     g->dy = 1;
@@ -404,6 +408,8 @@ static bool stake_here(Game *g) {
     emit(g, EV_STAKE, count, 0);
     if (count == STAKE_COUNT) {
       g->daigo_follows = false;
+      g->daigo_x = npcs[NPC_DAIGO].x;
+      g->daigo_y = npcs[NPC_DAIGO].y;
       learn(g, 0, N_MEND);
       finish(g, OUT_MEND);
       open_scene(g, "Die neue Grenze", D_SCENE_MEND);
@@ -540,6 +546,7 @@ void game_action(Game *g, Action a) {
         !(a == ACT_CONFIRM && ++g->page >= dialogues[g->dialogue].count))
       return;
     g->state = GAME_EXPLORATION;
+    g->message[0] = 0;           /* the scene's echo of the last round ends with it */
     if (g->opens == OPEN_MEND) { /* the conversation leads into the workshop */
       g->state = GAME_MEND;
       g->selection = 0;

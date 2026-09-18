@@ -33,6 +33,8 @@ typedef enum {
   OBS_COUNT
 } ObsId;
 typedef enum { OUT_NONE, OUT_FIGHT, OUT_BOUNDARY, OUT_MEND, OUTCOME_COUNT } Outcome;
+/* In a rule: applies whatever has been decided. OUT_NONE means "not yet decided". */
+#define OUT_ANY OUTCOME_COUNT
 extern const char *const outcome_names[OUTCOME_COUNT];
 typedef uint32_t Obs;
 #define OBS(o) ((Obs)1 << (o))
@@ -104,6 +106,7 @@ typedef enum {
   D_ORIHA_MEND,
   D_ORIHA_DRYING,
   D_ORIHA_READY,
+  D_ORIHA_AFTER,
   D_MEND_WRONG,
   D_MEND_DONE,
   D_ENC_OFFER_BOWL,

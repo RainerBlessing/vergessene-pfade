@@ -272,6 +272,7 @@ Der Log wird im Core als Ereignispuffer geführt; `main.c` schreibt die Datei.
 **Status**: Complete (2026-09-18).
 - Build ohne Warnungen (vollständig neu übersetzt), `ctest` 2/2, `--verify --log` und `--smoke` mit Exit 0, Screenshots angesehen.
 - Probeweise eingebaute Fehler (Pfahl ohne Daigo, Nachlaufen abgeschaltet) werden erkannt.
+- **Nachtrag aus dem Review von 3C–3E (2026-09-18):** Behoben: fehlende Tile-Definition für den Grenzpfahl (die Änderung war in einem abgebrochenen Skriptlauf verloren gegangen); `reset_stone` versetzte versehentlich Daigo; Daigo blockierte den Rückweg (Folgende tauschen jetzt den Platz) und blieb nach dem letzten Pfahl mitten im Wald stehen; Sumi bot nach einem Ausgang noch den veralteten Auftrag an (neues `OUT_ANY`, `OUT_NONE` heißt jetzt „noch nichts entschieden“); Oriha sprach nach der Übergabe weiter vom Trocknen; die Meldung der letzten Kampfrunde blieb in der Fußzeile stehen; fehlendes `break` bei der Niederlage. Neue Tests: Pfahl-Orte, Reihenfolge der Scherbenstücke, Erreichbarkeit je Overlay-Bedingung, Platztausch, leere Fußzeile.
 - Umsetzung:
   - Daigos Angebot kommt erst mit ruhigem Kami, bekannten Fährten und gelesenem Auftragsbuch; das Regelfeld `opens` startet das Nachlaufen.
   - Er übernimmt jeweils das zuletzt verlassene Feld der Spielfigur und blockiert nie den Weg. Verlässt man den Wald, kehrt er ans Lager zurück.
