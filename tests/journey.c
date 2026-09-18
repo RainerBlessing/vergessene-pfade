@@ -81,6 +81,8 @@ static void see(Game *g, JourneyObserver o, void *c, const char *label) {
 static bool use_item(Game *g, ItemId item) {
   ItemId owned[ITEM_COUNT];
   int count = game_owned_items(g, owned);
+  if (count == 0)
+    return false;
   game_action(g, ACT_INVENTORY);
   for (int i = 0; i < count && owned[g->selection] != item; i++)
     game_action(g, ACT_DOWN);
@@ -159,7 +161,7 @@ bool journey(Game *g, JourneyObserver observer, void *context) {
   game_action(g, ACT_UP); /* into the grove: the kami rises */
   REQUIRE(g->state == GAME_ENCOUNTER && g->mood == MOOD_ANGRY);
   see(g, observer, context, "07-encounter");
-  int options[ENC_COUNT];
+  int options[ENCOUNTER_OPTION_LIMIT];
   int count = game_encounter_options(g, options);
   REQUIRE(count == 3); /* waiting, offering the shards, retreating */
   for (int i = 0; i < count; i++)

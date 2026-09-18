@@ -88,6 +88,9 @@ static void talk(Game *g, int npc) {
     const DialogueRule *r = &dialogue_rules[i];
     if ((int)r->npc != npc || !matches(g, r->needs, r->forbids))
       continue;
+    /* Do not hand over something the player still carries: the next rule speaks. */
+    if (r->gives != ITEM_NONE && g->player.inventory.quantities[r->gives])
+      continue;
     if (r->gives != ITEM_NONE)
       inventory_add(&g->player.inventory, r->gives, 1);
     learn(g, r->grants, r->note);
@@ -232,7 +235,8 @@ int game_encounter_options(const Game *g, int *out) {
   return n;
 }
 static void show(Game *g, DialogueId line) {
-  snprintf(g->message, sizeof g->message, "%s", dialogues[line].pages[0]);
+  const char *text = line > D_NONE ? dialogues[line].pages[0] : NULL;
+  snprintf(g->message, sizeof g->message, "%s", text ? text : "");
 }
 /* The spirit rises from the grove; its mood is remembered between encounters. */
 static void begin_encounter(Game *g) {
@@ -243,14 +247,16 @@ static void begin_encounter(Game *g) {
   emit(g, EV_ENCOUNTER, g->mood, 0);
 }
 static void encounter_action(Game *g, Action a) {
-  int options[ENC_COUNT];
+  int options[ENCOUNTER_OPTION_LIMIT];
   int count = game_encounter_options(g, options);
   if (a == ACT_UP)
     g->selection = (g->selection + count - 1) % count;
   if (a == ACT_DOWN)
     g->selection = (g->selection + 1) % count;
-  if (a == ACT_CANCEL)
-    g->selection = count - 1; /* Escape highlights retreating, it does not do it */
+  if (a == ACT_CANCEL) /* Escape highlights retreating, it does not do it */
+    for (int i = 0; i < count; i++)
+      if (encounter_options[options[i]].action == ENC_RETREAT)
+        g->selection = i;
   if (a != ACT_CONFIRM)
     return;
   if (g->selection >= count)

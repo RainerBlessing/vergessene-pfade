@@ -152,7 +152,7 @@ static void inventory_panel(Renderer *r, const Game *g) {
   text(r, 12, 157, 1, "ENTER ANSEHEN  /  ESC ZURUECK");
 }
 static void encounter_panel(Renderer *r, const Game *g) {
-  int options[ENC_COUNT];
+  int options[ENCOUNTER_OPTION_LIMIT];
   int count = game_encounter_options(g, options);
   panel(r, 4, 21, 312, 175);
   text(r, 16, 31, 1, "AM RAND DES HAINS");

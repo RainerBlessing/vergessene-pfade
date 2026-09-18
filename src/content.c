@@ -54,6 +54,9 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
     [D_MIO_HERB] = {1,
                     {"Der Fuchs ist verletzt? Oh nein.\nHier, mein Heilkraut. "
                      "Leg es ihm\nauf die Wunde. Bitte!"}},
+    [D_MIO_HERB_MORE] = {1,
+                         {"Du hast es aufgebraucht? Hier,\nmein letztes. Der Fuchs "
+                          "braucht\nes noetiger als wir."}},
     [D_MIO_HERB_AGAIN] = {1,
                           {"Hast du ihm schon geholfen? Nimm\ndas Kraut aus der "
                            "Tasche, wenn\ndu bei ihm bist."}},
@@ -172,8 +175,11 @@ const DialogueRule dialogue_rules[] = {
     {NPC_ORIHA, OBS(OBS_BOWL_SHARDS), 0, 0, D_ORIHA_SHARDS, NOTE_NONE, ITEM_NONE},
     {NPC_ORIHA, 0, 0, 0, D_ORIHA, NOTE_NONE, ITEM_NONE},
     {NPC_MIO, OBS(OBS_FOX_TENDED), 0, 0, D_MIO_THANKS, NOTE_NONE, ITEM_NONE},
+    /* Mio keeps helping while the fox is hurt: the herb can be used up elsewhere. */
+    {NPC_MIO, OBS(OBS_FOX_WOUNDED), OBS(OBS_MIO_HERB), OBS(OBS_MIO_HERB), D_MIO_HERB,
+     N_HERB, ITEM_HERB},
+    {NPC_MIO, OBS(OBS_FOX_WOUNDED), 0, 0, D_MIO_HERB_MORE, NOTE_NONE, ITEM_HERB},
     {NPC_MIO, OBS(OBS_MIO_HERB), 0, 0, D_MIO_HERB_AGAIN, NOTE_NONE, ITEM_NONE},
-    {NPC_MIO, OBS(OBS_FOX_WOUNDED), 0, OBS(OBS_MIO_HERB), D_MIO_HERB, N_HERB, ITEM_HERB},
     {NPC_MIO, 0, 0, 0, D_MIO, NOTE_NONE, ITEM_NONE},
     {NPC_KENTA, OBS(OBS_KENTA_STARE), 0, 0, D_KENTA_AGAIN, NOTE_NONE, ITEM_NONE},
     {NPC_KENTA, 0, 0, OBS(OBS_KENTA_STARE), D_KENTA, N_KENTA, ITEM_NONE},
@@ -347,6 +353,9 @@ const EncounterOption encounter_options[] = {
 };
 const int encounter_option_count =
     (int)(sizeof encounter_options / sizeof encounter_options[0]);
+_Static_assert(sizeof encounter_options / sizeof encounter_options[0] <=
+                   ENCOUNTER_OPTION_LIMIT,
+               "raise ENCOUNTER_OPTION_LIMIT");
 const EncounterOffer encounter_offers[] = {
     {ITEM_SHARDS, 0, OBS(OBS_KAMI_ANGERED), MOOD_ANGRY, D_ENC_OFFER_SHARDS,
      N_KAMI_SHARDS},

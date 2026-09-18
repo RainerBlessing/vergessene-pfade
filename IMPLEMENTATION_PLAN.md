@@ -187,6 +187,7 @@ Der Log wird im Core als Ereignispuffer geführt; `main.c` schreibt die Datei.
 **Status**: Complete (2026-09-18).
 - Build ohne Warnungen, `ctest` 2/2; `--verify --log` mit Exit 0, Screenshots angesehen.
 - Probeweise eingebaute Fehler (Gemüt ändert sich nicht, Darbringen ohne Gegenstand wählbar) werden erkannt.
+- **Nachtrag aus dem Review von 2B/3A (2026-09-18):** Die Meldung „Build ohne Warnungen“ für 2B und 3A war falsch. Das neue `guarded`-Feld erzeugte 35 `-Wmissing-field-initializers` in `world.c`, die meine gefilterte Ausgabe verdeckt hatte. Behoben durch benannte Initialisierer; der Build ist jetzt nachweislich warnungsfrei. Weitere Korrekturen: Escape sucht „Zurückweichen“ in der Liste (statt den letzten Eintrag zu nehmen), Puffergröße über `ENCOUNTER_OPTION_LIMIT` mit `_Static_assert`, `show()` ohne NULL-Text, Mio gibt Ersatz-Heilkraut (sonst Softlock, sobald der Kampf Schaden macht), drei Testfehler.
 - Abweichung vom Plan: **Angreifen wird noch nicht angeboten.** Ohne Kampf wäre es nur ein Platzhaltertext. Die Aktion steht bereits in der Gemüts- und Texttabelle; Stage 3B ergänzt eine Zeile in `encounter_options`.
 - Umsetzung:
   - Der Hainrand löst jetzt die Begegnung aus. Das Zurückweichen (nicht mehr ein blinder Windstoß) schiebt die Figur auf sicheren Boden; das Ereignis `knockback` entfällt.

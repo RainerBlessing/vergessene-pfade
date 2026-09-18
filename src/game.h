@@ -76,7 +76,8 @@ bool game_knows(const Game *g, ObsId o);
 /* Items the player owns, in display order; returns the count. */
 int game_owned_items(const Game *g, ItemId *out);
 int game_take_events(Game *g, GameEvent *out, int max);
-/* Indices into encounter_options offered now, in display order; returns the count. */
+/* Indices into encounter_options offered now, in display order; returns the count.
+ * `out` must hold ENCOUNTER_OPTION_LIMIT entries. */
 int game_encounter_options(const Game *g, int *out);
 /* What "offering" would hand over right now, or ITEM_NONE. */
 ItemId game_encounter_offer(const Game *g);

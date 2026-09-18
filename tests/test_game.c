@@ -311,6 +311,7 @@ static int test_content(const char *assets) {
       bool found = false;
       const Map *m = &g.maps[p->map];
       const Obs states[2] = {0, ~(Obs)0};
+      const Obs saved = g.obs;
       for (int k = 0; k < 2; k++) {
         g.obs = states[k];
         for (int y = 0; y < m->height; y++)
@@ -319,6 +320,7 @@ static int test_content(const char *assets) {
                 point_reachable(&g, p->map, x, y))
               found = true;
       }
+      g.obs = saved;
       CHECK(found);
     }
   }
@@ -357,7 +359,18 @@ static int test_fox_and_tracks(const char *assets) {
   game_action(&g, ACT_CONFIRM);
   CHECK(g.dialogue == D_MIO_HERB_AGAIN && g.player.inventory.quantities[ITEM_HERB] == 1);
   game_action(&g, ACT_CANCEL);
+  /* Using the herb elsewhere must not lock the fox out: Mio hands over another. */
+  g.player.hp = 10;
+  game_action(&g, ACT_INVENTORY);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.player.inventory.quantities[ITEM_HERB] == 0 && g.player.hp > 10);
+  game_action(&g, ACT_CANCEL);
+  stand(&g, MAP_VILLAGE, 11, 11, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_MIO_HERB_MORE && g.player.inventory.quantities[ITEM_HERB] == 1);
+  game_action(&g, ACT_CANCEL);
   /* The herb only tends the fox while facing the den. */
+  g.player.hp = g.player.max_hp;
   stand(&g, MAP_FOREST, 6, 21, 0, 1);
   game_action(&g, ACT_INVENTORY);
   game_action(&g, ACT_CONFIRM);
@@ -394,7 +407,7 @@ static int test_fox_and_tracks(const char *assets) {
 }
 
 static int options_contain(const Game *g, EncounterAction action) {
-  int options[ENC_COUNT];
+  int options[ENCOUNTER_OPTION_LIMIT];
   int count = game_encounter_options(g, options);
   for (int i = 0; i < count; i++)
     if (encounter_options[options[i]].action == action)
@@ -448,8 +461,7 @@ static int test_encounter(const char *assets) {
   /* Escape only highlights retreating. */
   g.selection = 0;
   game_action(&g, ACT_CANCEL);
-  CHECK(g.state == GAME_ENCOUNTER &&
-        encounter_options[g.selection].action == ENC_RETREAT);
+  CHECK(g.state == GAME_ENCOUNTER && options_contain(&g, ENC_RETREAT) - 1 == g.selection);
   /* Every guarded tile bordering open ground releases onto safe ground. */
   for (int y = 1; y < g.maps[MAP_FOREST].height - 1; y++)
     for (int x = 1; x < g.maps[MAP_FOREST].width - 1; x++) {

@@ -56,6 +56,7 @@ typedef enum {
   D_ORIHA_OWNER,
   D_MIO,
   D_MIO_HERB,
+  D_MIO_HERB_MORE,
   D_MIO_HERB_AGAIN,
   D_MIO_THANKS,
   D_KENTA,
@@ -173,6 +174,7 @@ typedef struct {
   const char *label;
   Obs needs;
 } EncounterOption;
+#define ENCOUNTER_OPTION_LIMIT 8 /* buffer size for game_encounter_options */
 extern const EncounterOption encounter_options[];
 extern const int encounter_option_count;
 typedef struct {
