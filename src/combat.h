@@ -3,9 +3,9 @@
 #include "inventory.h"
 typedef struct {
   const char *name;
-  int hp, attack, defense, map, x, y;
+  int hp, attack, defense;
 } EnemyDef;
-extern const EnemyDef beast;
+extern const EnemyDef kami;
 typedef struct {
   int hp;
   bool won, lost;
@@ -13,5 +13,7 @@ typedef struct {
 } Combat;
 int combat_damage(int attack, int defense, int modifier);
 void combat_begin(Combat *c);
-void combat_turn(Combat *c, Player *p, bool herb, char *message, int size);
+/* One exchange. `rage` is added to the spirit's attack (an angry kami hits
+ * harder). A failed herb costs no turn. */
+void combat_turn(Combat *c, Player *p, int rage, bool herb, char *message, int size);
 #endif

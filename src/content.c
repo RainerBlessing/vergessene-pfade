@@ -5,6 +5,7 @@ const char *const obs_names[OBS_COUNT] = {
     "BOWL_SHARDS",   "BOWL_MARK",          "HOUSE_MARK",      "BOWL_OWNER",
     "LEDGER_DEBT",   "FOX_WOUNDED",        "MIO_HERB",        "FOX_TENDED",
     "TRACKS",        "KAMI_SEEN",          "KAMI_ANGERED"};
+const char *const outcome_names[OUTCOME_COUNT] = {"NONE", "FIGHT", "BOUNDARY", "MEND"};
 
 const Npc npcs[NPC_COUNT] = {{MAP_VILLAGE, 5, 4, 0, "SUMI", "Sumi / Dorfaelteste"},
                              {MAP_VILLAGE, 24, 4, 1, "ORIHA", "Oriha / Lackmeisterin"},
@@ -132,6 +133,17 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
     [D_ENC_OFFER_SHARDS] = {1,
                             {"Du haeltst die Scherben hin. Der\nKami sieht sie an. "
                              "Etwas knackt\nwie brechendes Holz."}},
+    [D_ENC_FIGHT] = {1, {"Du gehst auf den Kami los."}},
+    [D_ENC_VICTORY] = {1,
+                       {"Der Kami zerfaellt zu Laub und\nAsche. Im Hain wird es "
+                        "still.\nSehr still."}},
+    [D_ENC_DEFEAT] = {1,
+                      {"Du kommst am Suedtor wieder zu\ndir. Jemand hat dich "
+                       "gefunden\nund heimgebracht."}},
+    [D_SUMI_FOUGHT] =
+        {2,
+         {"Du hast ihn vertrieben? Dann\nkoennen die Leute wieder\narbeiten. Gut.",
+          "Komisch. Ich dachte, ich waere\nerleichtert."}},
     [D_I_BOWL_MARK] = {1, {"Auf dem Boden einer Scherbe ist\nein Zeichen eingebrannt."}},
     [D_I_BOWL_MARK_MATCH] = {1,
                              {"Auf dem Boden einer Scherbe ist\nein Zeichen "
@@ -161,30 +173,39 @@ const char *const notes[NOTE_COUNT] = {
     [N_TRACKS] = "Tierspuren meiden das Lager und\nlaufen im Bogen um den Hain.",
     [N_KAMI] = "Etwas mit einem Geweih aus Aesten\nbewacht den Rand des Hains.",
     [N_KAMI_SHARDS] = "Als ich die Scherben zeigte, wurde\nder Kami zorniger.",
+    [N_FOUGHT] = "Der Kami ist zerfallen. Im Hain\nist es sehr still.",
 };
 
 #define MARKS (OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK))
 const DialogueRule dialogue_rules[] = {
+    /* Reactions to an outcome come first. */
+    {NPC_SUMI, 0, 0, 0, D_SUMI_FOUGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT},
     {NPC_SUMI, MARKS, OBS(OBS_BOWL_OWNER), OBS(OBS_BOWL_OWNER), D_SUMI_OWNER, N_OWNER,
-     ITEM_NONE},
-    {NPC_SUMI, OBS(OBS_BOWL_OWNER), 0, 0, D_SUMI_OWNER_KNOWN, NOTE_NONE, ITEM_NONE},
-    {NPC_SUMI, OBS(OBS_ASKED_BY_SUMI), 0, 0, D_SUMI_WAITING, NOTE_NONE, ITEM_NONE},
-    {NPC_SUMI, 0, 0, OBS(OBS_ASKED_BY_SUMI), D_SUMI_TASK, N_ASKED, ITEM_NONE},
+     ITEM_NONE, OUT_NONE},
+    {NPC_SUMI, OBS(OBS_BOWL_OWNER), 0, 0, D_SUMI_OWNER_KNOWN, NOTE_NONE, ITEM_NONE,
+     OUT_NONE},
+    {NPC_SUMI, OBS(OBS_ASKED_BY_SUMI), 0, 0, D_SUMI_WAITING, NOTE_NONE, ITEM_NONE,
+     OUT_NONE},
+    {NPC_SUMI, 0, 0, OBS(OBS_ASKED_BY_SUMI), D_SUMI_TASK, N_ASKED, ITEM_NONE, OUT_NONE},
     {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | OBS(OBS_BOWL_OWNER), 0, 0, D_ORIHA_OWNER,
-     NOTE_NONE, ITEM_NONE},
-    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS), 0, 0, D_ORIHA_SHARDS, NOTE_NONE, ITEM_NONE},
-    {NPC_ORIHA, 0, 0, 0, D_ORIHA, NOTE_NONE, ITEM_NONE},
-    {NPC_MIO, OBS(OBS_FOX_TENDED), 0, 0, D_MIO_THANKS, NOTE_NONE, ITEM_NONE},
+     NOTE_NONE, ITEM_NONE, OUT_NONE},
+    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS), 0, 0, D_ORIHA_SHARDS, NOTE_NONE, ITEM_NONE,
+     OUT_NONE},
+    {NPC_ORIHA, 0, 0, 0, D_ORIHA, NOTE_NONE, ITEM_NONE, OUT_NONE},
+    {NPC_MIO, OBS(OBS_FOX_TENDED), 0, 0, D_MIO_THANKS, NOTE_NONE, ITEM_NONE, OUT_NONE},
     /* Mio keeps helping while the fox is hurt: the herb can be used up elsewhere. */
     {NPC_MIO, OBS(OBS_FOX_WOUNDED), OBS(OBS_MIO_HERB), OBS(OBS_MIO_HERB), D_MIO_HERB,
-     N_HERB, ITEM_HERB},
-    {NPC_MIO, OBS(OBS_FOX_WOUNDED), 0, 0, D_MIO_HERB_MORE, NOTE_NONE, ITEM_HERB},
-    {NPC_MIO, OBS(OBS_MIO_HERB), 0, 0, D_MIO_HERB_AGAIN, NOTE_NONE, ITEM_NONE},
-    {NPC_MIO, 0, 0, 0, D_MIO, NOTE_NONE, ITEM_NONE},
-    {NPC_KENTA, OBS(OBS_KENTA_STARE), 0, 0, D_KENTA_AGAIN, NOTE_NONE, ITEM_NONE},
-    {NPC_KENTA, 0, 0, OBS(OBS_KENTA_STARE), D_KENTA, N_KENTA, ITEM_NONE},
-    {NPC_DAIGO, OBS(OBS_LEDGER_DEBT), 0, 0, D_DAIGO_LEDGER, NOTE_NONE, ITEM_NONE},
-    {NPC_DAIGO, 0, 0, 0, D_DAIGO, NOTE_NONE, ITEM_NONE},
+     N_HERB, ITEM_HERB, OUT_NONE},
+    {NPC_MIO, OBS(OBS_FOX_WOUNDED), 0, 0, D_MIO_HERB_MORE, NOTE_NONE, ITEM_HERB,
+     OUT_NONE},
+    {NPC_MIO, OBS(OBS_MIO_HERB), 0, 0, D_MIO_HERB_AGAIN, NOTE_NONE, ITEM_NONE, OUT_NONE},
+    {NPC_MIO, 0, 0, 0, D_MIO, NOTE_NONE, ITEM_NONE, OUT_NONE},
+    {NPC_KENTA, OBS(OBS_KENTA_STARE), 0, 0, D_KENTA_AGAIN, NOTE_NONE, ITEM_NONE,
+     OUT_NONE},
+    {NPC_KENTA, 0, 0, OBS(OBS_KENTA_STARE), D_KENTA, N_KENTA, ITEM_NONE, OUT_NONE},
+    {NPC_DAIGO, OBS(OBS_LEDGER_DEBT), 0, 0, D_DAIGO_LEDGER, NOTE_NONE, ITEM_NONE,
+     OUT_NONE},
+    {NPC_DAIGO, 0, 0, 0, D_DAIGO, NOTE_NONE, ITEM_NONE, OUT_NONE},
 };
 const int dialogue_rule_count = (int)(sizeof dialogue_rules / sizeof dialogue_rules[0]);
 
@@ -330,26 +351,32 @@ const TileOverride tile_overrides[] = {
 const int tile_override_count = (int)(sizeof tile_overrides / sizeof tile_overrides[0]);
 
 const char *const mood_names[MOOD_COUNT] = {"ZORNIG", "MISSTRAUISCH", "RUHIG"};
-const char *const encounter_action_names[ENC_COUNT] = {"WAIT", "OFFER", "ATTACK",
-                                                       "RETREAT"};
+const char *const encounter_action_names[ENC_COUNT] = {[ENC_WAIT] = "WAIT",
+                                                       [ENC_OFFER] = "OFFER",
+                                                       [ENC_ATTACK] = "ATTACK",
+                                                       [ENC_HEAL] = "HEAL",
+                                                       [ENC_RETREAT] = "RETREAT"};
 const Mood encounter_transitions[ENC_COUNT][MOOD_COUNT] = {
     /* from:        ANGRY       WARY        CALM */
     [ENC_WAIT] = {MOOD_WARY, MOOD_WARY, MOOD_CALM},
     [ENC_OFFER] = {MOOD_ANGRY, MOOD_WARY, MOOD_CALM}, /* offers override this */
     [ENC_ATTACK] = {MOOD_ANGRY, MOOD_ANGRY, MOOD_ANGRY},
+    [ENC_HEAL] = {MOOD_ANGRY, MOOD_WARY, MOOD_CALM},
     [ENC_RETREAT] = {MOOD_ANGRY, MOOD_WARY, MOOD_CALM},
 };
 const DialogueId encounter_lines[ENC_COUNT][MOOD_COUNT] = {
     [ENC_WAIT] = {D_ENC_WAIT_ANGRY, D_ENC_WAIT_WARY, D_ENC_WAIT_CALM},
     [ENC_OFFER] = {D_NONE, D_NONE, D_NONE},
     [ENC_ATTACK] = {D_ENC_ATTACK, D_ENC_ATTACK, D_ENC_ATTACK},
+    [ENC_HEAL] = {D_NONE, D_NONE, D_NONE},
     [ENC_RETREAT] = {D_ENC_RETREAT, D_ENC_RETREAT, D_ENC_RETREAT},
 };
-/* Stage 3B adds the attack option here. */
 const EncounterOption encounter_options[] = {
-    {ENC_WAIT, "STEHEN BLEIBEN", 0},
-    {ENC_OFFER, "DARBRINGEN", 0},
-    {ENC_RETREAT, "ZURUECKWEICHEN", 0},
+    {ENC_WAIT, "STEHEN BLEIBEN", 0, OPT_PEACE},
+    {ENC_OFFER, "DARBRINGEN", 0, OPT_PEACE},
+    {ENC_ATTACK, "ANGREIFEN", 0, OPT_BOTH},
+    {ENC_HEAL, "HEILKRAUT NEHMEN", 0, OPT_FIGHT},
+    {ENC_RETREAT, "ZURUECKWEICHEN", 0, OPT_BOTH},
 };
 const int encounter_option_count =
     (int)(sizeof encounter_options / sizeof encounter_options[0]);

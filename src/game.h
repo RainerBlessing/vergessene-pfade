@@ -1,5 +1,6 @@
 #ifndef GAME_H
 #define GAME_H
+#include "combat.h"
 #include "content.h"
 #include "inventory.h"
 #include "world.h"
@@ -25,14 +26,15 @@ typedef enum {
 
 /* Session-log events; the frontend drains them with game_take_events. */
 typedef enum {
-  EV_OBSERVE,         /* a = ObsId */
-  EV_EXAMINE,         /* a = tile symbol or 0 for items, b = DialogueId */
-  EV_EXAMINE_NOTHING, /* a = tile symbol, b = suppressed repeats of the previous one */
-  EV_NPC_TALK,        /* a = NpcId, b = DialogueId */
-  EV_NOTEBOOK_OPEN,   /* a = number of entries */
-  EV_ITEM_USE,        /* a = ItemId, b = DialogueId, or D_NONE when nothing happened */
-  EV_ENCOUNTER,       /* a = Mood at the start */
-  EV_ENCOUNTER_ACTION /* a = EncounterAction, b = Mood afterwards */
+  EV_OBSERVE,          /* a = ObsId */
+  EV_EXAMINE,          /* a = tile symbol or 0 for items, b = DialogueId */
+  EV_EXAMINE_NOTHING,  /* a = tile symbol, b = suppressed repeats of the previous one */
+  EV_NPC_TALK,         /* a = NpcId, b = DialogueId */
+  EV_NOTEBOOK_OPEN,    /* a = number of entries */
+  EV_ITEM_USE,         /* a = ItemId, b = DialogueId, or D_NONE when nothing happened */
+  EV_ENCOUNTER,        /* a = Mood at the start */
+  EV_ENCOUNTER_ACTION, /* a = EncounterAction, b = Mood afterwards */
+  EV_OUTCOME           /* a = Outcome */
 } EventType;
 typedef struct {
   EventType type;
@@ -54,10 +56,14 @@ typedef struct {
    * (0 for items). */
   int npc, page, selection, dialogue, scroll;
   char examined;
+  const char *scene; /* panel title while npc == SPEAKER_SCENE */
   Obs obs;
   NoteId notes[NOTE_LIMIT];
   int note_count;
   Mood mood;
+  Combat combat;
+  bool fighting;
+  Outcome outcome;
   Player player;
   char message[128];
   bool debug, collision;

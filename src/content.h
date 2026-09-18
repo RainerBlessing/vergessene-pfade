@@ -27,6 +27,8 @@ typedef enum {
   OBS_KAMI_ANGERED,
   OBS_COUNT
 } ObsId;
+typedef enum { OUT_NONE, OUT_FIGHT, OUT_BOUNDARY, OUT_MEND, OUTCOME_COUNT } Outcome;
+extern const char *const outcome_names[OUTCOME_COUNT];
 typedef uint32_t Obs;
 #define OBS(o) ((Obs)1 << (o))
 extern const char *const obs_names[OBS_COUNT];
@@ -87,6 +89,10 @@ typedef enum {
   D_ENC_ATTACK,
   D_ENC_RETREAT,
   D_ENC_OFFER_SHARDS,
+  D_ENC_FIGHT,
+  D_ENC_VICTORY,
+  D_ENC_DEFEAT,
+  D_SUMI_FOUGHT,
   D_I_BOWL_MARK,
   D_I_BOWL_MARK_MATCH,
   DIALOGUE_COUNT
@@ -121,6 +127,7 @@ typedef enum {
   N_TRACKS,
   N_KAMI,
   N_KAMI_SHARDS,
+  N_FOUGHT,
   NOTE_COUNT
 } NoteId;
 extern const char *const notes[NOTE_COUNT];
@@ -132,6 +139,7 @@ typedef struct {
   DialogueId dialogue;
   NoteId note;
   ItemId gives;
+  Outcome outcome; /* OUT_NONE matches any outcome */
 } DialogueRule;
 extern const DialogueRule dialogue_rules[];
 extern const int dialogue_rule_count;
@@ -164,7 +172,16 @@ extern const int tile_override_count;
 /* Encounter: actions change the spirit's mood, not only its health. */
 typedef enum { MOOD_ANGRY, MOOD_WARY, MOOD_CALM, MOOD_COUNT } Mood;
 extern const char *const mood_names[MOOD_COUNT];
-typedef enum { ENC_WAIT, ENC_OFFER, ENC_ATTACK, ENC_RETREAT, ENC_COUNT } EncounterAction;
+typedef enum {
+  ENC_WAIT,
+  ENC_OFFER,
+  ENC_ATTACK,
+  ENC_HEAL,
+  ENC_RETREAT,
+  ENC_COUNT
+} EncounterAction;
+/* When an option is offered: before the fight, during it, or both. */
+typedef enum { OPT_PEACE, OPT_FIGHT, OPT_BOTH } OptionWhen;
 extern const char *const encounter_action_names[ENC_COUNT];
 /* Mood after an action, by action and current mood. */
 extern const Mood encounter_transitions[ENC_COUNT][MOOD_COUNT];
@@ -173,6 +190,7 @@ typedef struct {
   EncounterAction action;
   const char *label;
   Obs needs;
+  OptionWhen when;
 } EncounterOption;
 #define ENCOUNTER_OPTION_LIMIT 8 /* buffer size for game_encounter_options */
 extern const EncounterOption encounter_options[];

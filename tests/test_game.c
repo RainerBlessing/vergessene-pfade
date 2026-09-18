@@ -336,6 +336,13 @@ static int test_content(const char *assets) {
   }
   for (int o = 0; o < OBS_COUNT; o++)
     CHECK(obs_names[o] != NULL);
+  /* Log names must cover every action, mood and outcome. */
+  for (int i = 0; i < ENC_COUNT; i++)
+    CHECK(encounter_action_names[i] != NULL);
+  for (int i = 0; i < MOOD_COUNT; i++)
+    CHECK(mood_names[i] != NULL);
+  for (int i = 0; i < OUTCOME_COUNT; i++)
+    CHECK(outcome_names[i] != NULL);
   return 0;
 }
 
@@ -481,6 +488,79 @@ static int test_encounter(const char *assets) {
   return 0;
 }
 
+/* Choose the encounter option with this action; returns false if it is absent. */
+static bool choose(Game *g, EncounterAction action) {
+  int slot = options_contain(g, action);
+  if (!slot)
+    return false;
+  g->selection = slot - 1;
+  game_action(g, ACT_CONFIRM);
+  return true;
+}
+static int test_fight(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  stand(&g, MAP_FOREST, 24, 12, 0, -1);
+  game_action(&g, ACT_UP);
+  CHECK(g.state == GAME_ENCOUNTER && !g.fighting && g.outcome == OUT_NONE);
+  CHECK(options_contain(&g, ENC_ATTACK) && !options_contain(&g, ENC_HEAL));
+  /* Attacking starts the fight and resolves a round at once. */
+  CHECK(choose(&g, ENC_ATTACK));
+  CHECK(g.fighting && g.state == GAME_ENCOUNTER && g.mood == MOOD_ANGRY);
+  CHECK(g.combat.hp < kami.hp && g.player.hp < g.player.max_hp);
+  /* During the fight: waiting and offering are gone, the herb appears with one. */
+  CHECK(!options_contain(&g, ENC_WAIT) && !options_contain(&g, ENC_OFFER));
+  CHECK(!options_contain(&g, ENC_HEAL));
+  CHECK(inventory_add(&g.player.inventory, ITEM_HERB, 1));
+  CHECK(options_contain(&g, ENC_HEAL) && options_contain(&g, ENC_RETREAT));
+  g.player.hp = 8; /* badly hurt: the herb is worth a turn here */
+  CHECK(choose(&g, ENC_HEAL));
+  CHECK(g.player.inventory.quantities[ITEM_HERB] == 0 && g.player.hp > 8);
+  CHECK(strstr(g.message, "Kraut") != NULL);
+  /* Stepping back keeps the spirit's wounds. */
+  int wounded = g.combat.hp;
+  CHECK(choose(&g, ENC_RETREAT));
+  CHECK(g.state == GAME_EXPLORATION && !g.fighting && g.outcome == OUT_NONE);
+  stand(&g, MAP_FOREST, 24, 12, 0, -1);
+  game_action(&g, ACT_UP);
+  CHECK(choose(&g, ENC_ATTACK));
+  CHECK(g.combat.hp < wounded);
+  /* Fighting on wins, ends the encounter and settles the grove. */
+  for (int round = 0; round < 20 && g.fighting; round++)
+    CHECK(choose(&g, ENC_ATTACK));
+  CHECK(g.combat.won && g.outcome == OUT_FIGHT && g.state == GAME_DIALOGUE);
+  CHECK(g.dialogue == D_ENC_VICTORY && g.npc == SPEAKER_SCENE);
+  CHECK(g.notes[g.note_count - 1] == N_FOUGHT);
+  CHECK(count_events(&g, EV_OUTCOME) == 1);
+  game_action(&g, ACT_CANCEL);
+  CHECK(g.state == GAME_EXPLORATION);
+  game_action(&g, ACT_UP);
+  CHECK(g.y == 11 && g.state == GAME_EXPLORATION); /* the grove is open now */
+  /* Sumi reacts to the outcome. */
+  stand(&g, MAP_VILLAGE, 5, 5, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_SUMI_FOUGHT);
+  return 0;
+}
+static int test_defeat(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  stand(&g, MAP_FOREST, 24, 12, 0, -1);
+  game_action(&g, ACT_UP);
+  g.player.hp = 3; /* one blow from falling */
+  CHECK(choose(&g, ENC_ATTACK));
+  CHECK(!g.fighting && g.state == GAME_DIALOGUE && g.outcome == OUT_NONE);
+  CHECK(g.dialogue == D_ENC_DEFEAT);
+  CHECK(g.map == MAP_VILLAGE && g.x == 16 && g.y == 1);
+  CHECK(g.player.hp == g.player.max_hp && g.combat.hp == kami.hp);
+  game_action(&g, ACT_CANCEL);
+  /* The grove is still guarded: losing decides nothing. */
+  stand(&g, MAP_FOREST, 24, 12, 0, -1);
+  game_action(&g, ACT_UP);
+  CHECK(g.state == GAME_ENCOUNTER && g.y == 12);
+  return 0;
+}
+
 static int test_combat(void) {
   for (int a = 0; a < 12; a++)
     for (int d = 0; d < 12; d++)
@@ -493,11 +573,11 @@ static int test_combat(void) {
   char message[128];
   combat_begin(&c);
   for (int turn = 0; turn < 20 && !c.won && !c.lost; turn++)
-    combat_turn(&c, &p, false, message, sizeof message);
+    combat_turn(&c, &p, 0, false, message, sizeof message);
   CHECK(c.won && !c.lost && p.hp > 0);
   combat_begin(&c);
   p.hp = 1;
-  combat_turn(&c, &p, false, message, sizeof message);
+  combat_turn(&c, &p, 0, false, message, sizeof message);
   CHECK(c.lost && p.hp == 0);
   return 0;
 }
@@ -508,8 +588,8 @@ int main(int argc, char **argv) {
   if (test_world(argv[1]) || test_dialogue_rules(argv[1]) || test_examine(argv[1]) ||
       test_examine_nothing(argv[1]) || test_inventory_and_notebook(argv[1]) ||
       test_content(argv[1]) || test_fox_and_tracks(argv[1]) || test_encounter(argv[1]) ||
-      test_combat())
+      test_fight(argv[1]) || test_defeat(argv[1]) || test_combat())
     return 1;
-  puts("World, dialogue, examining, notebook, content, fox, encounter and combat pass.");
+  puts("World, dialogue, examining, notebook, content, fox, encounter, fight pass.");
   return 0;
 }

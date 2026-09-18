@@ -73,6 +73,9 @@ static void drain_events(Game *g, FILE *log, Uint64 ms) {
     case EV_ENCOUNTER:
       fprintf(log, "encounter\tmood=%s\n", mood_names[e->a]);
       break;
+    case EV_OUTCOME:
+      fprintf(log, "outcome\t%s\n", outcome_names[e->a]);
+      break;
     case EV_ENCOUNTER_ACTION:
       fprintf(log, "encounter_action\t%s mood=%s\n", encounter_action_names[e->a],
               mood_names[e->b]);
@@ -171,7 +174,10 @@ int main(int argc, char **argv) {
   }
   if (verify) {
     Capture c = {&r, log, true};
-    result = journey(&g, capture, &c) && c.ok ? 0 : 1;
+    /* Both journeys: the peaceful exploration and the fight outcome. */
+    bool ok = journey(&g, capture, &c) && game_init(&g, assets) &&
+              journey_fight(&g, capture, &c);
+    result = ok && c.ok ? 0 : 1;
     drain_events(&g, log, SDL_GetTicks());
     goto cleanup;
   }

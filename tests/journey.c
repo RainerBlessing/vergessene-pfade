@@ -91,7 +91,7 @@ static bool use_item(Game *g, ItemId item) {
   game_action(g, ACT_CONFIRM);
   return g->state == GAME_DIALOGUE;
 }
-bool journey(Game *g, JourneyObserver observer, void *context) {
+static bool explore(Game *g, JourneyObserver observer, void *context) {
   REQUIRE(g->map == MAP_FOREST && g->obs == 0 && g->note_count == 0);
   REQUIRE(g->state == GAME_DIALOGUE && g->npc == SPEAKER_SCENE);
   see(g, observer, context, "01-arrival");
@@ -163,7 +163,7 @@ bool journey(Game *g, JourneyObserver observer, void *context) {
   see(g, observer, context, "07-encounter");
   int options[ENCOUNTER_OPTION_LIMIT];
   int count = game_encounter_options(g, options);
-  REQUIRE(count == 3); /* waiting, offering the shards, retreating */
+  REQUIRE(count == 4); /* waiting, offering the shards, attacking, retreating */
   for (int i = 0; i < count; i++)
     if (encounter_options[options[i]].action == ENC_WAIT)
       g->selection = i;
@@ -203,6 +203,21 @@ bool journey(Game *g, JourneyObserver observer, void *context) {
   REQUIRE(g->dialogue == D_MIO_THANKS);
   close_dialogue(g);
 
+  return true;
+}
+static bool pick(Game *g, EncounterAction action) {
+  int options[ENCOUNTER_OPTION_LIMIT];
+  int count = game_encounter_options(g, options);
+  for (int i = 0; i < count; i++)
+    if (encounter_options[options[i]].action == action) {
+      g->selection = i;
+      game_action(g, ACT_CONFIRM);
+      return true;
+    }
+  return false;
+}
+bool journey(Game *g, JourneyObserver observer, void *context) {
+  REQUIRE(explore(g, observer, context));
   game_action(g, ACT_CANCEL);
   REQUIRE(g->state == GAME_NOTEBOOK && g->note_count == 19);
   see(g, observer, context, "10-notebook");
@@ -213,5 +228,39 @@ bool journey(Game *g, JourneyObserver observer, void *context) {
   game_action(g, ACT_DEBUG);
   see(g, observer, context, "11-debug");
   game_action(g, ACT_DEBUG);
+  return true;
+}
+
+/* Outcome "Bekämpfen": explore, then fight the kami to the end. */
+bool journey_fight(Game *g, JourneyObserver observer, void *context) {
+  REQUIRE(explore(g, observer, context));
+  REQUIRE(g->map == MAP_VILLAGE);
+  REQUIRE(walk(g, 16, 0) || g->map == MAP_FOREST);
+  REQUIRE(walk(g, 24, 12));
+  game_action(g, ACT_UP);
+  REQUIRE(g->state == GAME_ENCOUNTER);
+  for (int round = 0; round < 20 && g->outcome == OUT_NONE; round++) {
+    if (g->state == GAME_DIALOGUE)
+      close_dialogue(g);
+    if (g->state != GAME_ENCOUNTER) { /* beaten and sent home: walk back */
+      REQUIRE(walk(g, 16, 0) || g->map == MAP_FOREST);
+      REQUIRE(walk(g, 24, 12));
+      game_action(g, ACT_UP);
+    }
+    REQUIRE(pick(g, g->player.hp <= 8 && g->player.inventory.quantities[ITEM_HERB]
+                        ? ENC_HEAL
+                        : ENC_ATTACK));
+  }
+  REQUIRE(g->outcome == OUT_FIGHT && g->state == GAME_DIALOGUE);
+  see(g, observer, context, "12-fight-won");
+  close_dialogue(g);
+  game_action(g, ACT_UP);
+  REQUIRE(g->y == 11); /* the grove is open */
+  see(g, observer, context, "13-grove");
+  REQUIRE(walk(g, 24, 39) || g->map == MAP_VILLAGE);
+  REQUIRE(talk_to(g, NPC_SUMI));
+  REQUIRE(g->dialogue == D_SUMI_FOUGHT);
+  see(g, observer, context, "14-sumi-after");
+  close_dialogue(g);
   return true;
 }

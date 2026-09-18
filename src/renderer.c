@@ -121,7 +121,7 @@ static void world(Renderer *r, const Game *g) {
 static void dialogue_panel(Renderer *r, const Game *g) {
   const TileDef *tile = tile_def(g->examined);
   const char *title = g->npc >= 0               ? npcs[g->npc].name
-                      : g->npc == SPEAKER_SCENE ? "Unterwegs"
+                      : g->npc == SPEAKER_SCENE ? g->scene
                       : tile                    ? tile->name
                                                 : "In deiner Tasche";
   panel(r, 4, 105, 312, 91);
@@ -159,6 +159,15 @@ static void encounter_panel(Renderer *r, const Game *g) {
   color(r, 3);
   formatted(r, 16, 45, "DER KAMI WIRKT %s", mood_names[g->mood]);
   sprite(r, 17, 144, 56, 2);
+  if (g->fighting) {
+    color(r, 2);
+    formatted(r, 16, 58, "KAMI %02d/%02d", g->combat.hp, kami.hp);
+    formatted(r, 232, 58, "DU %02d/%02d", g->player.hp, g->player.max_hp);
+    box(r, 16, 70, 96, 3, 3);
+    box(r, 16, 70, 96 * g->combat.hp / kami.hp, 3, 4);
+    box(r, 208, 70, 96, 3, 3);
+    box(r, 208, 70, 96 * g->player.hp / g->player.max_hp, 3, 1);
+  }
   text(r, 12, 92, 2, g->message);
   for (int i = 0; i < count; i++) {
     if (g->selection == i)

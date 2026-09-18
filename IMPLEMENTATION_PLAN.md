@@ -204,7 +204,17 @@ Der Log wird im Core als Ereignispuffer geführt; `main.c` schreibt die Datei.
 **Tests**:
 - Unit: Sieg/Niederlage, Ausgang wird nur einmal gesetzt.
 - `journey_fight` grün; alle bisherigen Journeys grün.
-**Status**: Not Started
+**Status**: Complete (2026-09-18).
+- Build ohne Warnungen (`grep -c warning` = 0), `ctest` 2/2, `--verify --log` und `--smoke` mit Exit 0, Screenshots angesehen.
+- Probeweise eingebaute Fehler (Wunden des Kami vergessen, Hain bleibt nach dem Sieg bewacht) werden erkannt.
+- Umsetzung:
+  - „Angreifen“ ist jetzt in `encounter_options`; „Heilkraut nehmen“ erscheint nur im Kampf und nur mit Kraut. Die Optionen unterscheiden über `OptionWhen` zwischen Begegnung und Kampf.
+  - Der Kami trifft im Zustand ZORNIG härter (`rage`).
+  - Zurückweichen pausiert den Kampf: Die Wunden des Kami bleiben, eine Niederlage setzt beide zurück.
+  - Niederlage schickt ins Dorf und entscheidet nichts; der Hain bleibt bewacht.
+  - Sieg setzt `OUT_FIGHT`, öffnet den Hain (`guarded` gilt nur ohne Ausgang) und ändert Sumis Dialog über das neue Feld `outcome` in der Regeltabelle.
+  - Sieg und Niederlage erscheinen im Textfenster (mehrzeilig), nicht in der einzeiligen Fußzeile.
+  - `journey_fight` ist ein eigener Journey-Test; `--verify` spielt beide.
 
 ## Stage 3C: Lösung „Alte Grenze wiederherstellen“
 **Goal**: Räumliches Rätsel, dessen Bedeutung aus der Geschichte des Ortes folgt.

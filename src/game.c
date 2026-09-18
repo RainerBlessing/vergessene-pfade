@@ -8,6 +8,7 @@ bool game_init(Game *g, const char *assets) {
   g->y = 19;
   g->dy = -1;
   g->npc = SPEAKER_SCENE;
+  g->scene = "Unterwegs";
   g->dialogue = D_SCENE_ARRIVAL;
   g->state = GAME_DIALOGUE;
   g->player = (Player){.hp = 24, .max_hp = 24, .attack = 8, .defense = 2};
@@ -75,6 +76,15 @@ static void learn(Game *g, Obs grants, NoteId note) {
   if (g->note_count < NOTE_LIMIT)
     g->notes[g->note_count++] = note;
 }
+static void open_scene(Game *g, const char *title, DialogueId dialogue) {
+  g->npc = SPEAKER_SCENE;
+  g->scene = title;
+  g->examined = 0;
+  g->dialogue = dialogue;
+  g->page = 0;
+  g->message[0] = 0;
+  g->state = GAME_DIALOGUE;
+}
 static void open_dialogue(Game *g, int npc, char examined, DialogueId dialogue) {
   g->npc = npc;
   g->examined = examined;
@@ -87,6 +97,8 @@ static void talk(Game *g, int npc) {
   for (int i = 0; i < dialogue_rule_count; i++) {
     const DialogueRule *r = &dialogue_rules[i];
     if ((int)r->npc != npc || !matches(g, r->needs, r->forbids))
+      continue;
+    if (r->outcome != OUT_NONE && r->outcome != g->outcome)
       continue;
     /* Do not hand over something the player still carries: the next rule speaks. */
     if (r->gives != ITEM_NONE && g->player.inventory.quantities[r->gives])
@@ -212,6 +224,13 @@ static void step_back(Game *g) {
     g->y = by;
   }
 }
+static bool option_now(const Game *g, const EncounterOption *o) {
+  if (!matches(g, o->needs, 0))
+    return false;
+  if (o->when != OPT_BOTH && (o->when == OPT_FIGHT) != g->fighting)
+    return false;
+  return true;
+}
 static const EncounterOffer *offer_at_hand(const Game *g) {
   for (int i = 0; i < encounter_offer_count; i++) {
     const EncounterOffer *o = &encounter_offers[i];
@@ -228,7 +247,8 @@ int game_encounter_options(const Game *g, int *out) {
   int n = 0;
   for (int i = 0; i < encounter_option_count; i++) {
     const EncounterOption *o = &encounter_options[i];
-    if (!matches(g, o->needs, 0) || (o->action == ENC_OFFER && !offer_at_hand(g)))
+    if (!option_now(g, o) || (o->action == ENC_OFFER && !offer_at_hand(g)) ||
+        (o->action == ENC_HEAL && !g->player.inventory.quantities[ITEM_HERB]))
       continue;
     out[n++] = i;
   }
@@ -237,6 +257,38 @@ int game_encounter_options(const Game *g, int *out) {
 static void show(Game *g, DialogueId line) {
   const char *text = line > D_NONE ? dialogues[line].pages[0] : NULL;
   snprintf(g->message, sizeof g->message, "%s", text ? text : "");
+}
+static void finish(Game *g, Outcome outcome) {
+  if (g->outcome != OUT_NONE)
+    return;
+  g->outcome = outcome;
+  emit(g, EV_OUTCOME, outcome, 0);
+}
+/* One exchange of blows. The fight continues until someone falls or the player
+ * steps back; the spirit keeps its wounds until it wins. */
+static void fight_round(Game *g, bool herb) {
+  if (!g->fighting) {
+    g->fighting = true;
+    if (g->combat.hp <= 0) /* a paused fight keeps the spirit's wounds */
+      combat_begin(&g->combat);
+  }
+  combat_turn(&g->combat, &g->player, g->mood == MOOD_ANGRY ? 1 : 0, herb, g->message,
+              sizeof g->message);
+  if (g->combat.won) {
+    g->fighting = false;
+    learn(g, 0, N_FOUGHT);
+    finish(g, OUT_FIGHT);
+    open_scene(g, "Am Rand des Hains", D_ENC_VICTORY);
+  } else if (g->combat.lost) {
+    g->fighting = false;
+    g->map = MAP_VILLAGE;
+    g->x = 16;
+    g->y = 1;
+    g->dy = 1;
+    g->player.hp = g->player.max_hp;
+    combat_begin(&g->combat); /* the spirit recovers as well */
+    open_scene(g, "Kiriyama, spaeter", D_ENC_DEFEAT);
+  }
 }
 /* The spirit rises from the grove; its mood is remembered between encounters. */
 static void begin_encounter(Game *g) {
@@ -271,8 +323,14 @@ static void encounter_action(Game *g, Action a) {
   } else
     show(g, encounter_lines[action][before]);
   emit(g, EV_ENCOUNTER_ACTION, action, g->mood);
+  if (action == ENC_ATTACK || action == ENC_HEAL) {
+    fight_round(g, action == ENC_HEAL);
+    g->selection = 0;
+    return;
+  }
   if (action == ENC_RETREAT) {
     step_back(g);
+    g->fighting = false;
     g->state = GAME_EXPLORATION;
   }
 }
@@ -282,7 +340,7 @@ static void move(Game *g, int dx, int dy) {
   if (!can_enter(g, g->x + dx, g->y + dy))
     return;
   const TileDef *tile = tile_def(game_tile(g, g->map, g->x + dx, g->y + dy));
-  if (tile->guarded) {
+  if (tile->guarded && g->outcome == OUT_NONE) { /* a settled grove lets you pass */
     begin_encounter(g);
     return;
   }
