@@ -184,7 +184,15 @@ Der Log wird im Core als Ereignispuffer geführt; `main.c` schreibt die Datei.
 **Tests**:
 - Unit: vollständige Übergangstabelle; deterministisch; Encounter-Ende setzt keinen Ausgang.
 - Journey: Begegnung betreten und verlassen.
-**Status**: Not Started
+**Status**: Complete (2026-09-18).
+- Build ohne Warnungen, `ctest` 2/2; `--verify --log` mit Exit 0, Screenshots angesehen.
+- Probeweise eingebaute Fehler (Gemüt ändert sich nicht, Darbringen ohne Gegenstand wählbar) werden erkannt.
+- Abweichung vom Plan: **Angreifen wird noch nicht angeboten.** Ohne Kampf wäre es nur ein Platzhaltertext. Die Aktion steht bereits in der Gemüts- und Texttabelle; Stage 3B ergänzt eine Zeile in `encounter_options`.
+- Umsetzung:
+  - Der Hainrand löst jetzt die Begegnung aus. Das Zurückweichen (nicht mehr ein blinder Windstoß) schiebt die Figur auf sicheren Boden; das Ereignis `knockback` entfällt.
+  - Das Gemüt bleibt zwischen Begegnungen erhalten.
+  - Darbringen zeigt den Gegenstand im Menü; die Scherben sind ein Fehlgriff mit Folge (Gemüt wird zornig, Notizbucheintrag).
+  - Neue Log-Ereignisse: `encounter`, `encounter_action`.
 
 ## Stage 3B: Lösung „Bekämpfen“
 **Goal**: Erster vollständiger Ausgang.

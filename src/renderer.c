@@ -151,6 +151,29 @@ static void inventory_panel(Renderer *r, const Game *g) {
   text(r, 12, 125, 2, g->message);
   text(r, 12, 157, 1, "ENTER ANSEHEN  /  ESC ZURUECK");
 }
+static void encounter_panel(Renderer *r, const Game *g) {
+  int options[ENC_COUNT];
+  int count = game_encounter_options(g, options);
+  panel(r, 4, 21, 312, 175);
+  text(r, 16, 31, 1, "AM RAND DES HAINS");
+  color(r, 3);
+  formatted(r, 16, 45, "DER KAMI WIRKT %s", mood_names[g->mood]);
+  sprite(r, 17, 144, 56, 2);
+  text(r, 12, 92, 2, g->message);
+  for (int i = 0; i < count; i++) {
+    if (g->selection == i)
+      box(r, 12, 134 + i * 15, 296, 14, 4);
+    color(r, g->selection == i ? 1 : 2);
+    EncounterAction action = encounter_options[options[i]].action;
+    if (action == ENC_OFFER)
+      formatted(r, 16, 137 + i * 15, "%c %s: %s", g->selection == i ? '>' : ' ',
+                encounter_options[options[i]].label, items[game_encounter_offer(g)].name);
+    else
+      formatted(r, 16, 137 + i * 15, "%c %s", g->selection == i ? '>' : ' ',
+                encounter_options[options[i]].label);
+  }
+  text(r, 12, 182, 3, "HOCH/RUNTER WAHL  ENTER HANDELN");
+}
 static void notebook_panel(Renderer *r, const Game *g) {
   panel(r, 4, 22, 312, 174);
   text(r, 16, 31, 1, "NOTIZBUCH");
@@ -177,8 +200,10 @@ void render_game(Renderer *r, const Game *g, int fps) {
     inventory_panel(r, g);
   if (g->state == GAME_NOTEBOOK)
     notebook_panel(r, g);
+  if (g->state == GAME_ENCOUNTER)
+    encounter_panel(r, g);
   if (g->debug) {
-    static const char *states[] = {"WELT", "DIALOG", "TASCHE", "NOTIZ"};
+    static const char *states[] = {"WELT", "DIALOG", "TASCHE", "NOTIZ", "KAMI"};
     panel(r, 4, 16, 312, 37);
     color(r, 2);
     formatted(r, 10, 23, "KARTE %d XY %d,%d BPS %d", g->map, g->x, g->y, fps);

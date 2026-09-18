@@ -9,12 +9,12 @@ Narrativer Retro-RPG-Prototyp (C11 / SDL3). Er prüft, ob der Loop
 - Kulturelle Notizen und Quellen: [docs/culture-notes.md](docs/culture-notes.md)
 - Herkunft des Codes: Emberpost (Japan-/Deutsch-Fassung), siehe [docs/emberpost/](docs/emberpost/)
 
-**Aktueller Stand (Stage 2B):**
+**Aktueller Stand (Stage 3A):**
 - Das Spiel beginnt mit der Ankunftsszene im Wald. Danach sind das Dorf Kiriyama und der Wald begehbar.
 - Fünf Figuren sprechen nach einer Regeltabelle, die Umgebung lässt sich untersuchen, und Beobachtungen landen diegetisch im Notizbuch.
 - Der verletzte Fuchs lässt sich mit Mios Heilkraut versorgen. Danach sieht die Figur Tierfährten („Tierzeichen“).
-- Wer den Hain betritt, wird von einem Windstoß zurückgeworfen.
-- Die Begegnung mit dem Kami und die Lösungswege folgen ab Stage 3A.
+- Am Hainrand erscheint der Waldkami. Stehen bleiben, Darbringen und Zurückweichen verändern sein Gemüt (zornig, misstrauisch, ruhig), das er sich merkt.
+- Kampf, Grenzrätsel und Kintsugi folgen ab Stage 3B.
 
 ## Bauen (Linux)
 
@@ -49,7 +49,7 @@ Alle Modi aus einem beschreibbaren Arbeitsverzeichnis starten:
   zusammen mit `--verify`. Jede Zeile hat die Spalten
   `zeit_ms  karte  x,y  ereignis  details`.
   - Ereignisse: `observe`, `examine`, `examine_nothing`, `npc_talk`, `notebook_open`,
-    `knockback`, `action_attempt` (Gegenstand benutzt, `ok=0/1`).
+    `action_attempt` (Gegenstand benutzt, `ok=0/1`), `encounter`, `encounter_action`.
   - Wiederholte erfolglose Untersuchungen desselben Ziels erzeugen keine eigene
     Zeile. Ihre Anzahl steht als `repeat=n` in der nächsten
     `examine_nothing`-Zeile.

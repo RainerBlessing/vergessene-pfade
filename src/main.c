@@ -70,8 +70,12 @@ static void drain_events(Game *g, FILE *log, Uint64 ms) {
     case EV_NOTEBOOK_OPEN:
       fprintf(log, "notebook_open\tentries=%d\n", e->a);
       break;
-    case EV_KNOCKBACK:
-      fprintf(log, "knockback\tguarded=%d,%d\n", e->a, e->b);
+    case EV_ENCOUNTER:
+      fprintf(log, "encounter\tmood=%s\n", mood_names[e->a]);
+      break;
+    case EV_ENCOUNTER_ACTION:
+      fprintf(log, "encounter_action\t%s mood=%s\n", encounter_action_names[e->a],
+              mood_names[e->b]);
       break;
     case EV_ITEM_USE:
       fprintf(log, "action_attempt\tuse=%s ok=%d dialogue=%d\n", items[e->a].name,

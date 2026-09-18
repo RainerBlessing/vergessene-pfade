@@ -156,9 +156,28 @@ bool journey(Game *g, JourneyObserver observer, void *context) {
   REQUIRE(game_knows(g, OBS_STONE_HOLLOW));
   close_dialogue(g);
   REQUIRE(walk(g, 24, 12));
-  game_action(g, ACT_UP); /* into the grove: thrown back */
-  REQUIRE(g->x == 24 && g->y == 13 && g->message[0]);
-  see(g, observer, context, "07-knockback");
+  game_action(g, ACT_UP); /* into the grove: the kami rises */
+  REQUIRE(g->state == GAME_ENCOUNTER && g->mood == MOOD_ANGRY);
+  see(g, observer, context, "07-encounter");
+  int options[ENC_COUNT];
+  int count = game_encounter_options(g, options);
+  REQUIRE(count == 3); /* waiting, offering the shards, retreating */
+  for (int i = 0; i < count; i++)
+    if (encounter_options[options[i]].action == ENC_WAIT)
+      g->selection = i;
+  game_action(g, ACT_CONFIRM);
+  REQUIRE(g->mood == MOOD_WARY && g->state == GAME_ENCOUNTER);
+  for (int i = 0; i < count; i++)
+    if (encounter_options[options[i]].action == ENC_OFFER)
+      g->selection = i;
+  game_action(g, ACT_CONFIRM);
+  REQUIRE(g->mood == MOOD_ANGRY && game_knows(g, OBS_KAMI_ANGERED));
+  see(g, observer, context, "08-shards-offered");
+  for (int i = 0; i < count; i++)
+    if (encounter_options[options[i]].action == ENC_RETREAT)
+      g->selection = i;
+  game_action(g, ACT_CONFIRM);
+  REQUIRE(g->state == GAME_EXPLORATION && g->y == 13);
   REQUIRE(use(g, 12, 12));
   REQUIRE(game_knows(g, OBS_CLAW_MARKS_EDGE));
   close_dialogue(g);
@@ -173,7 +192,7 @@ bool journey(Game *g, JourneyObserver observer, void *context) {
   REQUIRE(g->map == MAP_VILLAGE);
   REQUIRE(talk_to(g, NPC_SUMI));
   REQUIRE(game_knows(g, OBS_BOWL_OWNER) && g->dialogue == D_SUMI_OWNER);
-  see(g, observer, context, "08-owner");
+  see(g, observer, context, "09-owner");
   close_dialogue(g);
   REQUIRE(talk_to(g, NPC_ORIHA));
   REQUIRE(g->dialogue == D_ORIHA_OWNER);
@@ -183,14 +202,14 @@ bool journey(Game *g, JourneyObserver observer, void *context) {
   close_dialogue(g);
 
   game_action(g, ACT_CANCEL);
-  REQUIRE(g->state == GAME_NOTEBOOK && g->note_count == 17);
-  see(g, observer, context, "09-notebook");
+  REQUIRE(g->state == GAME_NOTEBOOK && g->note_count == 19);
+  see(g, observer, context, "10-notebook");
   game_action(g, ACT_UP);
   REQUIRE(g->scroll == g->note_count - NOTES_PER_PAGE - 1);
   game_action(g, ACT_CANCEL);
   REQUIRE(g->state == GAME_EXPLORATION);
   game_action(g, ACT_DEBUG);
-  see(g, observer, context, "10-debug");
+  see(g, observer, context, "11-debug");
   game_action(g, ACT_DEBUG);
   return true;
 }

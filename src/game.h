@@ -15,7 +15,13 @@ typedef enum {
   ACT_DEBUG,
   ACT_COLLISION
 } Action;
-typedef enum { GAME_EXPLORATION, GAME_DIALOGUE, GAME_INVENTORY, GAME_NOTEBOOK } GameState;
+typedef enum {
+  GAME_EXPLORATION,
+  GAME_DIALOGUE,
+  GAME_INVENTORY,
+  GAME_NOTEBOOK,
+  GAME_ENCOUNTER
+} GameState;
 
 /* Session-log events; the frontend drains them with game_take_events. */
 typedef enum {
@@ -24,8 +30,9 @@ typedef enum {
   EV_EXAMINE_NOTHING, /* a = tile symbol, b = suppressed repeats of the previous one */
   EV_NPC_TALK,        /* a = NpcId, b = DialogueId */
   EV_NOTEBOOK_OPEN,   /* a = number of entries */
-  EV_KNOCKBACK,       /* x,y = where the player landed; a,b = the guarded tile */
-  EV_ITEM_USE         /* a = ItemId, b = DialogueId, or D_NONE when nothing happened */
+  EV_ITEM_USE,        /* a = ItemId, b = DialogueId, or D_NONE when nothing happened */
+  EV_ENCOUNTER,       /* a = Mood at the start */
+  EV_ENCOUNTER_ACTION /* a = EncounterAction, b = Mood afterwards */
 } EventType;
 typedef struct {
   EventType type;
@@ -50,6 +57,7 @@ typedef struct {
   Obs obs;
   NoteId notes[NOTE_LIMIT];
   int note_count;
+  Mood mood;
   Player player;
   char message[128];
   bool debug, collision;
@@ -68,4 +76,8 @@ bool game_knows(const Game *g, ObsId o);
 /* Items the player owns, in display order; returns the count. */
 int game_owned_items(const Game *g, ItemId *out);
 int game_take_events(Game *g, GameEvent *out, int max);
+/* Indices into encounter_options offered now, in display order; returns the count. */
+int game_encounter_options(const Game *g, int *out);
+/* What "offering" would hand over right now, or ITEM_NONE. */
+ItemId game_encounter_offer(const Game *g);
 #endif

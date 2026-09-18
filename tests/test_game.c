@@ -393,16 +393,64 @@ static int test_fox_and_tracks(const char *assets) {
   return 0;
 }
 
-static int test_guarded_grove(const char *assets) {
+static int options_contain(const Game *g, EncounterAction action) {
+  int options[ENC_COUNT];
+  int count = game_encounter_options(g, options);
+  for (int i = 0; i < count; i++)
+    if (encounter_options[options[i]].action == action)
+      return i + 1;
+  return 0;
+}
+static int test_encounter(const char *assets) {
   Game g;
   CHECK(game_init(&g, assets));
+  /* Stepping into the grove starts the encounter; the player stays put. */
   stand(&g, MAP_FOREST, 24, 12, 0, -1);
   game_action(&g, ACT_UP);
-  CHECK(g.x == 24 && g.y == 13 && g.dy == -1);
-  CHECK(strstr(g.message, "Windstoss") != NULL);
-  CHECK(count_events(&g, EV_KNOCKBACK) == 1);
-  CHECK(g.events[g.event_count - 1].a == 24 && g.events[g.event_count - 1].b == 11);
-  /* Every guarded tile bordering open ground throws back onto safe ground. */
+  CHECK(g.state == GAME_ENCOUNTER && g.x == 24 && g.y == 12);
+  CHECK(g.mood == MOOD_ANGRY && game_knows(&g, OBS_KAMI_SEEN));
+  CHECK(count_events(&g, EV_ENCOUNTER) == 1);
+  CHECK(strcmp(g.message, dialogues[D_ENC_APPEAR].pages[0]) == 0);
+  /* Without anything to offer, only waiting and retreating are possible. */
+  CHECK(!options_contain(&g, ENC_OFFER) && options_contain(&g, ENC_WAIT));
+  CHECK(options_contain(&g, ENC_RETREAT));
+  /* Waiting follows the mood table and does not end the encounter. */
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_ENCOUNTER && g.mood == MOOD_WARY);
+  CHECK(strcmp(g.message, dialogues[D_ENC_WAIT_ANGRY].pages[0]) == 0);
+  for (int before = 0; before < MOOD_COUNT; before++) {
+    g.mood = (Mood)before;
+    g.selection = options_contain(&g, ENC_WAIT) - 1;
+    game_action(&g, ACT_CONFIRM);
+    CHECK(g.mood == encounter_transitions[ENC_WAIT][before]);
+  }
+  /* Retreating leaves the grove and pushes the player onto safe ground. */
+  g.mood = MOOD_WARY;
+  g.selection = options_contain(&g, ENC_RETREAT) - 1;
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_EXPLORATION && g.x == 24 && g.y == 13);
+  const TileDef *t = tile_def(game_tile(&g, MAP_FOREST, g.x, g.y));
+  CHECK(t->passable && !t->guarded);
+  /* The spirit remembers its mood when the player comes back. */
+  stand(&g, MAP_FOREST, 24, 12, 0, -1);
+  game_action(&g, ACT_UP);
+  CHECK(g.state == GAME_ENCOUNTER && g.mood == MOOD_WARY);
+  /* Offering the bare shards is possible and makes things worse. */
+  CHECK(inventory_add(&g.player.inventory, ITEM_SHARDS, 1));
+  int slot = options_contain(&g, ENC_OFFER);
+  CHECK(slot > 0);
+  g.selection = slot - 1;
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.mood == MOOD_ANGRY && game_knows(&g, OBS_KAMI_ANGERED));
+  CHECK(g.notes[g.note_count - 1] == N_KAMI_SHARDS);
+  CHECK(g.state == GAME_ENCOUNTER);
+  CHECK(g.player.inventory.quantities[ITEM_SHARDS] == 1); /* the shards stay */
+  /* Escape only highlights retreating. */
+  g.selection = 0;
+  game_action(&g, ACT_CANCEL);
+  CHECK(g.state == GAME_ENCOUNTER &&
+        encounter_options[g.selection].action == ENC_RETREAT);
+  /* Every guarded tile bordering open ground releases onto safe ground. */
   for (int y = 1; y < g.maps[MAP_FOREST].height - 1; y++)
     for (int x = 1; x < g.maps[MAP_FOREST].width - 1; x++) {
       if (!tile_def(game_tile(&g, MAP_FOREST, x, y))->guarded ||
@@ -411,8 +459,12 @@ static int test_guarded_grove(const char *assets) {
         continue;
       stand(&g, MAP_FOREST, x, y + 1, 0, -1);
       game_action(&g, ACT_UP);
-      const TileDef *t = tile_def(game_tile(&g, MAP_FOREST, g.x, g.y));
-      CHECK(g.y > y && t->passable && !t->guarded && !t->transition);
+      CHECK(g.state == GAME_ENCOUNTER);
+      g.selection = options_contain(&g, ENC_RETREAT) - 1;
+      game_action(&g, ACT_CONFIRM);
+      const TileDef *safe = tile_def(game_tile(&g, MAP_FOREST, g.x, g.y));
+      CHECK(g.state == GAME_EXPLORATION && g.y > y && safe->passable && !safe->guarded &&
+            !safe->transition);
     }
   return 0;
 }
@@ -443,9 +495,9 @@ int main(int argc, char **argv) {
     return 1;
   if (test_world(argv[1]) || test_dialogue_rules(argv[1]) || test_examine(argv[1]) ||
       test_examine_nothing(argv[1]) || test_inventory_and_notebook(argv[1]) ||
-      test_content(argv[1]) || test_fox_and_tracks(argv[1]) ||
-      test_guarded_grove(argv[1]) || test_combat())
+      test_content(argv[1]) || test_fox_and_tracks(argv[1]) || test_encounter(argv[1]) ||
+      test_combat())
     return 1;
-  puts("World, dialogue rules, examining, notebook, content, fox, grove and combat pass.");
+  puts("World, dialogue, examining, notebook, content, fox, encounter and combat pass.");
   return 0;
 }

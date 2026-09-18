@@ -23,6 +23,8 @@ typedef enum {
   OBS_MIO_HERB,
   OBS_FOX_TENDED, /* also the ability "Tierzeichen": tracks become visible */
   OBS_TRACKS,
+  OBS_KAMI_SEEN,
+  OBS_KAMI_ANGERED,
   OBS_COUNT
 } ObsId;
 typedef uint32_t Obs;
@@ -77,6 +79,13 @@ typedef enum {
   D_X_FOX_TENDED,
   D_X_TRACKS,
   D_I_TEND_FOX,
+  D_ENC_APPEAR,
+  D_ENC_WAIT_ANGRY,
+  D_ENC_WAIT_WARY,
+  D_ENC_WAIT_CALM,
+  D_ENC_ATTACK,
+  D_ENC_RETREAT,
+  D_ENC_OFFER_SHARDS,
   D_I_BOWL_MARK,
   D_I_BOWL_MARK_MATCH,
   DIALOGUE_COUNT
@@ -109,6 +118,8 @@ typedef enum {
   N_HERB,
   N_FOX_TENDED,
   N_TRACKS,
+  N_KAMI,
+  N_KAMI_SHARDS,
   NOTE_COUNT
 } NoteId;
 extern const char *const notes[NOTE_COUNT];
@@ -148,6 +159,33 @@ typedef struct {
 } TileOverride;
 extern const TileOverride tile_overrides[];
 extern const int tile_override_count;
+
+/* Encounter: actions change the spirit's mood, not only its health. */
+typedef enum { MOOD_ANGRY, MOOD_WARY, MOOD_CALM, MOOD_COUNT } Mood;
+extern const char *const mood_names[MOOD_COUNT];
+typedef enum { ENC_WAIT, ENC_OFFER, ENC_ATTACK, ENC_RETREAT, ENC_COUNT } EncounterAction;
+extern const char *const encounter_action_names[ENC_COUNT];
+/* Mood after an action, by action and current mood. */
+extern const Mood encounter_transitions[ENC_COUNT][MOOD_COUNT];
+/* What the player may try. Offering appears only with something to offer. */
+typedef struct {
+  EncounterAction action;
+  const char *label;
+  Obs needs;
+} EncounterOption;
+extern const EncounterOption encounter_options[];
+extern const int encounter_option_count;
+typedef struct {
+  ItemId item;
+  Obs needs, grants;
+  Mood result;
+  DialogueId dialogue;
+  NoteId note;
+} EncounterOffer;
+extern const EncounterOffer encounter_offers[];
+extern const int encounter_offer_count;
+/* Text after an action, by action and the mood before it. */
+extern const DialogueId encounter_lines[ENC_COUNT][MOOD_COUNT];
 
 #define SPEAKER_SCENE (-2)
 #endif

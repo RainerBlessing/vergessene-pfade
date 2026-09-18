@@ -4,7 +4,7 @@ const char *const obs_names[OBS_COUNT] = {
     "BROKEN_ROPE",   "SHRINE_INSCRIPTION", "STONE_DRAGGED",   "STONE_HOLLOW",
     "BOWL_SHARDS",   "BOWL_MARK",          "HOUSE_MARK",      "BOWL_OWNER",
     "LEDGER_DEBT",   "FOX_WOUNDED",        "MIO_HERB",        "FOX_TENDED",
-    "TRACKS"};
+    "TRACKS",        "KAMI_SEEN",          "KAMI_ANGERED"};
 
 const Npc npcs[NPC_COUNT] = {{MAP_VILLAGE, 5, 4, 0, "SUMI", "Sumi / Dorfaelteste"},
                              {MAP_VILLAGE, 24, 4, 1, "ORIHA", "Oriha / Lackmeisterin"},
@@ -112,6 +112,23 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
                        "still.\nDann humpelt er in den Bau.",
                        "Als du dich aufrichtest, faellt\ndir etwas am Boden auf: "
                        "Faehrten.\nUeberall Faehrten."}},
+    [D_ENC_APPEAR] = {1,
+                      {"Zwischen den Staemmen richtet sich\netwas auf. Ein Geweih "
+                       "aus Aesten.\nEin Gesicht wie Rinde."}},
+    [D_ENC_WAIT_ANGRY] = {1,
+                          {"Du bleibst stehen und ruehrst dich\nnicht. Das Knurren "
+                           "wird leiser."}},
+    [D_ENC_WAIT_WARY] = {1,
+                         {"Du wartest. Es sieht dich an und\nweicht nicht. Aeste "
+                          "knacken."}},
+    [D_ENC_WAIT_CALM] = {1, {"Ihr steht euch ruhig gegenueber.\nDer Wald atmet."}},
+    [D_ENC_ATTACK] = {1, {"Du machst einen Schritt nach vorn.\nDer Hain wird laut."}},
+    [D_ENC_RETREAT] = {1,
+                       {"Du weichst zurueck. Der Wind legt\nsich, die Aeste werden "
+                        "still."}},
+    [D_ENC_OFFER_SHARDS] = {1,
+                            {"Du haeltst die Scherben hin. Der\nKami sieht sie an. "
+                             "Etwas knackt\nwie brechendes Holz."}},
     [D_I_BOWL_MARK] = {1, {"Auf dem Boden einer Scherbe ist\nein Zeichen eingebrannt."}},
     [D_I_BOWL_MARK_MATCH] = {1,
                              {"Auf dem Boden einer Scherbe ist\nein Zeichen "
@@ -139,6 +156,8 @@ const char *const notes[NOTE_COUNT] = {
     [N_HERB] = "Mio gab mir Heilkraut fuer den\nFuchs.",
     [N_FOX_TENDED] = "Seit ich den Fuchs versorgt habe,\nsehe ich ueberall Faehrten.",
     [N_TRACKS] = "Tierspuren meiden das Lager und\nlaufen im Bogen um den Hain.",
+    [N_KAMI] = "Etwas mit einem Geweih aus Aesten\nbewacht den Rand des Hains.",
+    [N_KAMI_SHARDS] = "Als ich die Scherben zeigte, wurde\nder Kami zorniger.",
 };
 
 #define MARKS (OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK))
@@ -303,3 +322,34 @@ const TileOverride tile_overrides[] = {
     TRACK(34, 13),
 };
 const int tile_override_count = (int)(sizeof tile_overrides / sizeof tile_overrides[0]);
+
+const char *const mood_names[MOOD_COUNT] = {"ZORNIG", "MISSTRAUISCH", "RUHIG"};
+const char *const encounter_action_names[ENC_COUNT] = {"WAIT", "OFFER", "ATTACK",
+                                                       "RETREAT"};
+const Mood encounter_transitions[ENC_COUNT][MOOD_COUNT] = {
+    /* from:        ANGRY       WARY        CALM */
+    [ENC_WAIT] = {MOOD_WARY, MOOD_WARY, MOOD_CALM},
+    [ENC_OFFER] = {MOOD_ANGRY, MOOD_WARY, MOOD_CALM}, /* offers override this */
+    [ENC_ATTACK] = {MOOD_ANGRY, MOOD_ANGRY, MOOD_ANGRY},
+    [ENC_RETREAT] = {MOOD_ANGRY, MOOD_WARY, MOOD_CALM},
+};
+const DialogueId encounter_lines[ENC_COUNT][MOOD_COUNT] = {
+    [ENC_WAIT] = {D_ENC_WAIT_ANGRY, D_ENC_WAIT_WARY, D_ENC_WAIT_CALM},
+    [ENC_OFFER] = {D_NONE, D_NONE, D_NONE},
+    [ENC_ATTACK] = {D_ENC_ATTACK, D_ENC_ATTACK, D_ENC_ATTACK},
+    [ENC_RETREAT] = {D_ENC_RETREAT, D_ENC_RETREAT, D_ENC_RETREAT},
+};
+/* Stage 3B adds the attack option here. */
+const EncounterOption encounter_options[] = {
+    {ENC_WAIT, "STEHEN BLEIBEN", 0},
+    {ENC_OFFER, "DARBRINGEN", 0},
+    {ENC_RETREAT, "ZURUECKWEICHEN", 0},
+};
+const int encounter_option_count =
+    (int)(sizeof encounter_options / sizeof encounter_options[0]);
+const EncounterOffer encounter_offers[] = {
+    {ITEM_SHARDS, 0, OBS(OBS_KAMI_ANGERED), MOOD_ANGRY, D_ENC_OFFER_SHARDS,
+     N_KAMI_SHARDS},
+};
+const int encounter_offer_count =
+    (int)(sizeof encounter_offers / sizeof encounter_offers[0]);

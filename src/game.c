@@ -200,17 +200,75 @@ static void notebook_action(Game *g, Action a) {
 static bool can_enter(const Game *g, int x, int y) {
   return game_npc_at(g, x, y) < 0 && game_passable(g, g->map, x, y);
 }
-/* The spirit throws the player back from guarded ground: to the previous tile,
- * and one more step if that is free, safe ground. */
-static void knock_back(Game *g, int gx, int gy) {
+/* Guarded ground pushes the player one step away, onto free, safe ground. */
+static void step_back(Game *g) {
   int bx = g->x - g->dx, by = g->y - g->dy;
   const TileDef *back = tile_def(game_tile(g, g->map, bx, by));
   if (can_enter(g, bx, by) && !back->guarded && !back->transition) {
     g->x = bx;
     g->y = by;
   }
-  snprintf(g->message, sizeof g->message, "Ein Windstoss wirft dich zurueck!");
-  emit(g, EV_KNOCKBACK, gx, gy);
+}
+static const EncounterOffer *offer_at_hand(const Game *g) {
+  for (int i = 0; i < encounter_offer_count; i++) {
+    const EncounterOffer *o = &encounter_offers[i];
+    if (g->player.inventory.quantities[o->item] && matches(g, o->needs, 0))
+      return o;
+  }
+  return NULL;
+}
+ItemId game_encounter_offer(const Game *g) {
+  const EncounterOffer *o = offer_at_hand(g);
+  return o ? o->item : ITEM_NONE;
+}
+int game_encounter_options(const Game *g, int *out) {
+  int n = 0;
+  for (int i = 0; i < encounter_option_count; i++) {
+    const EncounterOption *o = &encounter_options[i];
+    if (!matches(g, o->needs, 0) || (o->action == ENC_OFFER && !offer_at_hand(g)))
+      continue;
+    out[n++] = i;
+  }
+  return n;
+}
+static void show(Game *g, DialogueId line) {
+  snprintf(g->message, sizeof g->message, "%s", dialogues[line].pages[0]);
+}
+/* The spirit rises from the grove; its mood is remembered between encounters. */
+static void begin_encounter(Game *g) {
+  g->state = GAME_ENCOUNTER;
+  g->selection = 0;
+  learn(g, OBS(OBS_KAMI_SEEN), N_KAMI);
+  show(g, D_ENC_APPEAR);
+  emit(g, EV_ENCOUNTER, g->mood, 0);
+}
+static void encounter_action(Game *g, Action a) {
+  int options[ENC_COUNT];
+  int count = game_encounter_options(g, options);
+  if (a == ACT_UP)
+    g->selection = (g->selection + count - 1) % count;
+  if (a == ACT_DOWN)
+    g->selection = (g->selection + 1) % count;
+  if (a == ACT_CANCEL)
+    g->selection = count - 1; /* Escape highlights retreating, it does not do it */
+  if (a != ACT_CONFIRM)
+    return;
+  if (g->selection >= count)
+    g->selection = 0;
+  EncounterAction action = encounter_options[options[g->selection]].action;
+  const EncounterOffer *offer = action == ENC_OFFER ? offer_at_hand(g) : NULL;
+  Mood before = g->mood;
+  g->mood = offer ? offer->result : encounter_transitions[action][before];
+  if (offer) {
+    learn(g, offer->grants, offer->note);
+    show(g, offer->dialogue);
+  } else
+    show(g, encounter_lines[action][before]);
+  emit(g, EV_ENCOUNTER_ACTION, action, g->mood);
+  if (action == ENC_RETREAT) {
+    step_back(g);
+    g->state = GAME_EXPLORATION;
+  }
 }
 static void move(Game *g, int dx, int dy) {
   g->dx = dx;
@@ -219,7 +277,7 @@ static void move(Game *g, int dx, int dy) {
     return;
   const TileDef *tile = tile_def(game_tile(g, g->map, g->x + dx, g->y + dy));
   if (tile->guarded) {
-    knock_back(g, g->x + dx, g->y + dy);
+    begin_encounter(g);
     return;
   }
   g->x += dx;
@@ -256,6 +314,9 @@ void game_action(Game *g, Action a) {
     return;
   case GAME_INVENTORY:
     inventory_action(g, a);
+    return;
+  case GAME_ENCOUNTER:
+    encounter_action(g, a);
     return;
   case GAME_EXPLORATION:
     break;
