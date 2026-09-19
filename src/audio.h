@@ -36,6 +36,8 @@ void audio_close(Audio *a);
 void audio_play(Audio *a, SfxId id);
 /* Turn the game's own events into sounds. */
 void audio_events(Audio *a, const GameEvent *events, int count);
+/* Mix the voices that are playing into `out`, clamped. Used by audio_update. */
+void audio_mix(Audio *a, float *out, int frames);
 /* Keep the device fed; call once per frame. */
 void audio_update(Audio *a);
 void audio_cycle(Audio *a);

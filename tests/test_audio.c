@@ -81,12 +81,41 @@ int main(void) {
   audio_events(&a, quiet, (int)(sizeof quiet / sizeof quiet[0]));
   for (int i = 0; i < SFX_VOICES; i++)
     CHECK(a.voices[i].position < 0);
+  /* Mixing: loud, but never past the edge, and quieter one step down. */
+  float out[256];
+  silence(&a);
+  for (int i = 0; i < SFX_VOICES; i++)
+    audio_play(&a, SFX_SETTLE); /* loud from the first sample, on every voice */
+  audio_mix(&a, out, 256);
+  float loud = 0;
+  for (int i = 0; i < 256; i++) {
+    CHECK(out[i] <= 1.0f && out[i] >= -1.0f);
+    loud = SDL_max(loud, SDL_fabsf(out[i]));
+  }
+  CHECK(loud > 0.5f);
+  silence(&a);
+  audio_play(&a, SFX_CLICK);
+  audio_mix(&a, out, 256);
+  float normal = 0;
+  for (int i = 0; i < 256; i++)
+    normal = SDL_max(normal, SDL_fabsf(out[i]));
+  audio_cycle(&a); /* quiet */
+  silence(&a);
+  audio_play(&a, SFX_CLICK);
+  audio_mix(&a, out, 256);
+  float lowered = 0;
+  for (int i = 0; i < 256; i++)
+    lowered = SDL_max(lowered, SDL_fabsf(out[i]));
+  CHECK(lowered > 0.0f && lowered < normal);
+  audio_cycle(&a); /* off */
+  audio_cycle(&a); /* on again */
   /* The setting turns them off and says so. */
   CHECK(strstr(audio_label(&a), "AN") != NULL);
   audio_cycle(&a);
   CHECK(strstr(audio_label(&a), "LEISE") != NULL);
   audio_cycle(&a);
   CHECK(strstr(audio_label(&a), "AUS") != NULL);
+  silence(&a);
   audio_play(&a, SFX_CLICK);
   for (int i = 0; i < SFX_VOICES; i++)
     CHECK(a.voices[i].position < 0);

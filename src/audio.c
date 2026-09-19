@@ -208,26 +208,32 @@ void audio_events(Audio *a, const GameEvent *events, int count) {
     }
   }
 }
-void audio_update(Audio *a) {
-  const int chunk = 512;
-  if (!a->stream)
-    return;
-  /* Keep about a tenth of a second queued: short enough to stay responsive. */
-  if (SDL_GetAudioStreamQueued(a->stream) > (int)sizeof(float) * SFX_RATE / 10)
-    return;
-  float out[512];
-  float volume = a->level == 2 ? 1.0f : a->level == 1 ? 0.45f : 0.0f;
-  for (int i = 0; i < chunk; i++)
+void audio_mix(Audio *a, float *out, int frames) {
+  /* Loud enough to sit next to the game window; the clamp keeps two sounds at
+   * once from tearing. */
+  float volume = a->level == 2 ? 2.2f : a->level == 1 ? 1.0f : 0.0f;
+  for (int i = 0; i < frames; i++)
     out[i] = 0;
   for (int v = 0; v < SFX_VOICES; v++) {
     int position = a->voices[v].position;
     if (position < 0)
       continue;
     SfxId id = a->voices[v].id;
-    for (int i = 0; i < chunk && position < a->length[id]; i++, position++)
+    for (int i = 0; i < frames && position < a->length[id]; i++, position++)
       out[i] += a->samples[id][position] * volume;
     a->voices[v].position = position < a->length[id] ? position : -1;
   }
+  for (int i = 0; i < frames; i++)
+    out[i] = out[i] > 1.0f ? 1.0f : out[i] < -1.0f ? -1.0f : out[i];
+}
+void audio_update(Audio *a) {
+  float out[512];
+  if (!a->stream)
+    return;
+  /* Keep about a tenth of a second queued: short enough to stay responsive. */
+  if (SDL_GetAudioStreamQueued(a->stream) > (int)sizeof(float) * SFX_RATE / 10)
+    return;
+  audio_mix(a, out, (int)(sizeof out / sizeof out[0]));
   SDL_PutAudioStreamData(a->stream, out, (int)sizeof out);
 }
 /* An, leise, aus, und wieder an. */
