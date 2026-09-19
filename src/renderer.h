@@ -6,6 +6,7 @@ typedef struct {
   SDL_Renderer *sdl;
   SDL_Texture *atlas;
   bool paper;
+  const char *audio; /* the sound setting, shown in the notebook */
 } Renderer;
 bool renderer_init(Renderer *r, SDL_Renderer *sdl, const char *assets);
 void renderer_destroy(Renderer *r);

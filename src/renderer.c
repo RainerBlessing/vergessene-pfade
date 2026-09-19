@@ -63,6 +63,7 @@ static void sprite(Renderer *r, int id, int x, int y, int scale) {
 bool renderer_init(Renderer *r, SDL_Renderer *sdl, const char *assets) {
   r->sdl = sdl;
   r->atlas = NULL;
+  r->audio = "F3 KLANG: AN"; /* the frontend overwrites this each frame */
   char path[1024];
   snprintf(path, sizeof path, "%s/tiles/atlas.bmp", assets);
   SDL_Surface *s = SDL_LoadBMP(path);
@@ -238,7 +239,7 @@ static void notebook_panel(Renderer *r, const Game *g) {
   if (g->scroll + NOTES_PER_PAGE < g->note_count)
     formatted(r, 292, 154, "v");
   text(r, 16, 166, 3, "HOCH/RUNTER BLAETTERN  ESC WEITER");
-  text(r, 16, 180, 1, "R NEU BEGINNEN  /  Q BEENDEN");
+  formatted(r, 16, 180, "R NEU  Q ENDE  %s", r->audio ? r->audio : "");
 }
 void render_game(Renderer *r, const Game *g, int fps) {
   r->paper = false;

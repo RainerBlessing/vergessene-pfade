@@ -1,3 +1,4 @@
+#include "audio.h"
 #include "journey.h"
 #include "renderer.h"
 #include <SDL3/SDL.h>
@@ -46,9 +47,11 @@ static Action held(void) {
   return ACT_NONE;
 }
 /* Session log: one tab-separated line per event (see IMPLEMENTATION_PLAN.md). */
-static void drain_events(Game *g, FILE *log, Uint64 ms) {
+static void drain_events(Game *g, FILE *log, Uint64 ms, Audio *audio) {
   GameEvent events[EVENT_LIMIT];
   int n = game_take_events(g, events, EVENT_LIMIT);
+  if (audio)
+    audio_events(audio, events, n);
   if (!log)
     return;
   for (int i = 0; i < n; i++) {
@@ -112,7 +115,7 @@ typedef struct {
 } Capture;
 static void capture(Game *g, const char *label, void *context) {
   Capture *c = context;
-  drain_events(g, c->log, SDL_GetTicks());
+  drain_events(g, c->log, SDL_GetTicks(), NULL);
   render_game(c->renderer, g, 60);
   SDL_Surface *s = SDL_RenderReadPixels(c->renderer->sdl, NULL);
   char path[128];
@@ -125,9 +128,13 @@ static void capture(Game *g, const char *label, void *context) {
   SDL_RenderPresent(c->renderer->sdl);
   SDL_PumpEvents();
 }
-static void act(Game *g, Action a, FILE *log) {
+/* One confirmation sounds once: the specific sounds come from the events. */
+static void act(Game *g, Action a, FILE *log, Audio *audio) {
+  bool answering = g->state != GAME_EXPLORATION && (a == ACT_CONFIRM || a == ACT_CANCEL);
   game_action(g, a);
-  drain_events(g, log, SDL_GetTicks());
+  if (audio && answering)
+    audio_play(audio, SFX_CLICK);
+  drain_events(g, log, SDL_GetTicks(), audio);
 }
 static int usage(void) {
   fprintf(stderr, "Aufruf: vergessene_pfade [--smoke | --verify] [--log DATEI]\n");
@@ -155,7 +162,7 @@ int main(int argc, char **argv) {
     }
     fprintf(log, "# time_ms\tmap\tx,y\tevent\tdetails\n");
   }
-  if (!SDL_Init(SDL_INIT_VIDEO)) {
+  if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)) {
     fprintf(stderr, "%s\n", SDL_GetError());
     if (log)
       fclose(log);
@@ -199,11 +206,13 @@ int main(int argc, char **argv) {
       if (log)
         fprintf(log, "# run\t%s\n", runs[i].name);
       ok = game_init(&g, assets) && runs[i].run(&g, capture, &c);
-      drain_events(&g, log, SDL_GetTicks()); /* before the next game_init clears them */
+      drain_events(&g, log, SDL_GetTicks(), NULL); /* before game_init clears them */
     }
     result = ok && c.ok ? 0 : 1;
     goto cleanup;
   }
+  Audio audio;
+  audio_open(&audio);
   bool run = true;
   int frames = 0, fps = 60, fps_frames = 0;
   Uint64 last_move = 0, fps_time = SDL_GetTicks();
@@ -215,7 +224,10 @@ int main(int argc, char **argv) {
       if (e.type == SDL_EVENT_QUIT)
         run = false;
       if (e.type == SDL_EVENT_KEY_DOWN && !e.key.repeat) {
-        if (g.state == GAME_NOTEBOOK && e.key.key == SDLK_Q)
+        if (e.key.key == SDLK_F3) {
+          audio_cycle(&audio);
+          audio_play(&audio, SFX_CLICK);
+        } else if (g.state == GAME_NOTEBOOK && e.key.key == SDLK_Q)
           run = false;
         else if (g.state == GAME_NOTEBOOK && e.key.key == SDLK_R) {
           if (!game_init(&g, assets)) {
@@ -223,7 +235,7 @@ int main(int argc, char **argv) {
             run = false;
           }
         } else {
-          act(&g, key(e.key.key), log);
+          act(&g, key(e.key.key), log, &audio);
           last_move = frame_start;
         }
       }
@@ -232,7 +244,7 @@ int main(int argc, char **argv) {
         frame_start - last_move >= 140) {
       Action a = held();
       if (a != ACT_NONE) {
-        act(&g, a, log);
+        act(&g, a, log, &audio);
         last_move = frame_start;
       }
     }
@@ -242,6 +254,8 @@ int main(int argc, char **argv) {
       fps_time = frame_start;
     }
     fps_frames++;
+    audio_update(&audio);
+    r.audio = audio_label(&audio);
     render_game(&r, &g, fps);
     if (smoke && ++frames == 10) {
       Capture c = {&r, log, true};
@@ -255,6 +269,7 @@ int main(int argc, char **argv) {
       SDL_Delay((Uint32)(16 - elapsed));
   }
 cleanup:
+  audio_close(&audio);
   if (result)
     fprintf(stderr, "Die vergessenen Pfade fehlgeschlagen: %s\n", SDL_GetError());
   if (log)

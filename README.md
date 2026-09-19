@@ -24,6 +24,10 @@ Narrativer Retro-RPG-Prototyp (C11 / SDL3). Er prüft, ob der Loop
   Werkstatt lassen sich untersuchen, beim Betreten erscheint kurz der Ortsname
   („Gasthaus von Kiriyama“, „Orihas Lackwerkstatt“, nach dem Kennenlernen „Sumis Haus“).
   Der Futon erklärt erst, wozu er da ist; erst die Auswahl „Übernachten“ versucht zu schlafen.
+- **Klang:** kurze Effekte an einzelnen Handlungen (Bestätigen, Notiz, Stein schieben
+  und einrasten, Fuchs versorgen, Scherbe setzen, Pfahl einschlagen, Kami erscheint,
+  Treffer, Zerbrechen). Kein Dauerton, keine Schritte, keine Tipp-Geräusche.
+  Umschalten mit **F3**: an, leise, aus. Die Einstellung steht im Notizbuch.
 - **Hinweis am Schrein:** eine graue Stelle ohne Erklärung und eine Zeile über einen
   Besucher, der vor der Unruhe kam. Danach ein kurzer Abspann.
 
@@ -77,6 +81,7 @@ Alle Modi aus einem beschreibbaren Arbeitsverzeichnis starten:
 | Esc | Dialog schließen / Notizbuch (Hoch/Runter blättert) |
 | Enter am Futon (darauf oder davor) | Futon ansehen, dann „Übernachten“ wählen |
 | F1 / F2 | Debug-Anzeige / Hindernisse |
+| F3 | Klangeffekte: an, leise, aus |
 | R, Q (im Notizbuch) | neu starten / beenden |
 
 ## Formatierung
