@@ -17,6 +17,7 @@ typedef enum {
   ACT_COLLISION
 } Action;
 typedef enum {
+  GAME_TITLE,
   GAME_EXPLORATION,
   GAME_DIALOGUE,
   GAME_INVENTORY,

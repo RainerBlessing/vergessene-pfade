@@ -82,10 +82,34 @@ static bool point_reachable(const Game *g, int map, int x, int y) {
   return false;
 }
 
+/* The game opens on one page that says how it is played, and waits. */
+static int test_title(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  CHECK(g.state == GAME_TITLE);
+  /* Walking about does not skip it. */
+  game_action(&g, ACT_UP);
+  game_action(&g, ACT_LEFT);
+  game_action(&g, ACT_INVENTORY);
+  CHECK(g.state == GAME_TITLE && g.x == 24 && g.y == 19);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_DIALOGUE && g.dialogue == D_SCENE_ARRIVAL);
+  /* It says what the keys do, and fits the screen. */
+  int keys = 0;
+  for (int i = 0; i < TITLE_LINES; i++) {
+    /* At x=12 the panel holds 38 characters. */
+    CHECK(title_page[i] && strlen(title_page[i]) <= 38);
+    keys += strstr(title_page[i], "ENTER") != NULL ||
+            strstr(title_page[i], "WASD") != NULL || strstr(title_page[i], "ESC") != NULL;
+  }
+  CHECK(keys >= 3);
+  return 0;
+}
 static int test_world(const char *assets) {
   Game g;
   Map m;
   CHECK(game_init(&g, assets));
+  game_action(&g, ACT_CONFIRM); /* past the title page */
   CHECK(!map_load(&m, "no/such/file.map"));
   CHECK(!map_passable(&g.maps[MAP_VILLAGE], -1, 0));
   CHECK(!map_passable(&g.maps[MAP_VILLAGE], 0, 0));
@@ -1335,18 +1359,19 @@ static int test_combat(void) {
 int main(int argc, char **argv) {
   if (argc != 2)
     return 1;
-  if (test_world(argv[1]) || test_dialogue_rules(argv[1]) || test_examine(argv[1]) ||
-      test_examine_nothing(argv[1]) || test_inventory_and_notebook(argv[1]) ||
-      test_content(argv[1]) || test_fox_and_tracks(argv[1]) || test_encounter(argv[1]) ||
-      test_fight(argv[1]) || test_outcome_keeps_threads(argv[1]) ||
-      test_defeat(argv[1]) || test_boundary(argv[1]) || test_mend(argv[1]) ||
-      test_compromise(argv[1]) || test_daigo_stays(argv[1]) || test_phases(argv[1]) ||
-      test_consequences(argv[1]) || test_night_offer(argv[1]) || test_signs(argv[1]) ||
-      test_futon_explains(argv[1]) || test_futon(argv[1]) ||
-      test_change_precedence(argv[1]) || test_visitor_before_teaser(argv[1]) ||
-      test_den_with_kits(argv[1]) || test_fox_after_fight(argv[1]) ||
-      test_daigo_reactions(argv[1]) || test_no_late_deal(argv[1]) ||
-      test_morning_keeps_threads(argv[1]) || test_grey_trace(argv[1]) || test_combat())
+  if (test_title(argv[1]) || test_world(argv[1]) || test_dialogue_rules(argv[1]) ||
+      test_examine(argv[1]) || test_examine_nothing(argv[1]) ||
+      test_inventory_and_notebook(argv[1]) || test_content(argv[1]) ||
+      test_fox_and_tracks(argv[1]) || test_encounter(argv[1]) || test_fight(argv[1]) ||
+      test_outcome_keeps_threads(argv[1]) || test_defeat(argv[1]) ||
+      test_boundary(argv[1]) || test_mend(argv[1]) || test_compromise(argv[1]) ||
+      test_daigo_stays(argv[1]) || test_phases(argv[1]) || test_consequences(argv[1]) ||
+      test_night_offer(argv[1]) || test_signs(argv[1]) || test_futon_explains(argv[1]) ||
+      test_futon(argv[1]) || test_change_precedence(argv[1]) ||
+      test_visitor_before_teaser(argv[1]) || test_den_with_kits(argv[1]) ||
+      test_fox_after_fight(argv[1]) || test_daigo_reactions(argv[1]) ||
+      test_no_late_deal(argv[1]) || test_morning_keeps_threads(argv[1]) ||
+      test_grey_trace(argv[1]) || test_combat())
     return 1;
   puts("World, examining, encounter, outcomes, consequences, morning, trace pass.");
   return 0;

@@ -131,6 +131,9 @@ static bool use_item(Game *g, ItemId item) {
 }
 static bool explore(Game *g, JourneyObserver observer, void *context) {
   REQUIRE(g->map == MAP_FOREST && g->obs == 0 && g->note_count == 0);
+  REQUIRE(g->state == GAME_TITLE);
+  see(g, observer, context, "00-title");
+  game_action(g, ACT_CONFIRM);
   REQUIRE(g->state == GAME_DIALOGUE && g->npc == SPEAKER_SCENE);
   see(g, observer, context, "01-arrival");
   close_dialogue(g);

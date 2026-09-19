@@ -297,6 +297,10 @@ extern const DialogueId encounter_lines[ENC_COUNT][MOOD_COUNT];
 #define STONE_HOLLOW_X 24
 #define STONE_HOLLOW_Y 12
 
+/* The page before the journey: what this is and how it is played. */
+#define TITLE_LINES 15
+extern const char *const title_page[TITLE_LINES];
+
 /* Rooms that name themselves for a moment when the player steps inside. */
 typedef struct {
   int map, x, y, width, height;

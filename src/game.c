@@ -14,7 +14,7 @@ bool game_init(Game *g, const char *assets) {
   g->npc = SPEAKER_SCENE;
   g->scene = "Unterwegs";
   g->dialogue = D_SCENE_ARRIVAL;
-  g->state = GAME_DIALOGUE;
+  g->state = GAME_TITLE; /* the arrival scene waits behind the title page */
   g->player = (Player){.hp = 24, .max_hp = 24, .attack = 8, .defense = 2};
   char path[1024];
   snprintf(path, sizeof path, "%s/maps/village.map", assets);
@@ -624,6 +624,10 @@ void game_action(Game *g, Action a) {
     return;
   }
   switch (g->state) {
+  case GAME_TITLE:
+    if (a == ACT_CONFIRM)
+      g->state = GAME_DIALOGUE;
+    return;
   case GAME_NOTEBOOK:
     notebook_action(g, a);
     return;

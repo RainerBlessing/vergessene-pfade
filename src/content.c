@@ -708,3 +708,22 @@ const Place places[] = {
     {MAP_VILLAGE, 2, 3, 8, 4, "Sumis Haus", OBS(OBS_ASKED_BY_SUMI)},
 };
 const int place_count = (int)(sizeof places / sizeof places[0]);
+
+/* One page, skippable. Blank entries are spacing. */
+const char *const title_page[TITLE_LINES] = {
+    "DIE VERGESSENEN PFADE",
+    "",
+    "Erkunde das Dorf und den Wald.",
+    "Sprich mit den Menschen, untersuche",
+    "Auffaelliges und verbinde deine",
+    "Beobachtungen. Es gibt mehrere Wege,",
+    "den Konflikt zu loesen.",
+    "",
+    "PFEILE / WASD  Bewegen",
+    "ENTER          Reden, untersuchen",
+    "I              Tasche, Gegenstaende",
+    "ESC            Notizbuch",
+    "",
+    "Stell dich vor ein Objekt und sieh",
+    "es an. Das Notizbuch haelt Funde fest.",
+};

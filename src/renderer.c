@@ -241,10 +241,22 @@ static void notebook_panel(Renderer *r, const Game *g) {
   text(r, 16, 166, 3, "HOCH/RUNTER BLAETTERN  ESC WEITER");
   formatted(r, 16, 180, "R NEU  Q ENDE  %s", r->audio ? r->audio : "");
 }
+/* The page before the journey: what this is, and which keys do what. */
+static void title_panel(Renderer *r) {
+  panel(r, 4, 6, 312, 188);
+  for (int i = 0; i < TITLE_LINES; i++)
+    text(r, 12, 14 + i * 11, i == 0 ? 1 : 2, title_page[i]);
+  color(r, 3);
+  formatted(r, 12, 182, "ENTER - REISE BEGINNEN");
+}
 void render_game(Renderer *r, const Game *g, int fps) {
   r->paper = false;
   color(r, 0);
   SDL_RenderClear(r->sdl);
+  if (g->state == GAME_TITLE) {
+    title_panel(r);
+    return;
+  }
   world(r, g);
   if (g->state == GAME_DIALOGUE)
     dialogue_panel(r, g);
@@ -259,8 +271,8 @@ void render_game(Renderer *r, const Game *g, int fps) {
   if (g->state == GAME_PROMPT)
     prompt_panel(r, g);
   if (g->debug) {
-    static const char *states[] = {"WELT", "DIALOG", "TASCHE", "NOTIZ",
-                                   "KAMI", "SCHALE", "FRAGE"};
+    static const char *states[] = {"TITEL", "WELT", "DIALOG", "TASCHE",
+                                   "NOTIZ", "KAMI", "SCHALE", "FRAGE"};
     panel(r, 4, 16, 312, 37);
     color(r, 2);
     formatted(r, 10, 23, "KARTE %d XY %d,%d BPS %d", g->map, g->x, g->y, fps);

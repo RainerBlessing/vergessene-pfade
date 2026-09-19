@@ -10,6 +10,7 @@ Narrativer Retro-RPG-Prototyp (C11 / SDL3). Er prüft, ob der Loop
 - Herkunft des Codes: Emberpost (Japan-/Deutsch-Fassung), siehe [docs/emberpost/](docs/emberpost/)
 
 **Aktueller Stand (Stage 4): der Slice ist von der Ankunft bis zum Abspann spielbar.**
+- Startseite mit kurzer Anleitung, mit Enter zu überspringen.
 - Ankunftsszene im Wald, danach Dorf Kiriyama und Wald begehbar.
 - Fünf Figuren mit Regeldialogen, Umgebung untersuchbar, diegetisches Notizbuch.
 - Verletzter Fuchs, Mios Heilkraut, Fähigkeit „Tierzeichen“ mit sichtbaren Fährten.
