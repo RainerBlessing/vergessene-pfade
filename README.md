@@ -24,7 +24,6 @@ Narrativer Retro-RPG-Prototyp (C11 / SDL3). Er prüft, ob der Loop
   Werkstatt lassen sich untersuchen, beim Betreten erscheint kurz der Ortsname
   („Gasthaus von Kiriyama“, „Orihas Lackwerkstatt“, nach dem Kennenlernen „Sumis Haus“).
   Der Futon erklärt erst, wozu er da ist; erst die Auswahl „Übernachten“ versucht zu schlafen.
-- **Klang:** eine schlichte Ambient-Fläche, die auf Ort und Ausgang reagiert.
 - **Hinweis am Schrein:** eine graue Stelle ohne Erklärung und eine Zeile über einen
   Besucher, der vor der Unruhe kam. Danach ein kurzer Abspann.
 
