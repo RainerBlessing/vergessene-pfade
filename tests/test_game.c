@@ -1178,26 +1178,50 @@ static int test_no_late_deal(const char *assets) {
   CHECK(h.dialogue == D_DAIGO_FOUGHT && !h.daigo_follows);
   return 0;
 }
-/* Winning the fight does not snatch the fox away on the same day, and the
- * empty den says what it is. */
-static int test_fox_leaves_later(const char *assets) {
-  Game g;
-  CHECK(game_init(&g, assets));
-  g.outcome = OUT_FIGHT;
-  g.obs |= OBS(OBS_SETTLED) | OBS(OBS_FOX_WOUNDED);
-  CHECK(game_tile(&g, MAP_FOREST, 5, 20) == 'F'); /* still there today */
-  CHECK(inventory_add(&g.player.inventory, ITEM_HERB, 1));
-  stand(&g, MAP_FOREST, 6, 20, -1, 0);
-  game_action(&g, ACT_INVENTORY);
-  game_action(&g, ACT_CONFIRM);
-  CHECK(game_knows(&g, OBS_FOX_TENDED)); /* the wound can still be tended */
-  game_action(&g, ACT_CANCEL);
-  /* The next morning it has gone, and the den tells the player so. */
-  g.phase = PHASE_MORNING;
-  CHECK(game_tile(&g, MAP_FOREST, 5, 20) == 'e');
-  game_action(&g, ACT_CONFIRM);
-  CHECK(g.state == GAME_DIALOGUE && g.dialogue == D_X_DEN_EMPTY);
-  CHECK(g.notes[g.note_count - 1] == N_FOX_GONE);
+/* After the fight the fox stays for the day and is gone the next morning, with
+ * fresh felling around the den to show why. Mio remembers who helped it. */
+static int test_fox_after_fight(const char *assets) {
+  for (int tended = 0; tended < 2; tended++) {
+    Game g;
+    CHECK(game_init(&g, assets));
+    g.outcome = OUT_FIGHT;
+    g.obs |= OBS(OBS_SETTLED) | OBS(OBS_FOX_WOUNDED);
+    if (tended) {
+      g.obs |= OBS(OBS_FOX_TENDED) | OBS(OBS_TRACKS);
+      g.notes[g.note_count++] = N_FOX_TENDED;
+    }
+    /* The day of the fight: the den is as the player left it. */
+    CHECK(game_tile(&g, MAP_FOREST, 5, 20) == (tended ? 'f' : 'F'));
+    stand(&g, MAP_FOREST, 6, 20, -1, 0);
+    game_action(&g, ACT_CONFIRM);
+    CHECK(g.dialogue == (tended ? D_X_FOX_TENDED : D_X_FOX));
+    dismiss(&g);
+    /* The next morning: empty, with wood chips and fresh stumps nearby. */
+    g.phase = PHASE_MORNING;
+    g.obs |= OBS(OBS_MORNING);
+    CHECK(game_tile(&g, MAP_FOREST, 5, 20) == 'e'); /* tending does not override it */
+    int stumps = 0;
+    for (int y = 17; y <= 23; y++)
+      for (int x = 2; x <= 11; x++)
+        stumps += game_tile(&g, MAP_FOREST, x, y) == 'x';
+    CHECK(stumps >= 2);
+    game_action(&g, ACT_CONFIRM);
+    CHECK(g.dialogue == D_X_DEN_EMPTY);
+    dismiss(&g);
+    /* What the player did for the fox is still part of the story. */
+    if (tended) {
+      CHECK(game_knows(&g, OBS_TRACKS) && game_tile(&g, MAP_FOREST, 8, 19) == 't');
+      bool kept = false;
+      for (int i = 0; i < g.note_count; i++)
+        kept |= g.notes[i] == N_FOX_TENDED;
+      CHECK(kept);
+    }
+    /* And Mio speaks to it. */
+    stand(&g, MAP_VILLAGE, 11, 11, 0, -1);
+    game_action(&g, ACT_CONFIRM);
+    CHECK(g.dialogue == (tended ? D_MIO_MORNING_FIGHT_HELPED : D_MIO_MORNING_FIGHT));
+    dismiss(&g);
+  }
   return 0;
 }
 /* The morning must not swallow the bowl's story either. */
@@ -1274,7 +1298,7 @@ int main(int argc, char **argv) {
       test_compromise(argv[1]) || test_daigo_stays(argv[1]) || test_phases(argv[1]) ||
       test_consequences(argv[1]) || test_night_offer(argv[1]) || test_signs(argv[1]) ||
       test_futon_explains(argv[1]) || test_futon(argv[1]) ||
-      test_change_precedence(argv[1]) || test_fox_leaves_later(argv[1]) ||
+      test_change_precedence(argv[1]) || test_fox_after_fight(argv[1]) ||
       test_daigo_reactions(argv[1]) || test_no_late_deal(argv[1]) ||
       test_morning_keeps_threads(argv[1]) || test_grey_trace(argv[1]) || test_combat())
     return 1;

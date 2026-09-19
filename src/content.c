@@ -111,9 +111,9 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
                  {"Ein Fuchs vor seinem Bau. Er ist\nverletzt und knurrt leise. "
                   "An\nder Pfote klebt dunkler Lehm."}},
     [D_X_FOX_TENDED] = {1, {"Der Fuchs schlaeft vor dem Bau.\nDer Verband haelt."}},
-    [D_X_DEN_EMPTY] = {1,
-                       {"Der Bau ist leer. Kein Fuchs, kein\nWarmes, keine frischen "
-                        "Spuren."}},
+    [D_X_DEN_EMPTY] = {2,
+                       {"Frische Holzspaene liegen vor dem\nverlassenen Bau.",
+                        "Zwischen den Baeumen haben die\nHolzfaeller weitergearbeitet."}},
     [D_X_TRACKS] = {1,
                     {"Tierspuren. Sie machen einen\nweiten Bogen um das Lager "
                      "und\nfolgen dem Rand des Hains."}},
@@ -268,9 +268,15 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
                               "sparsam\nheizen.",
                               "Und jedes Jahr eine Gabe. Zwei\nFamilien fragen schon, "
                               "wovon\nsie leben sollen."}},
-    [D_MIO_MORNING_FIGHT] = {1,
-                             {"Der Fuchs ist weg. Sein Bau ist\nleer. Du warst das, "
-                              "oder?"}},
+    [D_MIO_MORNING_FIGHT] = {2,
+                             {"Seit dort wieder die Aexte\nschlagen, ist sein Bau "
+                              "verlassen.",
+                              "Ich hoffe, er hat einen ruhigeren\nPlatz gefunden."}},
+    [D_MIO_MORNING_FIGHT_HELPED] = {2,
+                                    {"Du hast ihm geholfen. Aber seit\ndort wieder "
+                                     "die Aexte schlagen,\nhabe ich ihn nicht mehr "
+                                     "gesehen.",
+                                     "Vielleicht ist er tiefer in den\nWald gezogen."}},
     [D_MIO_MORNING_BOUNDARY] = {1,
                                 {"Der Fuchs schlaeft wieder vor\nseinem Bau. Hoerst "
                                  "du die Voegel?"}},
@@ -339,6 +345,8 @@ const DialogueRule dialogue_rules[] = {
      OPEN_NOTHING, PHASE_MORNING},
     {NPC_SUMI, 0, 0, 0, D_SUMI_MORNING_MEND, N_MORNING, ITEM_NONE, OUT_MEND, OPEN_NOTHING,
      PHASE_MORNING},
+    {NPC_MIO, OBS(OBS_FOX_TENDED), 0, 0, D_MIO_MORNING_FIGHT_HELPED, NOTE_NONE, ITEM_NONE,
+     OUT_FIGHT, OPEN_NOTHING, PHASE_MORNING},
     {NPC_MIO, 0, 0, 0, D_MIO_MORNING_FIGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT, OPEN_NOTHING,
      PHASE_MORNING},
     {NPC_MIO, 0, 0, 0, D_MIO_MORNING_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY,
@@ -600,6 +608,9 @@ const TileOverride outcome_changes[] = {
     CHANGE(MAP_FOREST, 20, 6, 'x', OUT_FIGHT, PHASE_ANY, TAG_LOSS),
     CHANGE(MAP_FOREST, 24, 7, 'x', OUT_FIGHT, PHASE_ANY, TAG_LOSS),
     CHANGE(MAP_FOREST, 5, 20, 'e', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
+    CHANGE(MAP_FOREST, 7, 18, 'x', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
+    CHANGE(MAP_FOREST, 4, 22, 'x', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
+    CHANGE(MAP_FOREST, 9, 21, 'x', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
     CHANGE(MAP_VILLAGE, 25, 13, 'W', OUT_FIGHT, PHASE_MORNING, TAG_GAIN),
     CHANGE(MAP_FOREST, 16, 4, 'x', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
     CHANGE(MAP_FOREST, 30, 4, 'x', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
