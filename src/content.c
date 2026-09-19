@@ -111,6 +111,9 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
                  {"Ein Fuchs vor seinem Bau. Er ist\nverletzt und knurrt leise. "
                   "An\nder Pfote klebt dunkler Lehm."}},
     [D_X_FOX_TENDED] = {1, {"Der Fuchs schlaeft vor dem Bau.\nDer Verband haelt."}},
+    [D_X_DEN_EMPTY] = {1,
+                       {"Der Bau ist leer. Kein Fuchs, kein\nWarmes, keine frischen "
+                        "Spuren."}},
     [D_X_TRACKS] = {1,
                     {"Tierspuren. Sie machen einen\nweiten Bogen um das Lager "
                      "und\nfolgen dem Rand des Hains."}},
@@ -304,6 +307,7 @@ const char *const notes[NOTE_COUNT] = {
     [N_FOX] = "Ein verletzter Fuchs am Bau. An\nder Pfote dunkler Lehm.",
     [N_HERB] = "Mio gab mir Heilkraut fuer den\nFuchs.",
     [N_FOX_TENDED] = "Seit ich den Fuchs versorgt habe,\nsehe ich ueberall Faehrten.",
+    [N_FOX_GONE] = "Der Fuchsbau ist leer. Der Fuchs\nist fortgezogen.",
     [N_TRACKS] = "Tierspuren meiden das Lager und\nlaufen im Bogen um den Hain.",
     [N_KAMI] = "Etwas mit einem Geweih aus Aesten\nbewacht den Rand des Hains.",
     [N_KAMI_SHARDS] = "Als ich die Scherben zeigte, wurde\nder Kami zorniger.",
@@ -496,6 +500,11 @@ const ExaminePoint examine_points[] = {
     {.kind = POINT_SYMBOL, .map = MAP_FOREST, .symbol = 'f', .dialogue = D_X_FOX_TENDED},
     {.kind = POINT_SYMBOL,
      .map = MAP_FOREST,
+     .symbol = 'e',
+     .dialogue = D_X_DEN_EMPTY,
+     .note = N_FOX_GONE},
+    {.kind = POINT_SYMBOL,
+     .map = MAP_FOREST,
      .symbol = 't',
      .needs = OBS(OBS_FOX_TENDED),
      .grants = OBS(OBS_TRACKS),
@@ -585,7 +594,7 @@ const TileOverride outcome_changes[] = {
     CHANGE(MAP_VILLAGE, 24, 13, 'W', OUT_FIGHT, PHASE_ANY, TAG_GAIN),
     CHANGE(MAP_FOREST, 20, 6, 'x', OUT_FIGHT, PHASE_ANY, TAG_LOSS),
     CHANGE(MAP_FOREST, 24, 7, 'x', OUT_FIGHT, PHASE_ANY, TAG_LOSS),
-    CHANGE(MAP_FOREST, 5, 20, 'e', OUT_FIGHT, PHASE_ANY, TAG_LOSS),
+    CHANGE(MAP_FOREST, 5, 20, 'e', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
     CHANGE(MAP_VILLAGE, 25, 13, 'W', OUT_FIGHT, PHASE_MORNING, TAG_GAIN),
     CHANGE(MAP_FOREST, 16, 4, 'x', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
     CHANGE(MAP_FOREST, 30, 4, 'x', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),

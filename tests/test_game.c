@@ -1116,10 +1116,33 @@ static int test_change_precedence(const char *assets) {
   g.obs |= OBS(OBS_FOX_TENDED);
   CHECK(game_tile(&g, MAP_FOREST, 5, 20) == 'f');
   g.outcome = OUT_FIGHT;
-  CHECK(game_tile(&g, MAP_FOREST, 5, 20) == 'e'); /* the fox left */
-  g.outcome = OUT_MEND;
+  CHECK(game_tile(&g, MAP_FOREST, 5, 20) == 'f'); /* it stays the day of the fight */
   g.phase = PHASE_MORNING;
+  CHECK(game_tile(&g, MAP_FOREST, 5, 20) == 'e'); /* by morning it has left */
+  g.outcome = OUT_MEND;
   CHECK(game_tile(&g, MAP_FOREST, 5, 20) == 'g'); /* and came back with kits */
+  return 0;
+}
+/* Winning the fight does not snatch the fox away on the same day, and the
+ * empty den says what it is. */
+static int test_fox_leaves_later(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  g.outcome = OUT_FIGHT;
+  g.obs |= OBS(OBS_SETTLED) | OBS(OBS_FOX_WOUNDED);
+  CHECK(game_tile(&g, MAP_FOREST, 5, 20) == 'F'); /* still there today */
+  CHECK(inventory_add(&g.player.inventory, ITEM_HERB, 1));
+  stand(&g, MAP_FOREST, 6, 20, -1, 0);
+  game_action(&g, ACT_INVENTORY);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(game_knows(&g, OBS_FOX_TENDED)); /* the wound can still be tended */
+  game_action(&g, ACT_CANCEL);
+  /* The next morning it has gone, and the den tells the player so. */
+  g.phase = PHASE_MORNING;
+  CHECK(game_tile(&g, MAP_FOREST, 5, 20) == 'e');
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_DIALOGUE && g.dialogue == D_X_DEN_EMPTY);
+  CHECK(g.notes[g.note_count - 1] == N_FOX_GONE);
   return 0;
 }
 /* The morning must not swallow the bowl's story either. */
@@ -1196,8 +1219,8 @@ int main(int argc, char **argv) {
       test_compromise(argv[1]) || test_daigo_stays(argv[1]) || test_phases(argv[1]) ||
       test_consequences(argv[1]) || test_night_offer(argv[1]) || test_signs(argv[1]) ||
       test_futon_explains(argv[1]) || test_futon(argv[1]) ||
-      test_change_precedence(argv[1]) || test_morning_keeps_threads(argv[1]) ||
-      test_grey_trace(argv[1]) || test_combat())
+      test_change_precedence(argv[1]) || test_fox_leaves_later(argv[1]) ||
+      test_morning_keeps_threads(argv[1]) || test_grey_trace(argv[1]) || test_combat())
     return 1;
   puts("World, examining, encounter, outcomes, consequences, morning, trace pass.");
   return 0;
