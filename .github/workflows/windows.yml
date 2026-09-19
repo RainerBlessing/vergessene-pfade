@@ -1,0 +1,79 @@
+name: Windows Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - name: Quellcode laden
+        uses: actions/checkout@v7
+
+      - name: MinGW und Build-Werkzeuge bereitstellen
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            curl
+            tar
+            gzip
+
+      - name: SDL3 bereitstellen
+        run: |
+          set -euo pipefail
+          if [ ! -f vendor/SDL3-3.2.28/CMakeLists.txt ]; then
+            mkdir -p vendor
+            curl --fail --location --retry 3 \
+              https://github.com/libsdl-org/SDL/releases/download/release-3.2.28/SDL3-3.2.28.tar.gz \
+              -o /tmp/SDL3.tar.gz
+            tar -xzf /tmp/SDL3.tar.gz -C vendor
+          fi
+
+      - name: Konfigurieren
+        run: |
+          cmake -S . -B build-windows -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=gcc \
+            -DVP_VENDORED_SDL=ON \
+            -DCMAKE_EXE_LINKER_FLAGS=-static
+
+      - name: Spiel und Tests bauen
+        run: cmake --build build-windows --parallel 3
+
+      - name: Spiellogik testen
+        run: |
+          ctest --test-dir build-windows \
+            --output-on-failure --no-tests=error \
+            -R '^(core|complete_journey)$'
+
+      - name: Windows-Paket zusammenstellen
+        run: |
+          set -euo pipefail
+          mkdir -p dist/windows
+          cp build-windows/vergessene_pfade.exe dist/windows/
+          cp -R assets dist/windows/
+          objdump -p dist/windows/vergessene_pfade.exe | grep 'DLL Name'
+
+      - name: Download bereitstellen
+        uses: actions/upload-artifact@v7
+        with:
+          name: vergessene-pfade-windows-x64
+          path: dist/windows/
+          if-no-files-found: error
+          retention-days: 14
