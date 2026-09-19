@@ -207,6 +207,19 @@ static void mend_panel(Renderer *r, const Game *g) {
   }
   text(r, 12, 182, 3, "ENTER SETZEN  /  ESC SPAETER");
 }
+static void prompt_panel(Renderer *r, const Game *g) {
+  panel(r, 4, 105, 312, 91);
+  text(r, 12, 114, 2, dialogues[g->dialogue].pages[0]);
+  for (int i = 0; i < NIGHT_CHOICES; i++) {
+    if (g->selection == i)
+      box(r, 12, 148 + i * 15, 296, 14, 4);
+    color(r, g->selection == i ? 1 : 2);
+    formatted(r, 16, 151 + i * 15, "%c %s", g->selection == i ? '>' : ' ',
+              night_choices[i]);
+  }
+  color(r, 3);
+  formatted(r, 12, 185, "HOCH/RUNTER WAHL  ENTER WAEHLEN");
+}
 static void notebook_panel(Renderer *r, const Game *g) {
   panel(r, 4, 22, 312, 174);
   text(r, 16, 31, 1, "NOTIZBUCH");
@@ -237,8 +250,11 @@ void render_game(Renderer *r, const Game *g, int fps) {
     encounter_panel(r, g);
   if (g->state == GAME_MEND)
     mend_panel(r, g);
+  if (g->state == GAME_PROMPT)
+    prompt_panel(r, g);
   if (g->debug) {
-    static const char *states[] = {"WELT", "DIALOG", "TASCHE", "NOTIZ", "KAMI", "SCHALE"};
+    static const char *states[] = {"WELT", "DIALOG", "TASCHE", "NOTIZ",
+                                   "KAMI", "SCHALE", "FRAGE"};
     panel(r, 4, 16, 312, 37);
     color(r, 2);
     formatted(r, 10, 23, "KARTE %d XY %d,%d BPS %d", g->map, g->x, g->y, fps);

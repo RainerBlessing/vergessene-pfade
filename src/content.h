@@ -128,6 +128,7 @@ typedef enum {
   D_SCENE_MEND,
   D_X_FUTON_AWAKE,
   D_X_FUTON_MORNING,
+  D_PROMPT_SLEEP,
   D_SCENE_MORNING,
   D_X_TRACE,
   D_X_TRACE_TRACKS,
@@ -192,7 +193,7 @@ extern const char *const notes[NOTE_COUNT];
 
 /* First matching rule wins. */
 /* What a conversation opens once its last page is read. */
-typedef enum { OPEN_NOTHING, OPEN_MEND, OPEN_FOLLOW } DialogueOpens;
+typedef enum { OPEN_NOTHING, OPEN_MEND, OPEN_FOLLOW, OPEN_NIGHT } DialogueOpens;
 typedef struct {
   NpcId npc;
   Obs needs, forbids, grants;
@@ -281,6 +282,13 @@ extern const DialogueId encounter_lines[ENC_COUNT][MOOD_COUNT];
 #define STONE_START_Y 16
 #define STONE_HOLLOW_X 24
 #define STONE_HOLLOW_Y 12
+
+/* The two answers to the question about the night, in this order. */
+#define NIGHT_CHOICES 2
+extern const char *const night_choices[NIGHT_CHOICES];
+/* Where the inn stands: both ways into the night end up here. */
+#define INN_X 4
+#define INN_Y 14
 
 /* Where the new boundary is staked out, along the animal tracks. */
 #define STAKE_COUNT 3

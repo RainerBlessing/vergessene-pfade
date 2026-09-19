@@ -17,6 +17,9 @@ Narrativer Retro-RPG-Prototyp (C11 / SDL3). Er prüft, ob der Loop
 - **Drei Ausgänge:** bekämpfen, alte Grenze wiederherstellen, Kintsugi mit Kompromiss.
 - **Konsequenzen:** Jeder Ausgang verändert Dorf und Wald sofort und, nach einer Nacht
   im Gasthaus, ein zweites Mal. Jeder hat sichtbaren Gewinn **und** Verlust.
+- **Die Nacht:** Nach dem Gespräch mit Sumi fragt sie: „Fuer heute ist alles
+  entschieden. Im Gasthaus uebernachten?“ Wer ablehnt, kann weiter erkunden und später
+  wieder bei Sumi oder am Futon übernachten.
 - **Klang:** eine schlichte Ambient-Fläche, die auf Ort und Ausgang reagiert.
 - **Hinweis am Schrein:** eine graue Stelle ohne Erklärung und eine Zeile über einen
   Besucher, der vor der Unruhe kam. Danach ein kurzer Abspann.
@@ -69,7 +72,7 @@ Alle Modi aus einem beschreibbaren Arbeitsverzeichnis starten:
 | Leertaste / Enter | reden bzw. untersuchen (Blickfeld, sonst das Feld unter dir), weiter |
 | I | Tasche; Enter benutzt einen Gegenstand am Ziel vor dir oder sieht ihn genauer an |
 | Esc | Dialog schließen / Notizbuch (Hoch/Runter blättert) |
-| Enter auf dem Futon | übernachten, sobald etwas entschieden ist |
+| Enter am Futon (darauf oder davor) | übernachten, sobald etwas entschieden ist |
 | F1 / F2 | Debug-Anzeige / Hindernisse |
 | R, Q (im Notizbuch) | neu starten / beenden |
 

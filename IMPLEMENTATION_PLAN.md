@@ -302,6 +302,12 @@ Der Log wird im Core als Ereignispuffer geführt; `main.c` schreibt die Datei.
   - Morgen-Dialoge für Sumi, Mio und Daigo je Ausgang.
   - Graue Spur am Schrein nach jedem Ausgang; mit Tierzeichen zusätzlich „nicht einmal Tiere“. Erst danach zeigt die Inschrift die Zeile über den Besucher, gefolgt vom Abspann-Teaser.
   - Klang: zweistimmige Ambient-Fläche mit Rauschanteil, je nach Ort und Ausgang; ohne Audiogerät läuft das Spiel weiter.
+- **Nachtrag (2026-09-19):** Der Übergang in den Morgen wurde verständlicher gemacht.
+  - Nach dem Gespräch mit Sumi fragt sie, ob im Gasthaus übernachtet werden soll („Übernachten“ / „Noch hierbleiben“). Ablehnen ist folgenlos; die Nacht bleibt bei Sumi und am Futon verfügbar.
+  - Beide Wege nutzen dieselbe Funktion `spend_the_night`; danach liegt die Figur im Gasthaus.
+  - Der Futon reagiert jetzt auch vom davorliegenden Feld. Nach einer Lösung erscheint dort kein Hinweis mehr auf einen unruhigen Wald, weil der Übergang vor den Untersuchungspunkten greift.
+  - Vor einer Lösung bleibt die Sperre; der Morgenwechsel geschieht weiterhin nur einmal.
+- **Selbstprüfung statt Review (2026-09-19):** Das angeforderte Review brach wegen eines Sitzungslimits ab. Eigene Prüfung fand zwei Fehler: Konsequenzen wurden von älteren Overlays verdeckt (Fuchsbau blieb nach dem Kampf „bewohnt“), und Sumis Morgen-Regeln verdeckten die Schalen-Geschichte. Beides behoben und mit Tests abgesichert. Ein unabhängiges Review von Stage 4 steht noch aus.
 - Tests: Prüfung auf Gewinn und Verlust je Ausgang **und** Phase, Sichtbarkeit jeder Änderung, Begehbarkeit in jedem Zustand, Übernachtung nur nach Entscheidung, zweite Nacht ohne Wirkung, Spur und späte Inschrift. Alle drei Journeys laufen bis zum Abspann.
 
 ## Stage 5A: Interner Playthrough & Kulturcheck

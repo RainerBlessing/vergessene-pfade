@@ -22,7 +22,8 @@ typedef enum {
   GAME_INVENTORY,
   GAME_NOTEBOOK,
   GAME_ENCOUNTER,
-  GAME_MEND
+  GAME_MEND,
+  GAME_PROMPT
 } GameState;
 
 /* Session-log events; the frontend drains them with game_take_events. */

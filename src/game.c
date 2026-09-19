@@ -51,14 +51,15 @@ char game_tile(const Game *g, int map, int x, int y) {
     for (int i = 0; i < STAKE_COUNT; i++)
       if ((g->staked & (1u << i)) && stakes[i].x == x && stakes[i].y == y)
         return 'p';
-  for (int i = 0; i < tile_override_count; i++) {
-    const TileOverride *o = &tile_overrides[i];
+  /* What an outcome changed comes first: it is the newer state of the world. */
+  for (int i = 0; i < outcome_change_count; i++) {
+    const TileOverride *o = &outcome_changes[i];
     if (o->map == map && o->x == x && o->y == y &&
         fits_now(g, o->needs, o->outcome, o->phase))
       return o->symbol;
   }
-  for (int i = 0; i < outcome_change_count; i++) {
-    const TileOverride *o = &outcome_changes[i];
+  for (int i = 0; i < tile_override_count; i++) {
+    const TileOverride *o = &tile_overrides[i];
     if (o->map == map && o->x == x && o->y == y &&
         fits_now(g, o->needs, o->outcome, o->phase))
       return o->symbol;
@@ -337,17 +338,42 @@ static void finish(Game *g, Outcome outcome) {
   learn(g, OBS(OBS_SETTLED), NOTE_NONE);
   emit(g, EV_OUTCOME, outcome, 0);
 }
-/* The night at the inn: only once something has been decided. */
-static bool sleep_here(Game *g) {
-  if (game_tile(g, g->map, g->x, g->y) != 'u' || g->phase != PHASE_BEFORE)
+/* The one way into the next morning, whether the night was offered by Sumi or
+ * taken at the futon. It happens once, and only once something is settled. */
+static bool spend_the_night(Game *g) {
+  if (g->phase != PHASE_BEFORE || g->outcome == OUT_NONE)
     return false;
-  if (g->outcome == OUT_NONE)
-    return false; /* the futon point says why */
+  g->map = MAP_VILLAGE;
+  g->x = INN_X;
+  g->y = INN_Y;
+  g->dx = 0;
+  g->dy = 1;
   g->phase = PHASE_MORNING;
   learn(g, OBS(OBS_MORNING), N_MORNING);
   emit(g, EV_PHASE, g->phase, 0);
   open_scene(g, "Im Gasthaus", D_SCENE_MORNING);
   return true;
+}
+/* The futon, from its own tile or from the one in front of it. */
+static bool sleep_here(Game *g) {
+  if (g->map != MAP_VILLAGE)
+    return false;
+  bool at_futon = game_tile(g, g->map, g->x, g->y) == 'u' ||
+                  game_tile(g, g->map, g->x + g->dx, g->y + g->dy) == 'u';
+  return at_futon && spend_the_night(g); /* otherwise the futon point speaks */
+}
+static void prompt_action(Game *g, Action a) {
+  if (a == ACT_UP || a == ACT_DOWN)
+    g->selection = g->selection == 0 ? 1 : 0;
+  if (a == ACT_CANCEL) { /* staying is the safe answer */
+    g->state = GAME_EXPLORATION;
+    return;
+  }
+  if (a != ACT_CONFIRM)
+    return;
+  g->state = GAME_EXPLORATION;
+  if (g->selection == 0)
+    spend_the_night(g);
 }
 /* One exchange of blows. The fight continues until someone falls or the player
  * steps back; the spirit keeps its wounds until it wins. */
@@ -586,6 +612,12 @@ void game_action(Game *g, Action a) {
     }
     if (g->opens == OPEN_FOLLOW)
       g->daigo_follows = true;
+    if (g->opens == OPEN_NIGHT && g->phase == PHASE_BEFORE) {
+      g->state = GAME_PROMPT;
+      g->dialogue = D_PROMPT_SLEEP;
+      g->selection = 0;
+      g->message[0] = 0;
+    }
     g->opens = OPEN_NOTHING;
     return;
   case GAME_INVENTORY:
@@ -596,6 +628,9 @@ void game_action(Game *g, Action a) {
     return;
   case GAME_MEND:
     mend_action(g, a);
+    return;
+  case GAME_PROMPT:
+    prompt_action(g, a);
     return;
   case GAME_EXPLORATION:
     break;

@@ -214,6 +214,9 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
     [D_X_FUTON_MORNING] = {1,
                            {"Du hast geschlafen. Jetzt ist\nTag, und das Dorf ist "
                             "wach."}},
+    [D_PROMPT_SLEEP] = {1,
+                        {"Fuer heute ist alles entschieden.\nIm Gasthaus "
+                         "uebernachten?"}},
     [D_SCENE_MORNING] = {1,
                          {"Du schlaefst, bis die Schiebetuer\nklappert. Am naechsten "
                           "Morgen\nist Kiriyama ein anderes Dorf."}},
@@ -308,6 +311,10 @@ const char *const notes[NOTE_COUNT] = {
 
 #define MARKS (OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK))
 const DialogueRule dialogue_rules[] = {
+    /* The bowl's story outranks every reaction, at any time: it is the only
+     * source of N_OWNER. */
+    {NPC_SUMI, MARKS, OBS(OBS_BOWL_OWNER), OBS(OBS_BOWL_OWNER), D_SUMI_OWNER, N_OWNER,
+     ITEM_NONE, OUT_ANY, OPEN_NOTHING, PHASE_ANY},
     /* The morning after: each outcome reads differently to each of them. */
     {NPC_SUMI, 0, 0, 0, D_SUMI_MORNING_FIGHT, N_MORNING, ITEM_NONE, OUT_FIGHT,
      OPEN_NOTHING, PHASE_MORNING},
@@ -331,13 +338,11 @@ const DialogueRule dialogue_rules[] = {
      * before her reaction to an outcome. */
     {NPC_SUMI, 0, OBS(OBS_ASKED_BY_SUMI), OBS(OBS_ASKED_BY_SUMI), D_SUMI_TASK, N_ASKED,
      ITEM_NONE, OUT_NONE, OPEN_NOTHING, PHASE_ANY},
-    {NPC_SUMI, MARKS, OBS(OBS_BOWL_OWNER), OBS(OBS_BOWL_OWNER), D_SUMI_OWNER, N_OWNER,
-     ITEM_NONE, OUT_ANY, OPEN_NOTHING, PHASE_ANY},
-    {NPC_SUMI, 0, 0, 0, D_SUMI_FOUGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT, OPEN_NOTHING,
+    {NPC_SUMI, 0, 0, 0, D_SUMI_FOUGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT, OPEN_NIGHT,
      PHASE_ANY},
-    {NPC_SUMI, 0, 0, 0, D_SUMI_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY, OPEN_NOTHING,
+    {NPC_SUMI, 0, 0, 0, D_SUMI_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY, OPEN_NIGHT,
      PHASE_ANY},
-    {NPC_SUMI, 0, 0, 0, D_SUMI_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND, OPEN_NOTHING,
+    {NPC_SUMI, 0, 0, 0, D_SUMI_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND, OPEN_NIGHT,
      PHASE_ANY},
     {NPC_SUMI, OBS(OBS_BOWL_OWNER), 0, 0, D_SUMI_OWNER_KNOWN, NOTE_NONE, ITEM_NONE,
      OUT_ANY, OPEN_NOTHING, PHASE_ANY},
@@ -649,3 +654,5 @@ const int mend_display[MEND_PIECES] = {2, 0, 3, 1};
 
 /* The stakes stand on the animal tracks, between the old stones. */
 const StakeSpot stakes[STAKE_COUNT] = {{14, 14}, {22, 15}, {30, 14}};
+
+const char *const night_choices[NIGHT_CHOICES] = {"UEBERNACHTEN", "NOCH HIERBLEIBEN"};

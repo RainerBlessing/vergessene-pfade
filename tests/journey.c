@@ -80,10 +80,16 @@ static void see(Game *g, JourneyObserver o, void *c, const char *label);
 /* The night at the inn, then the grey patch by the shrine: every outcome ends
  * the same way and says nothing more about the visitor. */
 static bool sleep_and_look(Game *g, JourneyObserver o, void *c, const char *label) {
-  if (g->map == MAP_FOREST)
-    REQUIRE(walk(g, 24, 39) || g->map == MAP_VILLAGE);
-  REQUIRE(walk(g, 4, 14));
-  game_action(g, ACT_CONFIRM);
+  if (g->state == GAME_PROMPT) { /* Sumi asked; the night is one answer away */
+    see(g, o, c, "prompt-night");
+    g->selection = 0;
+    game_action(g, ACT_CONFIRM);
+  } else {
+    if (g->map == MAP_FOREST)
+      REQUIRE(walk(g, 24, 39) || g->map == MAP_VILLAGE);
+    REQUIRE(walk(g, INN_X, INN_Y));
+    game_action(g, ACT_CONFIRM);
+  }
   REQUIRE(g->state == GAME_DIALOGUE && g->phase == PHASE_MORNING);
   close_dialogue(g);
   REQUIRE(walk(g, 24, 15)); /* the wood yard shows what the night brought */
@@ -313,6 +319,10 @@ bool journey_boundary(Game *g, JourneyObserver observer, void *context) {
   REQUIRE(g->dialogue == D_SUMI_BOUNDARY);
   see(g, observer, context, "17-sumi-boundary");
   close_dialogue(g);
+  REQUIRE(g->state == GAME_PROMPT);
+  g->selection = 1; /* stay a while: the night must remain available */
+  game_action(g, ACT_CONFIRM);
+  REQUIRE(g->state == GAME_EXPLORATION && g->phase == PHASE_BEFORE);
   REQUIRE(sleep_and_look(g, observer, context, "18-morning-boundary"));
   return true;
 }

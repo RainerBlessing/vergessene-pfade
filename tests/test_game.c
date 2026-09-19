@@ -19,6 +19,11 @@ static void stand(Game *g, int map, int x, int y, int dx, int dy) {
   g->dy = dy;
   g->state = GAME_EXPLORATION;
 }
+/* Close whatever is open: a dialogue, and the question that may follow it. */
+static void dismiss(Game *g) {
+  for (int i = 0; i < 8 && (g->state == GAME_DIALOGUE || g->state == GAME_PROMPT); i++)
+    game_action(g, ACT_CANCEL);
+}
 static int count_events(const Game *g, EventType type) {
   int n = 0;
   for (int i = 0; i < g->event_count; i++)
@@ -591,13 +596,13 @@ static int test_fight(const char *assets) {
   stand(&g, MAP_VILLAGE, 5, 5, 0, -1);
   game_action(&g, ACT_CONFIRM);
   CHECK(g.dialogue == D_SUMI_FOUGHT);
-  game_action(&g, ACT_CANCEL);
+  dismiss(&g);
   /* An outcome must not swallow the threads it comes before: the bowl's story
    * is still available afterwards. */
   g.obs |= OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK);
   game_action(&g, ACT_CONFIRM);
   CHECK(g.dialogue == D_SUMI_OWNER && game_knows(&g, OBS_BOWL_OWNER));
-  game_action(&g, ACT_CANCEL);
+  dismiss(&g);
   game_action(&g, ACT_CONFIRM);
   CHECK(g.dialogue == D_SUMI_FOUGHT);
   return 0;
@@ -611,11 +616,11 @@ static int test_outcome_keeps_threads(const char *assets) {
   stand(&g, MAP_VILLAGE, 5, 5, 0, -1);
   game_action(&g, ACT_CONFIRM);
   CHECK(g.dialogue == D_SUMI_FOUGHT && !game_knows(&g, OBS_ASKED_BY_SUMI));
-  game_action(&g, ACT_CANCEL);
+  dismiss(&g);
   g.obs |= OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK);
   game_action(&g, ACT_CONFIRM);
   CHECK(g.dialogue == D_SUMI_OWNER && game_knows(&g, OBS_BOWL_OWNER));
-  game_action(&g, ACT_CANCEL);
+  dismiss(&g);
   game_action(&g, ACT_CONFIRM);
   CHECK(g.dialogue == D_SUMI_FOUGHT);
   return 0;
@@ -931,6 +936,114 @@ static int test_consequences(const char *assets) {
     }
   return 0;
 }
+/* After the conflict Sumi asks, and the night is available from her and the
+ * futon; both use the same transition, and it happens only once. */
+static int test_night_offer(const char *assets) {
+  const Outcome outcomes[3] = {OUT_FIGHT, OUT_BOUNDARY, OUT_MEND};
+  for (int i = 0; i < 3; i++) {
+    Game g;
+    CHECK(game_init(&g, assets));
+    g.outcome = outcomes[i];
+    g.obs |= OBS(OBS_SETTLED);
+    stand(&g, MAP_VILLAGE, 5, 5, 0, -1);
+    /* Her reaction ends with the question. */
+    game_action(&g, ACT_CONFIRM);
+    for (int page = 0; page < DIALOGUE_PAGES && g.state == GAME_DIALOGUE; page++)
+      game_action(&g, ACT_CONFIRM);
+    CHECK(g.state == GAME_PROMPT && g.dialogue == D_PROMPT_SLEEP);
+    /* Staying keeps the player where they are, the night stays available. */
+    g.selection = 1;
+    game_action(&g, ACT_CONFIRM);
+    CHECK(g.state == GAME_EXPLORATION && g.phase == PHASE_BEFORE);
+    CHECK(g.x == 5 && g.y == 5);
+    /* Escape declines as well. */
+    game_action(&g, ACT_CONFIRM);
+    for (int page = 0; page < DIALOGUE_PAGES && g.state == GAME_DIALOGUE; page++)
+      game_action(&g, ACT_CONFIRM);
+    CHECK(g.state == GAME_PROMPT);
+    game_action(&g, ACT_CANCEL);
+    CHECK(g.state == GAME_EXPLORATION && g.phase == PHASE_BEFORE);
+    /* Later, from her again: this time the night. */
+    game_action(&g, ACT_CONFIRM);
+    for (int page = 0; page < DIALOGUE_PAGES && g.state == GAME_DIALOGUE; page++)
+      game_action(&g, ACT_CONFIRM);
+    CHECK(g.state == GAME_PROMPT);
+    g.selection = 0;
+    game_action(&g, ACT_CONFIRM);
+    CHECK(g.phase == PHASE_MORNING && g.dialogue == D_SCENE_MORNING);
+    CHECK(g.map == MAP_VILLAGE && game_tile(&g, MAP_VILLAGE, g.x, g.y) == 'u');
+    CHECK(g.notes[g.note_count - 1] == N_MORNING);
+    CHECK(count_events(&g, EV_PHASE) == 1);
+    game_action(&g, ACT_CANCEL);
+    /* No second morning, and no question about it any more. */
+    stand(&g, MAP_VILLAGE, 5, 5, 0, -1);
+    game_action(&g, ACT_CONFIRM);
+    for (int page = 0; page < DIALOGUE_PAGES && g.state == GAME_DIALOGUE; page++)
+      game_action(&g, ACT_CONFIRM);
+    CHECK(g.state == GAME_EXPLORATION && count_events(&g, EV_PHASE) == 1);
+  }
+  return 0;
+}
+/* The futon works from its own tile and from the one in front of it, and never
+ * claims the forest is restless once the conflict is settled. */
+static int test_futon(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  /* Before any outcome: still no sleep, with a reason. */
+  stand(&g, MAP_VILLAGE, 5, 14, -1, 0);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_FUTON_AWAKE && g.phase == PHASE_BEFORE);
+  game_action(&g, ACT_CANCEL);
+  /* Settled: from the tile in front of it. */
+  g.outcome = OUT_MEND;
+  g.obs |= OBS(OBS_SETTLED);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.phase == PHASE_MORNING && g.dialogue == D_SCENE_MORNING);
+  CHECK(game_tile(&g, MAP_VILLAGE, g.x, g.y) == 'u');
+  game_action(&g, ACT_CANCEL);
+  CHECK(g.dialogue != D_X_FUTON_AWAKE);
+  /* Standing on it in the morning says so, and changes nothing. */
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_FUTON_MORNING && count_events(&g, EV_PHASE) == 1);
+  game_action(&g, ACT_CANCEL);
+  /* And once settled, sleeping from its own tile works too. */
+  Game h;
+  CHECK(game_init(&h, assets));
+  h.outcome = OUT_FIGHT;
+  h.obs |= OBS(OBS_SETTLED);
+  stand(&h, MAP_VILLAGE, 4, 14, 0, -1);
+  game_action(&h, ACT_CONFIRM);
+  CHECK(h.phase == PHASE_MORNING && h.dialogue == D_SCENE_MORNING);
+  return 0;
+}
+/* What an outcome changes wins over what was true before it. */
+static int test_change_precedence(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  g.obs |= OBS(OBS_FOX_TENDED);
+  CHECK(game_tile(&g, MAP_FOREST, 5, 20) == 'f');
+  g.outcome = OUT_FIGHT;
+  CHECK(game_tile(&g, MAP_FOREST, 5, 20) == 'e'); /* the fox left */
+  g.outcome = OUT_MEND;
+  g.phase = PHASE_MORNING;
+  CHECK(game_tile(&g, MAP_FOREST, 5, 20) == 'g'); /* and came back with kits */
+  return 0;
+}
+/* The morning must not swallow the bowl's story either. */
+static int test_morning_keeps_threads(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  g.outcome = OUT_BOUNDARY;
+  g.phase = PHASE_MORNING;
+  g.obs |= OBS(OBS_MORNING) | OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK);
+  stand(&g, MAP_VILLAGE, 5, 5, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_SUMI_OWNER && game_knows(&g, OBS_BOWL_OWNER));
+  game_action(&g, ACT_CANCEL);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_SUMI_MORNING_BOUNDARY);
+  return 0;
+}
 /* The grey patch appears after any outcome and says nothing about itself. */
 static int test_grey_trace(const char *assets) {
   Game g;
@@ -988,7 +1101,9 @@ int main(int argc, char **argv) {
       test_fight(argv[1]) || test_outcome_keeps_threads(argv[1]) ||
       test_defeat(argv[1]) || test_boundary(argv[1]) || test_mend(argv[1]) ||
       test_compromise(argv[1]) || test_daigo_stays(argv[1]) || test_phases(argv[1]) ||
-      test_consequences(argv[1]) || test_grey_trace(argv[1]) || test_combat())
+      test_consequences(argv[1]) || test_night_offer(argv[1]) || test_futon(argv[1]) ||
+      test_change_precedence(argv[1]) || test_morning_keeps_threads(argv[1]) ||
+      test_grey_trace(argv[1]) || test_combat())
     return 1;
   puts("World, examining, encounter, outcomes, consequences, morning, trace pass.");
   return 0;
