@@ -4,7 +4,7 @@ import struct
 # Ink, moss, jade, bamboo, straw, washi, cedar, ochre, indigo,
 # water, slate, white, vermilion, sakura, skin, transparent.
 pal=[(24,25,34),(36,57,47),(55,85,56),(104,135,75),(177,161,105),(234,219,176),(88,57,46),(168,112,62),(45,56,81),(72,116,135),(112,130,139),(247,238,210),(183,63,52),(219,146,162),(220,167,119),(255,0,255)]
-w,h=52*16,16
+w,h=55*16,16
 pix=[[15]*w for _ in range(h)]
 def rect(t,x,y,ww,hh,c):
  for yy in range(max(0,y),min(16,y+hh)):
@@ -140,6 +140,12 @@ grass(50)
 shapes(50,[(7,8,2,7,6),(4,5,8,3,3),(6,3,4,3,3),(5,7,6,1,2)])
 rect(51,0,0,16,16,10)
 for x,y in [(3,4),(9,7),(5,12),(12,10)]:rect(51,x,y,2,1,5)
+# Two signs beside their doors, and Orihas workbench with bowls and brushes.
+for t,mark in [(52,'bed'),(53,'bowl')]:
+ shapes(t,[(0,0,16,16,6),(1,1,14,10,4),(1,1,14,1,7),(1,10,14,1,7),(6,11,4,5,6)])
+ if mark=='bed':shapes(t,[(3,4,10,4,5),(3,3,4,1,5),(3,8,10,1,7)])
+ else:shapes(t,[(5,4,6,3,5),(4,3,8,1,5),(6,7,4,1,7),(11,3,1,5,12)])
+shapes(54,[(0,0,16,16,6),(0,5,16,3,7),(1,8,14,7,4),(2,2,4,3,5),(3,1,2,1,5),(8,2,1,4,12),(8,1,1,1,0),(11,2,3,3,5),(12,1,1,1,11)])
 rows=bytearray()
 for row in reversed(pix):
  for c in row:rows.extend(bytes(pal[c][::-1]))

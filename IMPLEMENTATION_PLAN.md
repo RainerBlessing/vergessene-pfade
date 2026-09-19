@@ -307,6 +307,11 @@ Der Log wird im Core als Ereignispuffer geführt; `main.c` schreibt die Datei.
   - Beide Wege nutzen dieselbe Funktion `spend_the_night`; danach liegt die Figur im Gasthaus.
   - Der Futon reagiert jetzt auch vom davorliegenden Feld. Nach einer Lösung erscheint dort kein Hinweis mehr auf einen unruhigen Wald, weil der Übergang vor den Untersuchungspunkten greift.
   - Vor einer Lösung bleibt die Sperre; der Morgenwechsel geschieht weiterhin nur einmal.
+- **Nachtrag (2026-09-19), Orientierung im Dorf:** Gebäude sind jetzt ohne Ansprechpartner erkennbar.
+  - Untersuchbare Schilder am Gasthaus („GASTHAUS“) und an Orihas Werkstatt (Schale und Pinsel), dazu ihre Werkbank mit Schalen und Lacknäpfen.
+  - Beim Betreten nennt sich der Ort kurz im Kopfbereich (`places`-Tabelle mit `PLACE_TICKS`); „Sumis Haus“ erst nach dem Kennenlernen.
+  - Der Futon beschreibt zuerst seine Funktion. Untersuchen und Schlafen sind getrennt: Erst die Auswahl „Übernachten“ startet den Versuch, und bei ungelöstem Konflikt erscheint dann die bekannte Meldung über die Unruhe im Wald.
+  - Beim Aufwachen nennt sich das Gasthaus erneut.
 - **Selbstprüfung statt Review (2026-09-19):** Das angeforderte Review brach wegen eines Sitzungslimits ab. Eigene Prüfung fand zwei Fehler: Konsequenzen wurden von älteren Overlays verdeckt (Fuchsbau blieb nach dem Kampf „bewohnt“), und Sumis Morgen-Regeln verdeckten die Schalen-Geschichte. Beides behoben und mit Tests abgesichert. Ein unabhängiges Review von Stage 4 steht noch aus.
 - Tests: Prüfung auf Gewinn und Verlust je Ausgang **und** Phase, Sichtbarkeit jeder Änderung, Begehbarkeit in jedem Zustand, Übernachtung nur nach Entscheidung, zweite Nacht ohne Wirkung, Spur und späte Inschrift. Alle drei Journeys laufen bis zum Abspann.
 

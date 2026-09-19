@@ -88,6 +88,11 @@ static bool sleep_and_look(Game *g, JourneyObserver o, void *c, const char *labe
     if (g->map == MAP_FOREST)
       REQUIRE(walk(g, 24, 39) || g->map == MAP_VILLAGE);
     REQUIRE(walk(g, INN_X, INN_Y));
+    game_action(g, ACT_CONFIRM); /* what the futon is */
+    REQUIRE(g->dialogue == D_X_FUTON);
+    game_action(g, ACT_CONFIRM); /* and the question it raises */
+    REQUIRE(g->state == GAME_PROMPT);
+    g->selection = 0;
     game_action(g, ACT_CONFIRM);
   }
   REQUIRE(g->state == GAME_DIALOGUE && g->phase == PHASE_MORNING);
@@ -142,6 +147,13 @@ static bool explore(Game *g, JourneyObserver observer, void *context) {
   REQUIRE(use(g, 4, 6));
   REQUIRE(game_knows(g, OBS_HOUSE_MARK) && g->dialogue == D_X_HOUSE_MARK);
   close_dialogue(g);
+  /* The village says what its houses are, before anyone explains them. */
+  REQUIRE(use(g, 5, 16));
+  REQUIRE(g->dialogue == D_X_INN_SIGN);
+  close_dialogue(g);
+  REQUIRE(walk(g, 6, 15));
+  REQUIRE(g->place && g->place_ticks > 0);
+  see(g, observer, context, "03b-inn");
   REQUIRE(talk_to(g, NPC_KENTA));
   REQUIRE(game_knows(g, OBS_KENTA_STARE));
   close_dialogue(g);

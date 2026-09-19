@@ -63,6 +63,8 @@ typedef struct {
   int npc, page, selection, dialogue, scroll;
   char examined;
   const char *scene; /* panel title while npc == SPEAKER_SCENE */
+  const char *place; /* the room the player just stepped into */
+  int place_ticks;   /* how much longer its name is shown */
   Obs obs;
   NoteId notes[NOTE_LIMIT];
   int note_count;

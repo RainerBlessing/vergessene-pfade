@@ -49,7 +49,10 @@ const TileDef tiles[] = {
     {.symbol = 'e', .passable = false, .transition = false, .name = "Leerer Bau"},
     {.symbol = 'g', .passable = false, .transition = false, .name = "Fuchsbau"},
     {.symbol = 'j', .passable = false, .transition = false, .name = "Setzling"},
-    {.symbol = 'v', .passable = false, .transition = false, .name = "Graue Spur"}};
+    {.symbol = 'v', .passable = false, .transition = false, .name = "Graue Spur"},
+    {.symbol = 'n', .passable = false, .transition = false, .name = "Schild"},
+    {.symbol = 'w', .passable = false, .transition = false, .name = "Schild"},
+    {.symbol = 'c', .passable = false, .transition = false, .name = "Werkbank"}};
 const int tile_count = (int)(sizeof tiles / sizeof tiles[0]);
 const TileDef *tile_def(char s) {
   for (int i = 0; i < tile_count; i++)

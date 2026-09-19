@@ -77,10 +77,11 @@ bool renderer_init(Renderer *r, SDL_Renderer *sdl, const char *assets) {
 }
 void renderer_destroy(Renderer *r) { SDL_DestroyTexture(r->atlas); }
 static int tile_art(char t) {
-  static const char symbols[] = ".,~T^#H_+><*SBr=Rls[]GxOoYmdAkWMhFftbqpuegjv";
-  static const int art[] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 19, 20, 21,
-                            22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,
-                            37, 38, 39, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51};
+  static const char symbols[] = ".,~T^#H_+><*SBr=Rls[]GxOoYmdAkWMhFftbqpuegjvnwc";
+  static const int art[] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11,
+                            19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+                            31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 42, 43,
+                            44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54};
   const char *at = strchr(symbols, t);
   return at ? art[at - symbols] : 4;
 }
@@ -107,7 +108,11 @@ static void world(Renderer *r, const Game *g) {
       2);
   SDL_SetRenderClipRect(r->sdl, NULL);
   box(r, 0, 0, 320, 16, 0);
-  text(r, 8, 4, 1, g->map == MAP_VILLAGE ? "KIRIYAMA" : "DER WALD");
+  /* Stepping into a building names it for a moment. */
+  text(r, 8, 4, 1,
+       g->place_ticks > 0 && g->place ? g->place
+       : g->map == MAP_VILLAGE        ? "KIRIYAMA"
+                                      : "DER WALD");
   box(r, 0, 176, 320, 24, 0);
   color(r, 1);
   formatted(r, 8, 178, "LP %02d/%02d  I TASCHE  ESC NOTIZBUCH", g->player.hp,

@@ -126,6 +126,10 @@ typedef enum {
   D_SUMI_MEND,
   D_STAKE_SET,
   D_SCENE_MEND,
+  D_X_INN_SIGN,
+  D_X_WORKSHOP_SIGN,
+  D_X_WORKBENCH,
+  D_X_FUTON,
   D_X_FUTON_AWAKE,
   D_X_FUTON_MORNING,
   D_PROMPT_SLEEP,
@@ -282,6 +286,16 @@ extern const DialogueId encounter_lines[ENC_COUNT][MOOD_COUNT];
 #define STONE_START_Y 16
 #define STONE_HOLLOW_X 24
 #define STONE_HOLLOW_Y 12
+
+/* Rooms that name themselves for a moment when the player steps inside. */
+typedef struct {
+  int map, x, y, width, height;
+  const char *name;
+  Obs needs;
+} Place;
+extern const Place places[];
+extern const int place_count;
+#define PLACE_TICKS 14 /* actions the name stays on screen */
 
 /* The two answers to the question about the night, in this order. */
 #define NIGHT_CHOICES 2

@@ -208,6 +208,16 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
                        "lange\nnichts.",
                        "Zwischen den Staemmen sitzt der\nKami bei der Schale. Es "
                        "sieht\neuch zu und bleibt sitzen."}},
+    [D_X_INN_SIGN] = {1, {"Ein Holzschild ueber der Tuer:\nGASTHAUS."}},
+    [D_X_WORKSHOP_SIGN] = {1,
+                           {"Ein Schild mit einer Schale und\neinem Pinsel: Orihas "
+                            "Lackwerkstatt."}},
+    [D_X_WORKBENCH] = {1,
+                       {"Schalen, Pinsel, Lacknaepfe. Eine\nSchale traegt eine "
+                        "goldene Naht."}},
+    [D_X_FUTON] = {1,
+                   {"Ein bereitgelegter Futon fuer\nReisende. Hier kannst du\n"
+                    "uebernachten."}},
     [D_X_FUTON_AWAKE] = {1,
                          {"Du liegst wach. Solange der Wald\nunruhig ist, findest du "
                           "keinen\nSchlaf."}},
@@ -491,16 +501,19 @@ const ExaminePoint examine_points[] = {
      .grants = OBS(OBS_TRACKS),
      .dialogue = D_X_TRACKS,
      .note = N_TRACKS},
+    {.kind = POINT_SYMBOL, .map = MAP_VILLAGE, .symbol = 'n', .dialogue = D_X_INN_SIGN},
+    {.kind = POINT_SYMBOL,
+     .map = MAP_VILLAGE,
+     .symbol = 'w',
+     .dialogue = D_X_WORKSHOP_SIGN},
+    {.kind = POINT_SYMBOL, .map = MAP_VILLAGE, .symbol = 'c', .dialogue = D_X_WORKBENCH},
     /* The night at the inn, once something has been decided. */
     {.kind = POINT_SYMBOL,
      .map = MAP_VILLAGE,
      .symbol = 'u',
      .needs = OBS(OBS_MORNING),
      .dialogue = D_X_FUTON_MORNING},
-    {.kind = POINT_SYMBOL,
-     .map = MAP_VILLAGE,
-     .symbol = 'u',
-     .dialogue = D_X_FUTON_AWAKE},
+    {.kind = POINT_SYMBOL, .map = MAP_VILLAGE, .symbol = 'u', .dialogue = D_X_FUTON},
     /* The shrine after an outcome: a grey patch, and a line further down. */
     {.kind = POINT_SYMBOL,
      .map = MAP_FOREST,
@@ -656,3 +669,11 @@ const int mend_display[MEND_PIECES] = {2, 0, 3, 1};
 const StakeSpot stakes[STAKE_COUNT] = {{14, 14}, {22, 15}, {30, 14}};
 
 const char *const night_choices[NIGHT_CHOICES] = {"UEBERNACHTEN", "NOCH HIERBLEIBEN"};
+
+/* Buildings say what they are, whether or not anyone is in. */
+const Place places[] = {
+    {MAP_VILLAGE, 2, 13, 8, 4, "Gasthaus von Kiriyama", 0},
+    {MAP_VILLAGE, 21, 3, 8, 4, "Orihas Lackwerkstatt", 0},
+    {MAP_VILLAGE, 2, 3, 8, 4, "Sumis Haus", OBS(OBS_ASKED_BY_SUMI)},
+};
+const int place_count = (int)(sizeof places / sizeof places[0]);

@@ -885,18 +885,26 @@ static int test_phases(const char *assets) {
   CHECK(game_init(&g, assets));
   stand(&g, MAP_VILLAGE, 4, 14, 0, -1);
   CHECK(game_tile(&g, MAP_VILLAGE, 4, 14) == 'u');
+  game_action(&g, ACT_CONFIRM); /* what it is */
+  game_action(&g, ACT_CONFIRM); /* the question */
+  g.selection = 0;
   game_action(&g, ACT_CONFIRM);
   CHECK(g.phase == PHASE_BEFORE && g.dialogue == D_X_FUTON_AWAKE);
   game_action(&g, ACT_CANCEL);
   g.outcome = OUT_FIGHT;
   game_action(&g, ACT_CONFIRM);
+  game_action(&g, ACT_CONFIRM);
+  g.selection = 0;
+  game_action(&g, ACT_CONFIRM);
   CHECK(g.phase == PHASE_MORNING && g.dialogue == D_SCENE_MORNING);
   CHECK(g.notes[g.note_count - 1] == N_MORNING);
   CHECK(count_events(&g, EV_PHASE) == 1);
   game_action(&g, ACT_CANCEL);
-  /* A second night changes nothing more. */
+  /* A second night changes nothing more: the futon only describes itself. */
   game_action(&g, ACT_CONFIRM);
   CHECK(g.dialogue == D_X_FUTON_MORNING && count_events(&g, EV_PHASE) == 1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_EXPLORATION && count_events(&g, EV_PHASE) == 1);
   return 0;
 }
 static int test_consequences(const char *assets) {
@@ -984,19 +992,99 @@ static int test_night_offer(const char *assets) {
   }
   return 0;
 }
+/* The village says what its houses are, from the first visit on. */
+static int test_signs(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  /* The inn sign, before anything at all has happened. */
+  stand(&g, MAP_VILLAGE, 5, 17, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_INN_SIGN && g.outcome == OUT_NONE);
+  game_action(&g, ACT_CANCEL);
+  /* The workshop sign and her materials. */
+  stand(&g, MAP_VILLAGE, 24, 7, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_WORKSHOP_SIGN);
+  game_action(&g, ACT_CANCEL);
+  stand(&g, MAP_VILLAGE, 26, 5, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_WORKBENCH);
+  game_action(&g, ACT_CANCEL);
+  /* Stepping inside names the place for a moment. */
+  stand(&g, MAP_VILLAGE, 6, 16, 0, -1);
+  game_action(&g, ACT_UP);
+  CHECK(g.place && strcmp(g.place, "Gasthaus von Kiriyama") == 0 && g.place_ticks > 0);
+  stand(&g, MAP_VILLAGE, 25, 6, 0, -1);
+  game_action(&g, ACT_UP);
+  CHECK(g.place && strcmp(g.place, "Orihas Lackwerkstatt") == 0);
+  /* Sumi's house carries her name only once the player has met her. */
+  stand(&g, MAP_VILLAGE, 6, 6, 0, -1);
+  game_action(&g, ACT_UP);
+  CHECK(g.place == NULL || strcmp(g.place, "Sumis Haus") != 0);
+  g.obs |= OBS(OBS_ASKED_BY_SUMI);
+  stand(&g, MAP_VILLAGE, 6, 6, 0, -1);
+  game_action(&g, ACT_UP);
+  CHECK(g.place && strcmp(g.place, "Sumis Haus") == 0);
+  /* The name fades on its own. */
+  for (int i = 0; i < 64 && g.place_ticks > 0; i++)
+    game_action(&g, ACT_NONE);
+  CHECK(g.place_ticks == 0);
+  return 0;
+}
+/* Examining the futon explains it; only the answer tries to sleep. */
+static int test_futon_explains(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  stand(&g, MAP_VILLAGE, 5, 14, -1, 0);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_FUTON && g.state == GAME_DIALOGUE);
+  CHECK(g.phase == PHASE_BEFORE && count_events(&g, EV_PHASE) == 0);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_PROMPT); /* the question, not a night */
+  /* Unsolved: trying to sleep says why, and nothing changes. */
+  g.selection = 0;
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_FUTON_AWAKE && g.phase == PHASE_BEFORE);
+  game_action(&g, ACT_CANCEL);
+  /* Declining leaves the player standing there. */
+  game_action(&g, ACT_CONFIRM);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_PROMPT);
+  g.selection = 1;
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_EXPLORATION && g.phase == PHASE_BEFORE);
+  /* Settled: the same answer now leads into the morning. */
+  g.outcome = OUT_BOUNDARY;
+  g.obs |= OBS(OBS_SETTLED);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_DIALOGUE);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_PROMPT);
+  g.selection = 0;
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.phase == PHASE_MORNING && g.dialogue == D_SCENE_MORNING);
+  return 0;
+}
 /* The futon works from its own tile and from the one in front of it, and never
  * claims the forest is restless once the conflict is settled. */
 static int test_futon(const char *assets) {
   Game g;
   CHECK(game_init(&g, assets));
-  /* Before any outcome: still no sleep, with a reason. */
+  /* Before any outcome: the attempt is refused, with a reason. */
   stand(&g, MAP_VILLAGE, 5, 14, -1, 0);
+  game_action(&g, ACT_CONFIRM);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_PROMPT);
+  g.selection = 0;
   game_action(&g, ACT_CONFIRM);
   CHECK(g.dialogue == D_X_FUTON_AWAKE && g.phase == PHASE_BEFORE);
   game_action(&g, ACT_CANCEL);
   /* Settled: from the tile in front of it. */
   g.outcome = OUT_MEND;
   g.obs |= OBS(OBS_SETTLED);
+  game_action(&g, ACT_CONFIRM);
+  game_action(&g, ACT_CONFIRM);
+  g.selection = 0;
   game_action(&g, ACT_CONFIRM);
   CHECK(g.phase == PHASE_MORNING && g.dialogue == D_SCENE_MORNING);
   CHECK(game_tile(&g, MAP_VILLAGE, g.x, g.y) == 'u');
@@ -1012,6 +1100,11 @@ static int test_futon(const char *assets) {
   h.outcome = OUT_FIGHT;
   h.obs |= OBS(OBS_SETTLED);
   stand(&h, MAP_VILLAGE, 4, 14, 0, -1);
+  game_action(&h, ACT_CONFIRM);
+  CHECK(h.dialogue == D_X_FUTON);
+  game_action(&h, ACT_CONFIRM);
+  CHECK(h.state == GAME_PROMPT);
+  h.selection = 0;
   game_action(&h, ACT_CONFIRM);
   CHECK(h.phase == PHASE_MORNING && h.dialogue == D_SCENE_MORNING);
   return 0;
@@ -1101,7 +1194,8 @@ int main(int argc, char **argv) {
       test_fight(argv[1]) || test_outcome_keeps_threads(argv[1]) ||
       test_defeat(argv[1]) || test_boundary(argv[1]) || test_mend(argv[1]) ||
       test_compromise(argv[1]) || test_daigo_stays(argv[1]) || test_phases(argv[1]) ||
-      test_consequences(argv[1]) || test_night_offer(argv[1]) || test_futon(argv[1]) ||
+      test_consequences(argv[1]) || test_night_offer(argv[1]) || test_signs(argv[1]) ||
+      test_futon_explains(argv[1]) || test_futon(argv[1]) ||
       test_change_precedence(argv[1]) || test_morning_keeps_threads(argv[1]) ||
       test_grey_trace(argv[1]) || test_combat())
     return 1;

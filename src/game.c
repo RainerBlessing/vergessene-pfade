@@ -222,10 +222,9 @@ static void examine_nothing(Game *g, int x, int y) {
   *last = (NothingTarget){true, g->map, x, y, g->dx, g->dy, 0};
 }
 static bool stake_here(Game *g);
-static bool sleep_here(Game *g);
 /* Facing tile first, then the tile underfoot (passable points cannot be faced). */
 static void examine(Game *g) {
-  if (stake_here(g) || sleep_here(g))
+  if (stake_here(g))
     return;
   int fx = g->x + g->dx, fy = g->y + g->dy;
   const ExaminePoint *p = point_at(g, fx, fy);
@@ -338,6 +337,24 @@ static void finish(Game *g, Outcome outcome) {
   learn(g, OBS(OBS_SETTLED), NOTE_NONE);
   emit(g, EV_OUTCOME, outcome, 0);
 }
+/* The name of the room the player is standing in, if it has one. */
+static const char *place_at(const Game *g, int map, int x, int y) {
+  for (int i = 0; i < place_count; i++) {
+    const Place *p = &places[i];
+    if (p->map != map || !matches(g, p->needs, 0))
+      continue;
+    if (x >= p->x && x < p->x + p->width && y >= p->y && y < p->y + p->height)
+      return p->name;
+  }
+  return NULL;
+}
+static void enter_place(Game *g) {
+  const char *place = place_at(g, g->map, g->x, g->y);
+  if (!place || place == g->place)
+    return;
+  g->place = place;
+  g->place_ticks = PLACE_TICKS;
+}
 /* The one way into the next morning, whether the night was offered by Sumi or
  * taken at the futon. It happens once, and only once something is settled. */
 static bool spend_the_night(Game *g) {
@@ -349,18 +366,18 @@ static bool spend_the_night(Game *g) {
   g->dx = 0;
   g->dy = 1;
   g->phase = PHASE_MORNING;
+  g->place = NULL;
+  enter_place(g); /* waking up, the inn names itself again */
   learn(g, OBS(OBS_MORNING), N_MORNING);
   emit(g, EV_PHASE, g->phase, 0);
   open_scene(g, "Im Gasthaus", D_SCENE_MORNING);
   return true;
 }
-/* The futon, from its own tile or from the one in front of it. */
-static bool sleep_here(Game *g) {
-  if (g->map != MAP_VILLAGE)
-    return false;
-  bool at_futon = game_tile(g, g->map, g->x, g->y) == 'u' ||
-                  game_tile(g, g->map, g->x + g->dx, g->y + g->dy) == 'u';
-  return at_futon && spend_the_night(g); /* otherwise the futon point speaks */
+static void ask_about_the_night(Game *g) {
+  g->state = GAME_PROMPT;
+  g->dialogue = D_PROMPT_SLEEP;
+  g->selection = 0;
+  g->message[0] = 0;
 }
 static void prompt_action(Game *g, Action a) {
   if (a == ACT_UP || a == ACT_DOWN)
@@ -372,8 +389,10 @@ static void prompt_action(Game *g, Action a) {
   if (a != ACT_CONFIRM)
     return;
   g->state = GAME_EXPLORATION;
-  if (g->selection == 0)
-    spend_the_night(g);
+  if (g->selection != 0)
+    return;
+  if (!spend_the_night(g)) /* the forest is still unsettled */
+    open_dialogue(g, -1, 'u', D_X_FUTON_AWAKE);
 }
 /* One exchange of blows. The fight continues until someone falls or the player
  * steps back; the spirit keeps its wounds until it wins. */
@@ -561,6 +580,10 @@ static void move(Game *g, int dx, int dy) {
   int from_x = g->x, from_y = g->y;
   g->x += dx;
   g->y += dy;
+  if (!place_at(g, g->map, g->x, g->y))
+    g->place = NULL; /* outside again: the next room may repeat its name */
+  else
+    enter_place(g);
   if (g->daigo_follows) { /* he walks in your footsteps */
     g->daigo_x = from_x;
     g->daigo_y = from_y;
@@ -587,6 +610,8 @@ static void move(Game *g, int dx, int dy) {
   }
 }
 void game_action(Game *g, Action a) {
+  if (g->place_ticks > 0) /* the room's name fades after a few moves */
+    g->place_ticks--;
   if (a == ACT_DEBUG) {
     g->debug = !g->debug;
     return;
@@ -612,13 +637,12 @@ void game_action(Game *g, Action a) {
     }
     if (g->opens == OPEN_FOLLOW)
       g->daigo_follows = true;
-    if (g->opens == OPEN_NIGHT && g->phase == PHASE_BEFORE) {
-      g->state = GAME_PROMPT;
-      g->dialogue = D_PROMPT_SLEEP;
-      g->selection = 0;
-      g->message[0] = 0;
-    }
+    if (g->opens == OPEN_NIGHT && g->phase == PHASE_BEFORE)
+      ask_about_the_night(g);
     g->opens = OPEN_NOTHING;
+    /* Having read what the futon is, the same question follows. */
+    if (g->dialogue == D_X_FUTON && g->phase == PHASE_BEFORE)
+      ask_about_the_night(g);
     return;
   case GAME_INVENTORY:
     inventory_action(g, a);

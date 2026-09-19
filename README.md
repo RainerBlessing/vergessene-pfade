@@ -20,6 +20,10 @@ Narrativer Retro-RPG-Prototyp (C11 / SDL3). Er prüft, ob der Loop
 - **Die Nacht:** Nach dem Gespräch mit Sumi fragt sie: „Fuer heute ist alles
   entschieden. Im Gasthaus uebernachten?“ Wer ablehnt, kann weiter erkunden und später
   wieder bei Sumi oder am Futon übernachten.
+- **Gebäude sind von Anfang an erkennbar:** Schilder am Gasthaus und an Orihas
+  Werkstatt lassen sich untersuchen, beim Betreten erscheint kurz der Ortsname
+  („Gasthaus von Kiriyama“, „Orihas Lackwerkstatt“, nach dem Kennenlernen „Sumis Haus“).
+  Der Futon erklärt erst, wozu er da ist; erst die Auswahl „Übernachten“ versucht zu schlafen.
 - **Klang:** eine schlichte Ambient-Fläche, die auf Ort und Ausgang reagiert.
 - **Hinweis am Schrein:** eine graue Stelle ohne Erklärung und eine Zeile über einen
   Besucher, der vor der Unruhe kam. Danach ein kurzer Abspann.
@@ -72,7 +76,7 @@ Alle Modi aus einem beschreibbaren Arbeitsverzeichnis starten:
 | Leertaste / Enter | reden bzw. untersuchen (Blickfeld, sonst das Feld unter dir), weiter |
 | I | Tasche; Enter benutzt einen Gegenstand am Ziel vor dir oder sieht ihn genauer an |
 | Esc | Dialog schließen / Notizbuch (Hoch/Runter blättert) |
-| Enter am Futon (darauf oder davor) | übernachten, sobald etwas entschieden ist |
+| Enter am Futon (darauf oder davor) | Futon ansehen, dann „Übernachten“ wählen |
 | F1 / F2 | Debug-Anzeige / Hindernisse |
 | R, Q (im Notizbuch) | neu starten / beenden |
 
