@@ -71,8 +71,8 @@ jobs:
           path.write_bytes(plistlib.dumps(info))
           PY
 
-          lipo -verify_arch arm64 x86_64 \
-            "$APP/Contents/MacOS/vergessene_pfade"
+          lipo "$APP/Contents/MacOS/vergessene_pfade" \
+            -verify_arch arm64 x86_64
           codesign --force --sign - "$APP"
           codesign --verify --strict "$APP"
           ditto -c -k --keepParent "$APP" dist/vergessene-pfade-macos.zip
