@@ -154,6 +154,9 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
                          {"Der alte Stein steht wieder da,\nwo er hingehoert? Dann "
                           "bleibt\nder Hain ihrer.",
                           "Daigo wird toben. Das Holz an\nder Grenze war das beste."}},
+    [D_DAIGO_FOUGHT] = {1,
+                        {"Der Geist ist fort? Dann koennen\nwir wieder arbeiten. Ich "
+                         "schicke\ndie Leute morgen in den Wald."}},
     [D_DAIGO_BOUNDARY] = {1,
                           {"Du hast den Stein zurueckgerollt.\nWeisst du, was das "
                            "kostet? Nein.\nWoher auch."}},
@@ -387,16 +390,18 @@ const DialogueRule dialogue_rules[] = {
      OPEN_NOTHING, PHASE_ANY},
     {NPC_KENTA, 0, 0, OBS(OBS_KENTA_STARE), D_KENTA, N_KENTA, ITEM_NONE, OUT_ANY,
      OPEN_NOTHING, PHASE_ANY},
+    {NPC_DAIGO, 0, 0, 0, D_DAIGO_FOUGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT, OPEN_NOTHING,
+     PHASE_ANY},
     {NPC_DAIGO, 0, 0, 0, D_DAIGO_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY,
      OPEN_NOTHING, PHASE_ANY},
     {NPC_DAIGO, 0, 0, 0, D_DAIGO_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND, OPEN_NOTHING,
      PHASE_ANY},
     /* The compromise: he comes along once the kami sits and the tracks are known. */
     {NPC_DAIGO, OBS(OBS_KAMI_CALMED) | OBS(OBS_TRACKS) | OBS(OBS_LEDGER_DEBT),
-     OBS(OBS_DAIGO_DEAL), OBS(OBS_DAIGO_DEAL), D_DAIGO_OFFER, N_DEAL, ITEM_NONE, OUT_ANY,
+     OBS(OBS_DAIGO_DEAL), OBS(OBS_DAIGO_DEAL), D_DAIGO_OFFER, N_DEAL, ITEM_NONE, OUT_NONE,
      OPEN_FOLLOW, PHASE_ANY},
-    {NPC_DAIGO, OBS(OBS_DAIGO_DEAL), 0, 0, D_DAIGO_WALKING, NOTE_NONE, ITEM_NONE, OUT_ANY,
-     OPEN_FOLLOW, PHASE_ANY},
+    {NPC_DAIGO, OBS(OBS_DAIGO_DEAL), 0, 0, D_DAIGO_WALKING, NOTE_NONE, ITEM_NONE,
+     OUT_NONE, OPEN_FOLLOW, PHASE_ANY},
     {NPC_DAIGO, OBS(OBS_LEDGER_DEBT), 0, 0, D_DAIGO_LEDGER, NOTE_NONE, ITEM_NONE, OUT_ANY,
      OPEN_NOTHING, PHASE_ANY},
     {NPC_DAIGO, 0, 0, 0, D_DAIGO, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING, PHASE_ANY},

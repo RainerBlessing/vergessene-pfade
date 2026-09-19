@@ -366,6 +366,11 @@ static int test_content(const char *assets) {
     for (int k = 0; k < i; k++)
       CHECK(stakes[i].x != stakes[k].x || stakes[i].y != stakes[k].y);
   }
+  /* The boundary negotiation must not start once something has been decided.
+   * (Mending the bowl stays possible: it settles nothing by itself.) */
+  for (int i = 0; i < dialogue_rule_count; i++)
+    if (dialogue_rules[i].opens == OPEN_FOLLOW)
+      CHECK(dialogue_rules[i].outcome == OUT_NONE);
   /* The display order must be a permutation, or the puzzle breaks. */
   for (int i = 0; i < MEND_PIECES; i++) {
     CHECK(mend_display[i] >= 0 && mend_display[i] < MEND_PIECES);
@@ -1123,6 +1128,56 @@ static int test_change_precedence(const char *assets) {
   CHECK(game_tile(&g, MAP_FOREST, 5, 20) == 'g'); /* and came back with kits */
   return 0;
 }
+/* What the foreman says right after each outcome, and the next morning. */
+static int test_daigo_reactions(const char *assets) {
+  const Outcome outcomes[3] = {OUT_FIGHT, OUT_BOUNDARY, OUT_MEND};
+  const DialogueId today[3] = {D_DAIGO_FOUGHT, D_DAIGO_BOUNDARY, D_DAIGO_MEND};
+  const DialogueId morning[3] = {D_DAIGO_MORNING_FIGHT, D_DAIGO_MORNING_BOUNDARY,
+                                 D_DAIGO_MORNING_MEND};
+  for (int i = 0; i < 3; i++)
+    for (int ledger = 0; ledger < 2; ledger++) {
+      Game g;
+      CHECK(game_init(&g, assets));
+      g.outcome = outcomes[i];
+      g.obs |= OBS(OBS_SETTLED);
+      if (ledger)
+        g.obs |= OBS(OBS_LEDGER_DEBT); /* his book must not change the answer */
+      stand(&g, MAP_FOREST, 12, 31, -1, 0);
+      game_action(&g, ACT_CONFIRM);
+      CHECK(g.dialogue == (int)today[i]);
+      dismiss(&g);
+      g.phase = PHASE_MORNING;
+      g.obs |= OBS(OBS_MORNING);
+      game_action(&g, ACT_CONFIRM);
+      CHECK(g.dialogue == (int)morning[i]);
+      dismiss(&g);
+    }
+  return 0;
+}
+/* Once something is decided he no longer opens a different way out. */
+static int test_no_late_deal(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  g.obs |= OBS(OBS_KAMI_CALMED) | OBS(OBS_TRACKS) | OBS(OBS_LEDGER_DEBT);
+  stand(&g, MAP_FOREST, 12, 31, -1, 0);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_DAIGO_OFFER); /* undecided: the offer stands */
+  dismiss(&g);
+  CHECK(g.daigo_follows);
+  Game h;
+  CHECK(game_init(&h, assets));
+  h.obs = g.obs | OBS(OBS_SETTLED);
+  h.outcome = OUT_FIGHT;
+  stand(&h, MAP_FOREST, 12, 31, -1, 0);
+  game_action(&h, ACT_CONFIRM);
+  CHECK(h.dialogue == D_DAIGO_FOUGHT && !h.daigo_follows);
+  dismiss(&h);
+  /* Not even once the deal had been struck before the kami fell. */
+  h.obs |= OBS(OBS_DAIGO_DEAL);
+  game_action(&h, ACT_CONFIRM);
+  CHECK(h.dialogue == D_DAIGO_FOUGHT && !h.daigo_follows);
+  return 0;
+}
 /* Winning the fight does not snatch the fox away on the same day, and the
  * empty den says what it is. */
 static int test_fox_leaves_later(const char *assets) {
@@ -1220,6 +1275,7 @@ int main(int argc, char **argv) {
       test_consequences(argv[1]) || test_night_offer(argv[1]) || test_signs(argv[1]) ||
       test_futon_explains(argv[1]) || test_futon(argv[1]) ||
       test_change_precedence(argv[1]) || test_fox_leaves_later(argv[1]) ||
+      test_daigo_reactions(argv[1]) || test_no_late_deal(argv[1]) ||
       test_morning_keeps_threads(argv[1]) || test_grey_trace(argv[1]) || test_combat())
     return 1;
   puts("World, examining, encounter, outcomes, consequences, morning, trace pass.");
