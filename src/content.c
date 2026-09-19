@@ -1,12 +1,14 @@
 #include "content.h"
 const char *const obs_names[OBS_COUNT] = {
-    "ASKED_BY_SUMI", "KENTA_STARE",        "CLAW_MARKS_EDGE", "FRESH_STUMPS",
-    "BROKEN_ROPE",   "SHRINE_INSCRIPTION", "STONE_DRAGGED",   "STONE_HOLLOW",
-    "BOWL_SHARDS",   "BOWL_MARK",          "HOUSE_MARK",      "BOWL_OWNER",
-    "LEDGER_DEBT",   "FOX_WOUNDED",        "MIO_HERB",        "FOX_TENDED",
-    "TRACKS",        "KAMI_SEEN",          "KAMI_ANGERED",    "STONE_MOVED",
-    "BOWL_DRYING",   "BOWL_READY",         "KAMI_CALMED",     "DAIGO_DEAL",
-    "SETTLED",       "GREY_TRACE",         "MORNING",         "TEASED"};
+    "ASKED_BY_SUMI", "KENTA_STARE",  "CLAW_MARKS_EDGE",
+    "FRESH_STUMPS",  "BROKEN_ROPE",  "SHRINE_INSCRIPTION",
+    "STONE_DRAGGED", "STONE_HOLLOW", "BOWL_SHARDS",
+    "BOWL_MARK",     "HOUSE_MARK",   "BOWL_OWNER",
+    "LEDGER_DEBT",   "FOX_WOUNDED",  "MIO_HERB",
+    "FOX_TENDED",    "TRACKS",       "KAMI_SEEN",
+    "KAMI_ANGERED",  "STONE_MOVED",  "BOWL_DRYING",
+    "BOWL_READY",    "KAMI_CALMED",  "DAIGO_DEAL",
+    "GREY_TRACE",    "MORNING",      "TEASED"};
 const char *const outcome_names[OUTCOME_COUNT] = {"NONE", "FIGHT", "BOUNDARY", "MEND"};
 const char *const phase_names[PHASE_COUNT] = {"BEFORE", "MORNING"};
 
@@ -114,6 +116,9 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
     [D_X_DEN_EMPTY] = {2,
                        {"Frische Holzspaene liegen vor dem\nverlassenen Bau.",
                         "Zwischen den Baeumen haben die\nHolzfaeller weitergearbeitet."}},
+    [D_X_FOX_KITS] = {1,
+                      {"Drei junge Fuechse balgen sich vor\ndem Bau. Die Alte sieht "
+                       "dir zu."}},
     [D_X_TRACKS] = {1,
                     {"Tierspuren. Sie machen einen\nweiten Bogen um das Lager "
                      "und\nfolgen dem Rand des Hains."}},
@@ -516,6 +521,7 @@ const ExaminePoint examine_points[] = {
      .symbol = 'e',
      .dialogue = D_X_DEN_EMPTY,
      .note = N_FOX_GONE},
+    {.kind = POINT_SYMBOL, .map = MAP_FOREST, .symbol = 'g', .dialogue = D_X_FOX_KITS},
     {.kind = POINT_SYMBOL,
      .map = MAP_FOREST,
      .symbol = 't',
@@ -624,12 +630,12 @@ const TileOverride outcome_changes[] = {
     CHANGE(MAP_FOREST, 15, 28, '.', OUT_BOUNDARY, PHASE_MORNING, TAG_LOSS),
     CHANGE(MAP_FOREST, 12, 30, '.', OUT_BOUNDARY, PHASE_MORNING, TAG_LOSS),
     /* Kompromiss: deadwood and saplings, but the old edge stays cut. */
-    CHANGE(MAP_FOREST, 13, 30, 'W', OUT_MEND, PHASE_ANY, TAG_GAIN),
-    CHANGE(MAP_FOREST, 18, 10, 'x', OUT_MEND, PHASE_ANY, TAG_LOSS),
+    CHANGE(MAP_FOREST, 13, 30, 'z', OUT_MEND, PHASE_ANY, TAG_GAIN),
+    CHANGE(MAP_FOREST, 22, 10, 'x', OUT_MEND, PHASE_ANY, TAG_LOSS),
     CHANGE(MAP_VILLAGE, 23, 13, 'W', OUT_MEND, PHASE_MORNING, TAG_GAIN),
     CHANGE(MAP_FOREST, 16, 11, 'j', OUT_MEND, PHASE_MORNING, TAG_GAIN),
     CHANGE(MAP_FOREST, 5, 20, 'g', OUT_MEND, PHASE_MORNING, TAG_GAIN),
-    CHANGE(MAP_FOREST, 31, 10, 'x', OUT_MEND, PHASE_MORNING, TAG_LOSS),
+    CHANGE(MAP_FOREST, 26, 11, 'x', OUT_MEND, PHASE_MORNING, TAG_LOSS),
     CHANGE(MAP_VILLAGE, 22, 13, 's', OUT_MEND, PHASE_MORNING, TAG_LOSS),
     /* The grey patch by the shrine appears whatever was decided. */
     {MAP_FOREST, 37, 19, 'v', 0, OUT_FIGHT, PHASE_ANY, TAG_NEUTRAL},

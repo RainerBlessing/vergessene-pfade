@@ -31,6 +31,20 @@ static void build(Audio *a) {
       s[i] =
           0.25f * fade(i, n, 26.0f) * (noise() * 0.6f + tone((float)i * 900 / SFX_RATE));
   }
+  /* Two footfalls, quiet and slightly different from each other so that
+   * walking on does not turn into a machine. */
+  for (int step = 0; step < 2; step++) {
+    SfxId id = step ? SFX_STEP_B : SFX_STEP_A;
+    if (!(s = make(a, id, 90)))
+      continue;
+    n = a->length[id];
+    float low = 0;
+    for (int i = 0; i < n; i++) {
+      low = low * 0.72f + noise() * 0.28f;
+      s[i] = (step ? 0.075f : 0.085f) * fade(i, n, 18.0f) *
+             (low * 2.0f + 0.3f * tone((float)i * (step ? 120 : 150) / SFX_RATE));
+    }
+  }
   /* Pen on paper: brushed noise in two strokes. */
   if ((s = make(a, SFX_WRITE, 220))) {
     n = a->length[SFX_WRITE];
@@ -156,6 +170,10 @@ void audio_events(Audio *a, const GameEvent *events, int count) {
   for (int i = 0; i < count; i++) {
     const GameEvent *e = &events[i];
     switch (e->type) {
+    case EV_STEP:
+      a->left_foot = !a->left_foot;
+      audio_play(a, a->left_foot ? SFX_STEP_A : SFX_STEP_B);
+      break;
     case EV_OBSERVE:
       audio_play(a, SFX_WRITE);
       break;

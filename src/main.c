@@ -85,6 +85,8 @@ static void drain_events(Game *g, FILE *log, Uint64 ms, Audio *audio) {
     case EV_STAKE:
       fprintf(log, "stake\tset=%d\n", e->a);
       break;
+    case EV_STEP:
+      break; /* steps are for the ear, not for the log */
     case EV_PHASE:
       fprintf(log, "phase\t%s\n", phase_names[e->a]);
       break;

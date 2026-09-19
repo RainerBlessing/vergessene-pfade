@@ -106,6 +106,8 @@ static bool sleep_and_look(Game *g, JourneyObserver o, void *c, const char *labe
   close_dialogue(g);
   REQUIRE(approach(g, 38, 19));
   game_action(g, ACT_CONFIRM);
+  REQUIRE(g->dialogue == D_X_INSCRIPTION_LATE); /* the visitor, then the ending */
+  close_dialogue(g);
   REQUIRE(g->dialogue == D_SCENE_TEASER && game_knows(g, OBS_TEASED));
   close_dialogue(g);
   return true;

@@ -218,11 +218,19 @@ static int test_examine_nothing(const char *assets) {
   game_action(&g, ACT_CONFIRM);
   game_action(&g, ACT_CONFIRM);
   CHECK(count_events(&g, EV_EXAMINE_NOTHING) == 1);
-  game_action(&g, ACT_LEFT); /* moves: a new target */
+  game_action(&g, ACT_LEFT); /* moves: a step, and a new target */
   game_action(&g, ACT_CONFIRM);
-  CHECK(game_take_events(&g, events, EVENT_LIMIT) == 2);
-  CHECK(events[0].b == 0 && events[1].type == EV_EXAMINE_NOTHING && events[1].b == 2);
-  CHECK(g.event_count == 0);
+  int taken = game_take_events(&g, events, EVENT_LIMIT);
+  int repeats[2] = {-1, -1};
+  int nothing = 0, steps = 0;
+  for (int i = 0; i < taken; i++) {
+    if (events[i].type == EV_EXAMINE_NOTHING && nothing < 2)
+      repeats[nothing++] = events[i].b;
+    steps += events[i].type == EV_STEP;
+  }
+  /* The first target was logged once, the second carries its two repeats. */
+  CHECK(nothing == 2 && repeats[0] == 0 && repeats[1] == 2);
+  CHECK(steps == 1 && g.event_count == 0);
   /* Turning on the spot is also a new target. */
   stand(&g, MAP_VILLAGE, 16, 21, 0, -1);
   game_action(&g, ACT_CONFIRM);
@@ -366,6 +374,14 @@ static int test_content(const char *assets) {
     for (int k = 0; k < i; k++)
       CHECK(stakes[i].x != stakes[k].x || stakes[i].y != stakes[k].y);
   }
+  for (int i = 0; i < place_count; i++)
+    for (int t = 0; t < TRANSITION_COUNT; t++) {
+      const Place *pl = &places[i];
+      const Transition *tr = &transitions[t];
+      bool inside = tr->map == pl->map && tr->x >= pl->x && tr->x < pl->x + pl->width &&
+                    tr->y >= pl->y && tr->y < pl->y + pl->height;
+      CHECK(!inside); /* a room with a map exit would name the wrong place */
+    }
   /* The boundary negotiation must not start once something has been decided.
    * (Mending the bowl stays possible: it settles nothing by itself.) */
   for (int i = 0; i < dialogue_rule_count; i++)
@@ -931,9 +947,10 @@ static int test_consequences(const char *assets) {
         const TileOverride *c = &outcome_changes[i];
         if (c->outcome != (Outcome)o || (c->phase != PHASE_ANY && c->phase != (Phase)ph))
           continue;
-        gain |= c->tag == TAG_GAIN;
-        loss |= c->tag == TAG_LOSS;
-        visible &= game_tile(&g, c->map, c->x, c->y) == c->symbol;
+        bool differs = map_at(&g.maps[c->map], c->x, c->y) != c->symbol;
+        gain |= c->tag == TAG_GAIN && differs;
+        loss |= c->tag == TAG_LOSS && differs;
+        visible &= differs && game_tile(&g, c->map, c->x, c->y) == c->symbol;
       }
       CHECK(gain && loss && visible);
     }
@@ -957,7 +974,6 @@ static int test_night_offer(const char *assets) {
     Game g;
     CHECK(game_init(&g, assets));
     g.outcome = outcomes[i];
-    g.obs |= OBS(OBS_SETTLED);
     stand(&g, MAP_VILLAGE, 5, 5, 0, -1);
     /* Her reaction ends with the question. */
     game_action(&g, ACT_CONFIRM);
@@ -1044,6 +1060,9 @@ static int test_futon_explains(const char *assets) {
   game_action(&g, ACT_CONFIRM);
   CHECK(g.dialogue == D_X_FUTON && g.state == GAME_DIALOGUE);
   CHECK(g.phase == PHASE_BEFORE && count_events(&g, EV_PHASE) == 0);
+  game_action(&g, ACT_CANCEL);
+  CHECK(g.state == GAME_EXPLORATION); /* escape just closes the description */
+  game_action(&g, ACT_CONFIRM);
   game_action(&g, ACT_CONFIRM);
   CHECK(g.state == GAME_PROMPT); /* the question, not a night */
   /* Unsolved: trying to sleep says why, and nothing changes. */
@@ -1060,7 +1079,6 @@ static int test_futon_explains(const char *assets) {
   CHECK(g.state == GAME_EXPLORATION && g.phase == PHASE_BEFORE);
   /* Settled: the same answer now leads into the morning. */
   g.outcome = OUT_BOUNDARY;
-  g.obs |= OBS(OBS_SETTLED);
   game_action(&g, ACT_CONFIRM);
   CHECK(g.state == GAME_DIALOGUE);
   game_action(&g, ACT_CONFIRM);
@@ -1086,7 +1104,6 @@ static int test_futon(const char *assets) {
   game_action(&g, ACT_CANCEL);
   /* Settled: from the tile in front of it. */
   g.outcome = OUT_MEND;
-  g.obs |= OBS(OBS_SETTLED);
   game_action(&g, ACT_CONFIRM);
   game_action(&g, ACT_CONFIRM);
   g.selection = 0;
@@ -1103,7 +1120,6 @@ static int test_futon(const char *assets) {
   Game h;
   CHECK(game_init(&h, assets));
   h.outcome = OUT_FIGHT;
-  h.obs |= OBS(OBS_SETTLED);
   stand(&h, MAP_VILLAGE, 4, 14, 0, -1);
   game_action(&h, ACT_CONFIRM);
   CHECK(h.dialogue == D_X_FUTON);
@@ -1112,6 +1128,37 @@ static int test_futon(const char *assets) {
   h.selection = 0;
   game_action(&h, ACT_CONFIRM);
   CHECK(h.phase == PHASE_MORNING && h.dialogue == D_SCENE_MORNING);
+  return 0;
+}
+/* Reading the shrine in the morning shows the line about the visitor first,
+ * and only then the closing scene. */
+static int test_visitor_before_teaser(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  g.outcome = OUT_BOUNDARY;
+  g.phase = PHASE_MORNING;
+  g.obs |= OBS(OBS_MORNING) | OBS(OBS_GREY_TRACE);
+  stand(&g, MAP_FOREST, 37, 19, 1, 0);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_INSCRIPTION_LATE);
+  CHECK(g.notes[g.note_count - 1] == N_VISITOR);
+  for (int page = 0; page < DIALOGUE_PAGES && g.dialogue == D_X_INSCRIPTION_LATE; page++)
+    game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_DIALOGUE && g.dialogue == D_SCENE_TEASER);
+  CHECK(game_knows(&g, OBS_TEASED));
+  return 0;
+}
+/* The den with kits describes itself, like the empty one does. */
+static int test_den_with_kits(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  g.outcome = OUT_MEND;
+  g.phase = PHASE_MORNING;
+  g.obs |= OBS(OBS_MORNING) | OBS(OBS_FOX_TENDED);
+  CHECK(game_tile(&g, MAP_FOREST, 5, 20) == 'g');
+  stand(&g, MAP_FOREST, 6, 20, -1, 0);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_DIALOGUE && g.dialogue == D_X_FOX_KITS);
   return 0;
 }
 /* What an outcome changes wins over what was true before it. */
@@ -1139,7 +1186,6 @@ static int test_daigo_reactions(const char *assets) {
       Game g;
       CHECK(game_init(&g, assets));
       g.outcome = outcomes[i];
-      g.obs |= OBS(OBS_SETTLED);
       if (ledger)
         g.obs |= OBS(OBS_LEDGER_DEBT); /* his book must not change the answer */
       stand(&g, MAP_FOREST, 12, 31, -1, 0);
@@ -1166,7 +1212,7 @@ static int test_no_late_deal(const char *assets) {
   CHECK(g.daigo_follows);
   Game h;
   CHECK(game_init(&h, assets));
-  h.obs = g.obs | OBS(OBS_SETTLED);
+  h.obs = g.obs;
   h.outcome = OUT_FIGHT;
   stand(&h, MAP_FOREST, 12, 31, -1, 0);
   game_action(&h, ACT_CONFIRM);
@@ -1185,7 +1231,7 @@ static int test_fox_after_fight(const char *assets) {
     Game g;
     CHECK(game_init(&g, assets));
     g.outcome = OUT_FIGHT;
-    g.obs |= OBS(OBS_SETTLED) | OBS(OBS_FOX_WOUNDED);
+    g.obs |= OBS(OBS_FOX_WOUNDED);
     if (tended) {
       g.obs |= OBS(OBS_FOX_TENDED) | OBS(OBS_TRACKS);
       g.notes[g.note_count++] = N_FOX_TENDED;
@@ -1245,7 +1291,6 @@ static int test_grey_trace(const char *assets) {
   CHECK(game_init(&g, assets));
   CHECK(game_tile(&g, MAP_FOREST, 37, 19) != 'v');
   g.outcome = OUT_BOUNDARY;
-  g.obs |= OBS(OBS_SETTLED);
   CHECK(game_tile(&g, MAP_FOREST, 37, 19) == 'v');
   stand(&g, MAP_FOREST, 37, 20, 0, -1);
   game_action(&g, ACT_CONFIRM);
@@ -1298,7 +1343,8 @@ int main(int argc, char **argv) {
       test_compromise(argv[1]) || test_daigo_stays(argv[1]) || test_phases(argv[1]) ||
       test_consequences(argv[1]) || test_night_offer(argv[1]) || test_signs(argv[1]) ||
       test_futon_explains(argv[1]) || test_futon(argv[1]) ||
-      test_change_precedence(argv[1]) || test_fox_after_fight(argv[1]) ||
+      test_change_precedence(argv[1]) || test_visitor_before_teaser(argv[1]) ||
+      test_den_with_kits(argv[1]) || test_fox_after_fight(argv[1]) ||
       test_daigo_reactions(argv[1]) || test_no_late_deal(argv[1]) ||
       test_morning_keeps_threads(argv[1]) || test_grey_trace(argv[1]) || test_combat())
     return 1;

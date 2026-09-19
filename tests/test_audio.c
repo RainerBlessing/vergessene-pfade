@@ -54,7 +54,23 @@ int main(void) {
     audio_events(&a, &cases[i].event, 1);
     CHECK(playing(&a, cases[i].sound) == 1);
   }
-  /* Quiet events stay quiet: walking about and failing to find anything. */
+  /* Walking alternates between the two footfalls. */
+  silence(&a);
+  const GameEvent step = {EV_STEP, MAP_FOREST, 0, 0, '.', 0};
+  audio_events(&a, &step, 1);
+  CHECK(playing(&a, SFX_STEP_A) + playing(&a, SFX_STEP_B) == 1);
+  bool first = playing(&a, SFX_STEP_A) == 1;
+  silence(&a);
+  audio_events(&a, &step, 1);
+  CHECK(playing(&a, first ? SFX_STEP_B : SFX_STEP_A) == 1);
+  /* And stays well under the sounds that mark something. */
+  float loudest_step = 0, click = 0;
+  for (int i = 0; i < a.length[SFX_STEP_A]; i++)
+    loudest_step = SDL_max(loudest_step, SDL_fabsf(a.samples[SFX_STEP_A][i]));
+  for (int i = 0; i < a.length[SFX_CLICK]; i++)
+    click = SDL_max(click, SDL_fabsf(a.samples[SFX_CLICK][i]));
+  CHECK(loudest_step < click);
+  /* Quiet events stay quiet: failing to find anything, opening the notebook. */
   const GameEvent quiet[] = {{EV_EXAMINE_NOTHING, 0, 0, 0, '.', 0},
                              {EV_NOTEBOOK_OPEN, 0, 0, 0, 3, 0},
                              {EV_PHASE, 0, 0, 0, PHASE_MORNING, 0},

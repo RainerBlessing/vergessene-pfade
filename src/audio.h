@@ -2,9 +2,11 @@
 #define AUDIO_H
 #include "game.h"
 #include <SDL3/SDL.h>
-/* Short sounds tied to single actions. No music, no footsteps, no typing. */
+/* Short sounds tied to single actions. No music, no typing. */
 typedef enum {
-  SFX_CLICK,   /* confirming a line or a choice */
+  SFX_CLICK,  /* confirming a line or a choice */
+  SFX_STEP_A, /* two quiet footfalls, used alternately */
+  SFX_STEP_B,
   SFX_WRITE,   /* a new observation goes into the notebook */
   SFX_SCRAPE,  /* the boundary stone moves */
   SFX_SETTLE,  /* and drops into its hollow */
@@ -27,6 +29,7 @@ typedef struct {
     int position;
   } voices[SFX_VOICES];
   int level; /* 0 off, 1 quiet, 2 normal */
+  bool left_foot;
 } Audio;
 void audio_open(Audio *a);
 void audio_close(Audio *a);

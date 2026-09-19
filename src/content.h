@@ -30,7 +30,6 @@ typedef enum {
   OBS_BOWL_READY,
   OBS_KAMI_CALMED,
   OBS_DAIGO_DEAL,
-  OBS_SETTLED,
   OBS_GREY_TRACE,
   OBS_MORNING,
   OBS_TEASED,
@@ -98,6 +97,7 @@ typedef enum {
   D_X_FOX,
   D_X_FOX_TENDED,
   D_X_DEN_EMPTY,
+  D_X_FOX_KITS,
   D_X_TRACKS,
   D_I_TEND_FOX,
   D_ENC_APPEAR,
@@ -201,7 +201,13 @@ extern const char *const notes[NOTE_COUNT];
 
 /* First matching rule wins. */
 /* What a conversation opens once its last page is read. */
-typedef enum { OPEN_NOTHING, OPEN_MEND, OPEN_FOLLOW, OPEN_NIGHT } DialogueOpens;
+typedef enum {
+  OPEN_NOTHING,
+  OPEN_MEND,
+  OPEN_FOLLOW,
+  OPEN_NIGHT,
+  OPEN_TEASER
+} DialogueOpens;
 typedef struct {
   NpcId npc;
   Obs needs, forbids, grants;

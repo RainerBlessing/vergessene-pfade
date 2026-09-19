@@ -191,13 +191,10 @@ static void reset_stone(Game *g) {
 static void use_point(Game *g, const ExaminePoint *p, char examined) {
   if (p->kind == POINT_STONE && p->dialogue == D_X_STONE_STUCK)
     reset_stone(g);
-  /* Reading the grey patch in the morning closes the slice, once. */
-  if (p->note == N_VISITOR && g->phase == PHASE_MORNING && !game_knows(g, OBS_TEASED)) {
-    learn(g, p->grants | OBS(OBS_TEASED), p->note);
-    emit(g, EV_EXAMINE, examined, p->dialogue);
-    open_scene(g, "Die vergessenen Pfade", D_SCENE_TEASER);
-    return;
-  }
+  /* Reading about the visitor in the morning closes the slice, once - but only
+   * after the inscription itself has been read. */
+  bool closes =
+      p->note == N_VISITOR && g->phase == PHASE_MORNING && !game_knows(g, OBS_TEASED);
   if (p->takes != ITEM_NONE)
     inventory_remove(&g->player.inventory, p->takes, 1);
   if (p->gives != ITEM_NONE)
@@ -205,6 +202,10 @@ static void use_point(Game *g, const ExaminePoint *p, char examined) {
   learn(g, p->grants, p->note);
   emit(g, EV_EXAMINE, examined, p->dialogue);
   open_dialogue(g, -1, examined, p->dialogue);
+  if (closes) {
+    learn(g, OBS(OBS_TEASED), NOTE_NONE);
+    g->opens = OPEN_TEASER;
+  }
 }
 /* Repeated presses at the same target are counted, not logged again. */
 static void examine_nothing(Game *g, int x, int y) {
@@ -334,7 +335,6 @@ static void finish(Game *g, Outcome outcome) {
   if (g->outcome != OUT_NONE)
     return;
   g->outcome = outcome;
-  learn(g, OBS(OBS_SETTLED), NOTE_NONE);
   emit(g, EV_OUTCOME, outcome, 0);
 }
 /* The name of the room the player is standing in, if it has one. */
@@ -580,6 +580,7 @@ static void move(Game *g, int dx, int dy) {
   int from_x = g->x, from_y = g->y;
   g->x += dx;
   g->y += dy;
+  emit(g, EV_STEP, game_tile(g, g->map, g->x, g->y), 0);
   if (!place_at(g, g->map, g->x, g->y))
     g->place = NULL; /* outside again: the next room may repeat its name */
   else
@@ -605,6 +606,8 @@ static void move(Game *g, int dx, int dy) {
         g->daigo_x = npcs[NPC_DAIGO].x;
         g->daigo_y = npcs[NPC_DAIGO].y;
       }
+      g->place = NULL; /* the name belongs to the room actually entered */
+      enter_place(g);
       return;
     }
   }
@@ -624,26 +627,30 @@ void game_action(Game *g, Action a) {
   case GAME_NOTEBOOK:
     notebook_action(g, a);
     return;
-  case GAME_DIALOGUE:
+  case GAME_DIALOGUE: {
     if (a != ACT_CANCEL &&
         !(a == ACT_CONFIRM && ++g->page >= dialogues[g->dialogue].count))
       return;
+    /* Escape closes and nothing more; reading to the end can lead on. */
+    bool read_out = a == ACT_CONFIRM;
+    DialogueId was = g->dialogue;
     g->state = GAME_EXPLORATION;
-    g->message[0] = 0;           /* the scene's echo of the last round ends with it */
-    if (g->opens == OPEN_MEND) { /* the conversation leads into the workshop */
+    g->message[0] = 0; /* the scene's echo of the last round ends with it */
+    if (g->opens == OPEN_MEND) {
       g->state = GAME_MEND;
       g->selection = 0;
-      g->message[0] = 0;
-    }
-    if (g->opens == OPEN_FOLLOW)
+    } else if (g->opens == OPEN_FOLLOW)
       g->daigo_follows = true;
-    if (g->opens == OPEN_NIGHT && g->phase == PHASE_BEFORE)
+    else if (g->opens == OPEN_TEASER)
+      open_scene(g, "Die vergessenen Pfade", D_SCENE_TEASER);
+    else if (g->opens == OPEN_NIGHT && read_out && g->phase == PHASE_BEFORE)
       ask_about_the_night(g);
     g->opens = OPEN_NOTHING;
     /* Having read what the futon is, the same question follows. */
-    if (g->dialogue == D_X_FUTON && g->phase == PHASE_BEFORE)
+    if (read_out && was == D_X_FUTON && g->phase == PHASE_BEFORE)
       ask_about_the_night(g);
     return;
+  }
   case GAME_INVENTORY:
     inventory_action(g, a);
     return;
