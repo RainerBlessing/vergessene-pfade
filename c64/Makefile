@@ -12,6 +12,22 @@ build: $(PRG)
 $(PRG): $(SOURCES) src/maps.h
 	mkdir -p build
 	$(LLVM_MOS_CLANG) --target=mos-c64 -Os -o $(PRG) $(SOURCES)
+	$(MAKE) --no-print-directory build/spielen.sh
+
+# Zum Spielen ohne Bauen: liegt neben der .prg und startet nur sie.
+build/spielen.sh: Makefile
+	mkdir -p build
+	printf '%s\n' \
+	  '#!/bin/sh' \
+	  '# Vom Makefile erzeugt: startet die .prg daneben in VICE.' \
+	  '# Neu bauen tut dieses Skript nichts -- dafuer ist ../run-vice.sh da.' \
+	  'set -eu' \
+	  'dir=$$(cd -- "$$(dirname -- "$$0")" && pwd)' \
+	  'prg="$$dir/vergessene-pfade.prg"' \
+	  '[ -f "$$prg" ] || { echo "Keine $$prg -- erst make im Ordner darueber." >&2; exit 1; }' \
+	  'exec x64sc -default -autostart "$$prg" "$$@"' \
+	  > $@
+	chmod +x $@
 
 # Neither the rules nor the screen layout need a C64, so both are played
 # through on the host; tests/c64.h stands in for the SDK header.

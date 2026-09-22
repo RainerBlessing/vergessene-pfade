@@ -23,6 +23,14 @@ make maps       # src/maps.h aus ../assets/maps neu erzeugen
 ./run-vice.sh   # bauen und in VICE starten
 ```
 
+`make` legt neben der `.prg` ein `build/spielen.sh` ab, das nur noch startet
+und nichts baut — praktisch, um die fertige Fassung weiterzugeben oder schnell
+hineinzuschauen:
+
+```sh
+./build/spielen.sh
+```
+
 Voraussetzung ist das llvm-mos-SDK unter `~/.local/share/llvm-mos-sdk`
 (komplettes Release-Tarball, **nicht** das AUR-Paket `llvm-mos-bin`: dort fehlt
 die `mos-platform`-Laufzeit). Die geprüfte Fassung ist **v23.2.0**, dieselbe,
