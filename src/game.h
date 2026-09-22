@@ -41,8 +41,7 @@ typedef enum {
   EV_STONE_PUSH,       /* a,b = the stone's position after moving it */
   EV_MEND,             /* a = pieces in place, b = 1 when the piece fitted */
   EV_STAKE,            /* a = stakes set */
-  EV_PHASE,            /* a = Phase */
-  EV_STEP              /* a = tile stepped onto */
+  EV_PHASE             /* a = Phase */
 } EventType;
 typedef struct {
   EventType type;
@@ -67,6 +66,7 @@ typedef struct {
   const char *scene; /* panel title while npc == SPEAKER_SCENE */
   const char *place; /* the room the player just stepped into */
   int place_ticks;   /* how much longer its name is shown */
+  unsigned steps;    /* counts moves; the frontend turns changes into footfalls */
   Obs obs;
   NoteId notes[NOTE_LIMIT];
   int note_count;

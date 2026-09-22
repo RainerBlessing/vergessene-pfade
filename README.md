@@ -54,6 +54,27 @@ cmake -S . -B build-core -DVP_BUILD_GAME=OFF
 cmake --build build-core && ctest --test-dir build-core
 ```
 
+## Fenster und Vollbild
+
+Das Bild ist 320x200 und wird ganzzahlig vergrößert, damit die Pixel quadratisch
+bleiben. Beim Start wählbar:
+
+```sh
+./build/vergessene_pfade --scale 2      # Fenster 640x400
+./build/vergessene_pfade --fullscreen
+```
+
+Im Spiel schaltet **F4** die Größe weiter (2x bis 5x) und **F11** das Vollbild.
+
+**Unter einem kachelnden Fenstermanager (Hyprland/Omarchy) bestimmt der
+Fenstermanager die Größe**, nicht das Spiel: `--scale` und F4 bleiben dann ohne
+sichtbare Wirkung, Vollbild funktioniert. Für ein freies Fenster in der
+gewünschten Größe hilft eine Regel, zum Beispiel in `~/.config/hypr/hyprland.conf`:
+
+```
+windowrulev2 = float, class:^(vergessene_pfade)$
+```
+
 ## Diagnose
 
 Alle Modi aus einem beschreibbaren Arbeitsverzeichnis starten:
@@ -83,6 +104,8 @@ Alle Modi aus einem beschreibbaren Arbeitsverzeichnis starten:
 | Enter am Futon (darauf oder davor) | Futon ansehen, dann „Übernachten“ wählen |
 | F1 / F2 | Debug-Anzeige / Hindernisse |
 | F3 | Klangeffekte: an, leise, aus |
+| F4 | Fenstergröße: 2x (640x400), 3x, 4x, 5x, wieder 2x |
+| F11 | Vollbild an und aus |
 | R, Q (im Notizbuch) | neu starten / beenden |
 
 ## Formatierung

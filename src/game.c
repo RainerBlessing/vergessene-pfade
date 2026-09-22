@@ -580,7 +580,7 @@ static void move(Game *g, int dx, int dy) {
   int from_x = g->x, from_y = g->y;
   g->x += dx;
   g->y += dy;
-  emit(g, EV_STEP, game_tile(g, g->map, g->x, g->y), 0);
+  g->steps++;
   if (!place_at(g, g->map, g->x, g->y))
     g->place = NULL; /* outside again: the next room may repeat its name */
   else
@@ -645,7 +645,7 @@ void game_action(Game *g, Action a) {
       g->selection = 0;
     } else if (g->opens == OPEN_FOLLOW)
       g->daigo_follows = true;
-    else if (g->opens == OPEN_TEASER)
+    else if (g->opens == OPEN_TEASER && read_out)
       open_scene(g, "Die vergessenen Pfade", D_SCENE_TEASER);
     else if (g->opens == OPEN_NIGHT && read_out && g->phase == PHASE_BEFORE)
       ask_about_the_night(g);

@@ -31,8 +31,9 @@ int main(void) {
       if (v > peak)
         peak = v;
     }
-    CHECK(peak > 0.05f && peak <= 1.0f); /* audible, and no clipping */
-    CHECK(a.length[id] <= SFX_RATE);     /* short: at most a second */
+    CHECK(peak > 0.05f);              /* audible */
+    CHECK(peak * AUDIO_GAIN <= 1.0f); /* and never clips on its own */
+    CHECK(a.length[id] <= SFX_RATE);  /* short: at most a second */
   }
   /* Events map to their sound. */
   const struct {
@@ -56,12 +57,11 @@ int main(void) {
   }
   /* Walking alternates between the two footfalls. */
   silence(&a);
-  const GameEvent step = {EV_STEP, MAP_FOREST, 0, 0, '.', 0};
-  audio_events(&a, &step, 1);
+  audio_footstep(&a);
   CHECK(playing(&a, SFX_STEP_A) + playing(&a, SFX_STEP_B) == 1);
   bool first = playing(&a, SFX_STEP_A) == 1;
   silence(&a);
-  audio_events(&a, &step, 1);
+  audio_footstep(&a);
   CHECK(playing(&a, first ? SFX_STEP_B : SFX_STEP_A) == 1);
   /* And stays well under the sounds that mark something. */
   float loudest_step = 0, click = 0;
@@ -110,17 +110,17 @@ int main(void) {
   audio_cycle(&a); /* off */
   audio_cycle(&a); /* on again */
   /* The setting turns them off and says so. */
-  CHECK(strstr(audio_label(&a), "AN") != NULL);
+  CHECK(strcmp(audio_label(&a), "F3 KLANG: AN") == 0);
   audio_cycle(&a);
-  CHECK(strstr(audio_label(&a), "LEISE") != NULL);
+  CHECK(strcmp(audio_label(&a), "F3 KLANG: LEISE") == 0);
   audio_cycle(&a);
-  CHECK(strstr(audio_label(&a), "AUS") != NULL);
+  CHECK(strcmp(audio_label(&a), "F3 KLANG: AUS") == 0);
   silence(&a);
   audio_play(&a, SFX_CLICK);
   for (int i = 0; i < SFX_VOICES; i++)
     CHECK(a.voices[i].position < 0);
   audio_cycle(&a);
-  CHECK(strstr(audio_label(&a), "AN") != NULL);
+  CHECK(strcmp(audio_label(&a), "F3 KLANG: AN") == 0);
   audio_play(&a, SFX_CLICK);
   CHECK(playing(&a, SFX_CLICK) == 1);
   /* More sounds at once than voices: the extra ones are dropped, not queued. */

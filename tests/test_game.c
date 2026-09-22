@@ -82,6 +82,31 @@ static bool point_reachable(const Game *g, int map, int x, int y) {
   return false;
 }
 
+/* Walking is counted for the ear, but must not crowd the event log: a long
+ * walk still leaves room for what the player finds. */
+static int test_steps_do_not_flood(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  game_action(&g, ACT_CONFIRM); /* past the title page */
+  for (int i = 0; i < DIALOGUE_PAGES; i++)
+    game_action(&g, ACT_CONFIRM);
+  GameEvent events[EVENT_LIMIT];
+  game_take_events(&g, events, EVENT_LIMIT);
+  unsigned before = g.steps;
+  for (int i = 0; i < 40; i++)
+    game_action(&g, i % 2 ? ACT_DOWN : ACT_UP);
+  CHECK(g.steps > before + 30);
+  CHECK(g.event_count == 0 && g.events_dropped == 0);
+  /* And an observation made afterwards still arrives. */
+  stand(&g, MAP_FOREST, 12, 13, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  int taken = game_take_events(&g, events, EVENT_LIMIT);
+  bool observed = false;
+  for (int i = 0; i < taken; i++)
+    observed |= events[i].type == EV_OBSERVE;
+  CHECK(observed);
+  return 0;
+}
 /* The game opens on one page that says how it is played, and waits. */
 static int test_title(const char *assets) {
   Game g;
@@ -246,15 +271,13 @@ static int test_examine_nothing(const char *assets) {
   game_action(&g, ACT_CONFIRM);
   int taken = game_take_events(&g, events, EVENT_LIMIT);
   int repeats[2] = {-1, -1};
-  int nothing = 0, steps = 0;
-  for (int i = 0; i < taken; i++) {
+  int nothing = 0;
+  for (int i = 0; i < taken; i++)
     if (events[i].type == EV_EXAMINE_NOTHING && nothing < 2)
       repeats[nothing++] = events[i].b;
-    steps += events[i].type == EV_STEP;
-  }
   /* The first target was logged once, the second carries its two repeats. */
   CHECK(nothing == 2 && repeats[0] == 0 && repeats[1] == 2);
-  CHECK(steps == 1 && g.event_count == 0);
+  CHECK(g.event_count == 0);
   /* Turning on the spot is also a new target. */
   stand(&g, MAP_VILLAGE, 16, 21, 0, -1);
   game_action(&g, ACT_CONFIRM);
@@ -1359,19 +1382,19 @@ static int test_combat(void) {
 int main(int argc, char **argv) {
   if (argc != 2)
     return 1;
-  if (test_title(argv[1]) || test_world(argv[1]) || test_dialogue_rules(argv[1]) ||
-      test_examine(argv[1]) || test_examine_nothing(argv[1]) ||
-      test_inventory_and_notebook(argv[1]) || test_content(argv[1]) ||
-      test_fox_and_tracks(argv[1]) || test_encounter(argv[1]) || test_fight(argv[1]) ||
-      test_outcome_keeps_threads(argv[1]) || test_defeat(argv[1]) ||
-      test_boundary(argv[1]) || test_mend(argv[1]) || test_compromise(argv[1]) ||
-      test_daigo_stays(argv[1]) || test_phases(argv[1]) || test_consequences(argv[1]) ||
-      test_night_offer(argv[1]) || test_signs(argv[1]) || test_futon_explains(argv[1]) ||
-      test_futon(argv[1]) || test_change_precedence(argv[1]) ||
-      test_visitor_before_teaser(argv[1]) || test_den_with_kits(argv[1]) ||
-      test_fox_after_fight(argv[1]) || test_daigo_reactions(argv[1]) ||
-      test_no_late_deal(argv[1]) || test_morning_keeps_threads(argv[1]) ||
-      test_grey_trace(argv[1]) || test_combat())
+  if (test_title(argv[1]) || test_steps_do_not_flood(argv[1]) || test_world(argv[1]) ||
+      test_dialogue_rules(argv[1]) || test_examine(argv[1]) ||
+      test_examine_nothing(argv[1]) || test_inventory_and_notebook(argv[1]) ||
+      test_content(argv[1]) || test_fox_and_tracks(argv[1]) || test_encounter(argv[1]) ||
+      test_fight(argv[1]) || test_outcome_keeps_threads(argv[1]) ||
+      test_defeat(argv[1]) || test_boundary(argv[1]) || test_mend(argv[1]) ||
+      test_compromise(argv[1]) || test_daigo_stays(argv[1]) || test_phases(argv[1]) ||
+      test_consequences(argv[1]) || test_night_offer(argv[1]) || test_signs(argv[1]) ||
+      test_futon_explains(argv[1]) || test_futon(argv[1]) ||
+      test_change_precedence(argv[1]) || test_visitor_before_teaser(argv[1]) ||
+      test_den_with_kits(argv[1]) || test_fox_after_fight(argv[1]) ||
+      test_daigo_reactions(argv[1]) || test_no_late_deal(argv[1]) ||
+      test_morning_keeps_threads(argv[1]) || test_grey_trace(argv[1]) || test_combat())
     return 1;
   puts("World, examining, encounter, outcomes, consequences, morning, trace pass.");
   return 0;

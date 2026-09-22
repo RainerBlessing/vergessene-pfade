@@ -60,7 +60,8 @@ static void build(Audio *a) {
     int attack = n / 5;
     for (int i = 0; i < n; i++) {
       low = low * 0.86f + noise() * 0.14f; /* a crude low pass */
-      float swell = i < attack ? (float)i / (float)attack : fade(i - attack, n, 1.6f);
+      float swell =
+          i < attack ? (float)i / (float)attack : fade(i - attack, n - attack, 1.6f);
       s[i] = 0.5f * swell * (low * 2.4f + 0.2f * tone((float)i * 70 / SFX_RATE));
     }
   }
@@ -113,7 +114,8 @@ static void build(Audio *a) {
     for (int i = 0; i < n; i++) {
       float wobble = 118.0f + 26.0f * tone((float)i * 5.5f / SFX_RATE);
       phase += wobble / SFX_RATE;
-      float shape = i < attack ? (float)i / (float)attack : fade(i - attack, n, 2.2f);
+      float shape =
+          i < attack ? (float)i / (float)attack : fade(i - attack, n - attack, 2.2f);
       s[i] = 0.34f * shape * (tone(phase) * 0.8f + 0.25f * noise());
     }
   }
@@ -142,6 +144,11 @@ void audio_open(Audio *a) {
   for (int i = 0; i < SFX_VOICES; i++)
     a->voices[i].position = -1;
   build(a);
+  /* Sound is optional: a missing device must not keep the game from starting. */
+  if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
+    SDL_Log("Keine Klangeffekte: %s", SDL_GetError());
+    return;
+  }
   a->stream =
       SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
   if (a->stream)
@@ -166,14 +173,14 @@ void audio_play(Audio *a, SfxId id) {
       return;
     }
 }
+void audio_footstep(Audio *a) {
+  a->left_foot = !a->left_foot;
+  audio_play(a, a->left_foot ? SFX_STEP_A : SFX_STEP_B);
+}
 void audio_events(Audio *a, const GameEvent *events, int count) {
   for (int i = 0; i < count; i++) {
     const GameEvent *e = &events[i];
     switch (e->type) {
-    case EV_STEP:
-      a->left_foot = !a->left_foot;
-      audio_play(a, a->left_foot ? SFX_STEP_A : SFX_STEP_B);
-      break;
     case EV_OBSERVE:
       audio_play(a, SFX_WRITE);
       break;
@@ -211,7 +218,7 @@ void audio_events(Audio *a, const GameEvent *events, int count) {
 void audio_mix(Audio *a, float *out, int frames) {
   /* Loud enough to sit next to the game window; the clamp keeps two sounds at
    * once from tearing. */
-  float volume = a->level == 2 ? 2.2f : a->level == 1 ? 1.0f : 0.0f;
+  float volume = audio_gain(a);
   for (int i = 0; i < frames; i++)
     out[i] = 0;
   for (int v = 0; v < SFX_VOICES; v++) {
@@ -227,17 +234,20 @@ void audio_mix(Audio *a, float *out, int frames) {
     out[i] = out[i] > 1.0f ? 1.0f : out[i] < -1.0f ? -1.0f : out[i];
 }
 void audio_update(Audio *a) {
-  float out[512];
+  float out[256];
   if (!a->stream)
     return;
-  /* Keep about a tenth of a second queued: short enough to stay responsive. */
-  if (SDL_GetAudioStreamQueued(a->stream) > (int)sizeof(float) * SFX_RATE / 10)
+  /* Keep about 40 ms queued, so a sound follows its key press closely. */
+  if (SDL_GetAudioStreamQueued(a->stream) > (int)sizeof(float) * SFX_RATE / 25)
     return;
   audio_mix(a, out, (int)(sizeof out / sizeof out[0]));
   SDL_PutAudioStreamData(a->stream, out, (int)sizeof out);
 }
 /* An, leise, aus, und wieder an. */
 void audio_cycle(Audio *a) { a->level = (a->level + 2) % 3; }
+float audio_gain(const Audio *a) {
+  return a->level == 2 ? AUDIO_GAIN : a->level == 1 ? AUDIO_GAIN / 2 : 0.0f;
+}
 const char *audio_label(const Audio *a) {
   return a->level == 2   ? "F3 KLANG: AN"
          : a->level == 1 ? "F3 KLANG: LEISE"

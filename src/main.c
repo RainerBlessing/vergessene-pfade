@@ -85,8 +85,6 @@ static void drain_events(Game *g, FILE *log, Uint64 ms, Audio *audio) {
     case EV_STAKE:
       fprintf(log, "stake\tset=%d\n", e->a);
       break;
-    case EV_STEP:
-      break; /* steps are for the ear, not for the log */
     case EV_PHASE:
       fprintf(log, "phase\t%s\n", phase_names[e->a]);
       break;
@@ -138,12 +136,18 @@ static void act(Game *g, Action a, FILE *log, Audio *audio) {
     audio_play(audio, SFX_CLICK);
   drain_events(g, log, SDL_GetTicks(), audio);
 }
+/* The picture is 320x200; the window is a whole multiple of it, so pixels stay
+ * square. Two is the smallest that is still comfortable to read. */
+#define SCALE_MIN 2
+#define SCALE_MAX 5
 static int usage(void) {
-  fprintf(stderr, "Aufruf: vergessene_pfade [--smoke | --verify] [--log DATEI]\n");
+  fprintf(stderr, "Aufruf: vergessene_pfade [--smoke | --verify] [--log DATEI]"
+                  " [--scale 2..5] [--fullscreen]\n");
   return 2;
 }
 int main(int argc, char **argv) {
-  bool smoke = false, verify = false;
+  bool smoke = false, verify = false, fullscreen = false;
+  int scale = 4;
   const char *log_path = NULL;
   for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "--smoke") == 0)
@@ -152,7 +156,13 @@ int main(int argc, char **argv) {
       verify = true;
     else if (strcmp(argv[i], "--log") == 0 && i + 1 < argc)
       log_path = argv[++i];
-    else
+    else if (strcmp(argv[i], "--fullscreen") == 0)
+      fullscreen = true;
+    else if (strcmp(argv[i], "--scale") == 0 && i + 1 < argc) {
+      scale = SDL_atoi(argv[++i]);
+      if (scale < SCALE_MIN || scale > SCALE_MAX)
+        return usage();
+    } else
       return usage();
   }
   FILE *log = NULL;
@@ -164,7 +174,7 @@ int main(int argc, char **argv) {
     }
     fprintf(log, "# time_ms\tmap\tx,y\tevent\tdetails\n");
   }
-  if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)) {
+  if (!SDL_Init(SDL_INIT_VIDEO)) {
     fprintf(stderr, "%s\n", SDL_GetError());
     if (log)
       fclose(log);
@@ -173,10 +183,13 @@ int main(int argc, char **argv) {
   SDL_Window *w = NULL;
   SDL_Renderer *sdl = NULL;
   Renderer r = {0};
+  Audio audio = {0};
   int result = 1;
-  if (!SDL_CreateWindowAndRenderer("Die vergessenen Pfade | POC Walddorf", 1280, 800,
-                                   SDL_WINDOW_RESIZABLE, &w, &sdl))
+  if (!SDL_CreateWindowAndRenderer("Die vergessenen Pfade | POC Walddorf", 320 * scale,
+                                   200 * scale, SDL_WINDOW_RESIZABLE, &w, &sdl))
     goto cleanup;
+  if (fullscreen)
+    SDL_SetWindowFullscreen(w, true);
   SDL_SetWindowMinimumSize(w, 320, 200);
   if (!SDL_SetRenderLogicalPresentation(sdl, 320, 200,
                                         SDL_LOGICAL_PRESENTATION_INTEGER_SCALE))
@@ -213,7 +226,6 @@ int main(int argc, char **argv) {
     result = ok && c.ok ? 0 : 1;
     goto cleanup;
   }
-  Audio audio;
   audio_open(&audio);
   bool run = true;
   int frames = 0, fps = 60, fps_frames = 0;
@@ -229,6 +241,14 @@ int main(int argc, char **argv) {
         if (e.key.key == SDLK_F3) {
           audio_cycle(&audio);
           audio_play(&audio, SFX_CLICK);
+        } else if (e.key.key == SDLK_F11) {
+          fullscreen = !fullscreen;
+          SDL_SetWindowFullscreen(w, fullscreen);
+        } else if (e.key.key == SDLK_F4) { /* one step larger, then back to 2x */
+          scale = scale >= SCALE_MAX ? SCALE_MIN : scale + 1;
+          fullscreen = false;
+          SDL_SetWindowFullscreen(w, false);
+          SDL_SetWindowSize(w, 320 * scale, 200 * scale);
         } else if (g.state == GAME_NOTEBOOK && e.key.key == SDLK_Q)
           run = false;
         else if (g.state == GAME_NOTEBOOK && e.key.key == SDLK_R) {
@@ -237,7 +257,10 @@ int main(int argc, char **argv) {
             run = false;
           }
         } else {
+          unsigned before = g.steps;
           act(&g, key(e.key.key), log, &audio);
+          if (g.steps != before)
+            audio_footstep(&audio);
           last_move = frame_start;
         }
       }
@@ -246,7 +269,10 @@ int main(int argc, char **argv) {
         frame_start - last_move >= 140) {
       Action a = held();
       if (a != ACT_NONE) {
+        unsigned before = g.steps;
         act(&g, a, log, &audio);
+        if (g.steps != before)
+          audio_footstep(&audio);
         last_move = frame_start;
       }
     }
@@ -258,6 +284,10 @@ int main(int argc, char **argv) {
     fps_frames++;
     audio_update(&audio);
     r.audio = audio_label(&audio);
+    char display[48];
+    snprintf(display, sizeof display, "F4 FENSTER %dx  F11 %s", scale,
+             fullscreen ? "FENSTERMODUS" : "VOLLBILD");
+    r.display = display;
     render_game(&r, &g, fps);
     if (smoke && ++frames == 10) {
       Capture c = {&r, log, true};
