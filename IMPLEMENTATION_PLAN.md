@@ -337,6 +337,43 @@ Der Log wird im Core als Ereignispuffer geführt; `main.c` schreibt die Datei.
 - Dokumentierter interner Durchlauf je Ausgang.
 **Status**: Not Started
 
+### Optionaler Nachtrag zu 5A: Dorftiefe (nur bei Bedarf nach dem Durchlauf)
+
+Geprüfte Ideen aus der NIPPON-Strukturreferenz (2026-09-22). **Nicht vorab bauen.**
+Nur umsetzen, wenn der interne Durchlauf oder die Playtests zeigen, dass das Dorf
+flach wirkt oder die Rückkehr ins Dorf sich nicht lohnt. Beide Punkte brauchen
+keine neue Mechanik und keine neue Figur.
+
+1. **Holzvorrat mit Personen verknüpfen.** Der Stapel ist bereits untersuchbar
+   (`D_X_WOOD`, Tile `W` bei 23,13). Ergänzt würde nur eine Beobachtung darauf plus
+   je eine `dialogue_rules`-Zeile mit `needs`: Sumi erklärt, wofür das Dorf das Holz
+   braucht, Daigo seinen Auftrag. Kosten: 1 Obs-Bit, keine neue UI.
+2. **Mehr beobachtungsabhängige Regelzeilen.** Zusätzliche Varianten bestehender
+   NPC-Dialoge, die mit `needs` an gefundene Spuren hängen (Seil, Scherben, versetzter
+   Stein), nach dem Muster von `D_SUMI_OWNER` und `D_DAIGO_LEDGER`. Kein Themenmenü:
+   eine Liste freigeschalteter Gesprächsthemen wäre eine Fortschrittsanzeige und
+   verstößt gegen Designregel 2.
+
+**Verworfen** (Begründung, damit die Ideen nicht wiederkehren):
+- *Gasthausfiguren (Wirtin, Gast).* Teuerste Variante: zwei neue NPCs, Sprites,
+  Dialoge, zusätzlicher Sensitivity-Prüfstoff. Erst nach 5B, und erst nach dem
+  `uint64_t`-Wechsel (siehe unten).
+- *Übungsreparatur bei Oriha.* Nimmt dem Kintsugi-Moment die Einmaligkeit und macht
+  daraus ein Minispiel. Unklare Bedienung wäre innerhalb der echten Reparatur zu
+  lösen, nicht durch einen zweiten Durchlauf.
+- *Zweiter Wegstein im Dorf.* Grenzsteine sind das tragende Signal von `OUT_BOUNDARY`;
+  ein funktionsloser Stein verwässert es.
+- *Beobachtungsort mit Tageszeit.* Es gibt bewusst nur `PHASE_BEFORE`/`PHASE_MORNING`,
+  gekoppelt an die Nacht im Gasthaus. Ein Ort, der aufs Verweilen reagiert, führt
+  Warten als Spielhandlung wieder ein.
+
+**Rahmenbedingungen für jede dieser Erweiterungen:**
+- `Obs` ist `uint32_t`, `OBS_COUNT` steht bei 27 – **5 freie Bits**. Alles darüber
+  hinaus verlangt zuerst den Wechsel auf `uint64_t` in `content.h`, `game.c` und den
+  Tests, als eigener Schritt.
+- Der Slice ist auf ~30 Minuten kalibriert (12–15 min Erkundung). Mehr Dorfinhalt
+  vor dem Playtest verschiebt genau die Messgröße, die 5A prüfen soll.
+
 ## Stage 5B: Externe Playtests (3–5 Personen)
 **Goal**: Die Kernhypothese mit echten Spielenden prüfen.
 **Success Criteria**:
