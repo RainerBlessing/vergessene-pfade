@@ -1,0 +1,66 @@
+name: C64 Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  # Feste SDK-Fassung: "latest" waere nicht reproduzierbar. Beim Anheben
+  # auch lokal dieselbe Fassung installieren (siehe c64/README.md).
+  LLVM_MOS_VERSION: v23.2.0
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    defaults:
+      run:
+        working-directory: c64
+
+    steps:
+      - name: Quellcode laden
+        uses: actions/checkout@v7
+
+      - name: llvm-mos-SDK aus dem Cache holen
+        id: sdk-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/llvm-mos-sdk
+          key: llvm-mos-sdk-${{ runner.os }}-${{ env.LLVM_MOS_VERSION }}
+
+      - name: llvm-mos-SDK bereitstellen
+        if: steps.sdk-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.local/share/llvm-mos-sdk
+          curl --fail --location --retry 3 \
+            "https://github.com/llvm-mos/llvm-mos-sdk/releases/download/${LLVM_MOS_VERSION}/llvm-mos-linux.tar.xz" \
+            -o "$RUNNER_TEMP/llvm-mos-linux.tar.xz"
+          tar -xf "$RUNNER_TEMP/llvm-mos-linux.tar.xz" \
+            -C ~/.local/share/llvm-mos-sdk --strip-components=1
+          # Ohne mos-platform uebersetzt der Compiler klaglos etwas, das
+          # auf dem C64 nichts tut -- also hier einmal nachsehen.
+          test -f ~/.local/share/llvm-mos-sdk/mos-platform/c64/include/c64.h
+
+      - name: Karten sind aktuell
+        run: |
+          make maps
+          git diff --exit-code src/maps.h
+
+      - name: Regeln und Bildschirm testen
+        run: make test
+
+      - name: PRG bauen
+        run: make build
+
+      - name: Download bereitstellen
+        uses: actions/upload-artifact@v7
+        with:
+          name: vergessene-pfade-c64
+          path: c64/build/vergessene-pfade.prg
+          if-no-files-found: error
+          retention-days: 14

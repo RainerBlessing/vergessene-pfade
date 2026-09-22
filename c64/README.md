@@ -24,7 +24,19 @@ make maps       # src/maps.h aus ../assets/maps neu erzeugen
 
 Voraussetzung ist das llvm-mos-SDK unter `~/.local/share/llvm-mos-sdk`
 (komplettes Release-Tarball, **nicht** das AUR-Paket `llvm-mos-bin`: dort fehlt
-die `mos-platform`-Laufzeit).
+die `mos-platform`-Laufzeit). Die geprüfte Fassung ist **v23.2.0**, dieselbe,
+die `.github/workflows/c64.yml` verwendet:
+
+```sh
+mkdir -p ~/.local/share/llvm-mos-sdk
+curl -L -o /tmp/llvm-mos-linux.tar.xz \
+  https://github.com/llvm-mos/llvm-mos-sdk/releases/download/v23.2.0/llvm-mos-linux.tar.xz
+tar -xf /tmp/llvm-mos-linux.tar.xz -C ~/.local/share/llvm-mos-sdk --strip-components=1
+```
+
+In GitHub Actions läuft derselbe `make maps` / `make test` / `make build`; die
+`.prg` hängt als Artefakt am Lauf. VICE ist dort bewusst nicht dabei: die
+Emulatorläufe brauchen eine Anzeige und Wartezeiten und wären unzuverlässig.
 
 ## Steuerung
 
