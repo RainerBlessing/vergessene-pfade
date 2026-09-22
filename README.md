@@ -7,6 +7,7 @@ Narrativer Retro-RPG-Prototyp (C11 / SDL3). Er prüft, ob der Loop
 - Plan und Stand: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)
 - Spielbares Design: [docs/walddorf-slice.md](docs/walddorf-slice.md)
 - Kulturelle Notizen und Quellen: [docs/culture-notes.md](docs/culture-notes.md)
+- C64-Fassung des Slice (Erkundung, Begegnung, Kampf und alte Grenze): [c64/README.md](c64/README.md)
 - Herkunft des Codes: Emberpost (Japan-/Deutsch-Fassung), siehe [docs/emberpost/](docs/emberpost/)
 
 **Aktueller Stand (Stage 4): der Slice ist von der Ankunft bis zum Abspann spielbar.**
