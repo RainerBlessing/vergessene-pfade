@@ -48,6 +48,8 @@ static const TileDef tiles[] = {
     {'n', 14, 7, 0, "Schild"},
     {'w', 23, 7, 0, "Schild"},
     {'c', 3, 9, 0, "Werkbank"},
+    {'z', 26, 9, 0, "Totholzstapel"},
+    {'p', 9, 9, PASS, "Grenzpfahl"},
 };
 static const uint8_t tile_count = (uint8_t)(sizeof tiles / sizeof tiles[0]);
 

@@ -19,7 +19,8 @@ typedef enum {
   GAME_DIALOGUE,
   GAME_INVENTORY,
   GAME_NOTEBOOK,
-  GAME_ENCOUNTER
+  GAME_ENCOUNTER,
+  GAME_MEND
 } GameState;
 
 #define NOTE_LIMIT 24
@@ -42,6 +43,11 @@ typedef struct {
   uint8_t notes[NOTE_LIMIT], note_count;
   uint8_t mood, outcome, fighting;
   int8_t stone_x, stone_y; /* the boundary stone the loggers moved */
+  uint8_t mend_placed;     /* pieces of the bowl already set */
+  int8_t daigo_x, daigo_y; /* the foreman walks along while staking the boundary */
+  bool daigo_follows;
+  uint8_t staked;          /* bit per stake already driven in */
+  uint8_t opens;           /* what the open conversation leads to */
   uint8_t bag[ITEM_COUNT];
   int16_t hp, kami_hp;
   uint32_t random;
@@ -61,6 +67,10 @@ bool game_knows(const Game *g, ObsId o);
 bool game_shows(const Game *g, const TileOverride *o);
 /* May the player push the boundary stone? Observations unlock it, not the plot. */
 bool game_can_push(const Game *g);
+/* Where a person stands; the foreman moves while he follows. */
+void game_npc_pos(const Game *g, uint8_t npc, int8_t *x, int8_t *y);
+/* Pieces still lying beside the bowl, in display order; returns the count. */
+uint8_t game_mend_pieces(const Game *g, uint8_t *out);
 /* Items the player owns, in display order; returns the count. */
 uint8_t game_owned_items(const Game *g, uint8_t *out);
 /* Indices into encounter_options offered now; `out` holds ENCOUNTER_OPTION_LIMIT. */

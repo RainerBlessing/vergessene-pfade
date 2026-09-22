@@ -5,8 +5,8 @@ Ziel: prüfen, ob der Loop **Erkunden → Beobachten → Verstehen → Handeln**
 Toolchain und VICE-Start ist `~/projekte/c64u/fps-monitor`.
 
 Umfang (mit Rainer abgestimmt): Erkundung beider Karten, die Begegnung am
-Hainrand und die Ausgänge „bekämpfen“ und „alte Grenze“. Nicht im POC:
-Kintsugi, Nacht im Gasthaus, Morgen-Phase, Klang.
+Hainrand und alle drei Ausgänge. Nicht im POC: Nacht im Gasthaus, Morgen-Phase,
+Klang.
 
 Die Spiellogik ist dieselbe Tabellenlogik wie in der SDL-Fassung (`../src`),
 nur auf diesen Umfang gekürzt. Texte sind wörtlich übernommen.
@@ -44,4 +44,15 @@ verklemmter Stein lässt sich durch Ansehen zurücksetzen; in der Mulde beruhigt
 der Kami, der Hainrand bleibt, das Lager verliert Grund, Sumi und Daigo reagieren.
 **Tests**: `pushing_needs_both_observations`, `restore_old_boundary`,
 `a_stuck_stone_rolls_back`.
+**Status**: Complete
+
+## Stage 6: Kintsugi und Kompromiss
+**Ziel**: Die Kette von den Scherben bis zur neuen Grenze: Zeichen, Sumis
+Geschichte, Reparaturansicht, Trocknen, Darbringen, Daigo folgt, drei Pfähle.
+**Erfolgskriterien**: Oriha flickt erst mit `OBS_BOWL_OWNER`; ein falsches Stück
+kostet nichts; die Schale wird beim Rückweg aus dem Wald trocken; die geflickte
+Schale macht den Kami ruhig; Daigo geht nur mit Spuren und Auftragsbuch mit;
+drei Pfähle setzen `OUT_MEND` mit Totholz (Gewinn) und verlorenem Hainrand (Verlust).
+**Tests**: `mend_the_bowl`, `the_bowl_calms_the_spirit`, `stake_out_a_new_boundary`,
+`mend_view_shows_gap_and_pieces`.
 **Status**: Complete

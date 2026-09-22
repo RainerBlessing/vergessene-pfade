@@ -1,7 +1,7 @@
 #include "content.h"
 
 const ItemDef items[ITEM_COUNT] = {
-    {"", 0}, {"Heilkraut", 8}, {"Scherben der Schale", 0}};
+    {"", 0}, {"Heilkraut", 8}, {"Scherben der Schale", 0}, {"Geflickte Schale", 0}};
 
 const Npc npcs[NPC_COUNT] = {{MAP_VILLAGE, 5, 4, 'S', "Sumi / Dorfaelteste"},
                              {MAP_VILLAGE, 24, 4, 'O', "Oriha / Lackmeisterin"},
@@ -40,6 +40,11 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
                        {"Du hast ihn vertrieben? Dann\nkoennen die Leute wieder\n"
                         "arbeiten. Gut.",
                         "Komisch. Ich dachte, ich waere\nerleichtert."}},
+    [D_SUMI_MEND] = {2,
+                     {"Ihr habt eine neue Grenze\nabgesteckt? Und der Hain laesst\n"
+                      "uns das Totholz?",
+                      "Wir werden sparsam heizen muessen.\nUnd jedes Jahr eine Gabe "
+                      "bringen.\nGrossmutter haette gelacht."}},
     [D_SUMI_BOUNDARY] = {2,
                          {"Der alte Stein steht wieder da,\nwo er hingehoert? Dann "
                           "bleibt\nder Hain ihrer.",
@@ -50,9 +55,25 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
     [D_ORIHA_SHARDS] = {1,
                         {"Scherben einer Opferschale.\nWem gehoerte sie? Ohne "
                          "ihre\nGeschichte fasse ich sie nicht an."}},
-    [D_ORIHA_OWNER] = {1,
-                       {"Sumis Grossmutter also. Dann hat\ndiese Schale eine lange "
-                        "Geschichte.\nLass mich darueber nachdenken."}},
+    [D_ORIHA_MEND] = {2,
+                      {"Sumis Grossmutter also. Dann hat\ndiese Schale eine "
+                       "Geschichte,\ndie ich kenne.",
+                       "Setz dich. Ich hole den Goldlack.\nDu setzt die Stuecke, "
+                       "ich fuehre\ndeine Hand."}},
+    [D_ORIHA_DRYING] = {1,
+                        {"Der Lack braucht Ruhe. Komm\nwieder, wenn du aus dem "
+                         "Wald\nzurueck bist."}},
+    [D_ORIHA_READY] = {2,
+                       {"Sie ist trocken. Sieh nur, die\nNaehte glaenzen. Der Bruch "
+                        "ist\njetzt Teil der Schale.",
+                        "Nimm sie mit. Sie gehoert nicht\nin mein Regal."}},
+    [D_ORIHA_AFTER] = {1,
+                       {"Trag sie behutsam. Und bring sie\ndorthin, wo sie gebraucht "
+                        "wird."}},
+    [D_MEND_WRONG] = {1, {"Das passt nicht an diese\nBruchkante."}},
+    [D_MEND_DONE] = {1,
+                     {"Das letzte Stueck sitzt. Der Lack\nzieht eine goldene Naht "
+                      "durch\njeden Sprung."}},
     [D_MIO] = {2,
                {"Im Wald wohnt ein Fuchs. Er hat\nmir mal zugesehen, wie ich\nBeeren "
                 "gesammelt habe.",
@@ -88,6 +109,18 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
     [D_DAIGO_BOUNDARY] = {1,
                           {"Du hast den Stein zurueckgerollt.\nWeisst du, was das "
                            "kostet? Nein.\nWoher auch."}},
+    [D_DAIGO_MEND] = {1,
+                      {"Bis zu den Pfaehlen also. Das ist\nweniger Holz. Aber es "
+                       "ist Holz,\num das niemand streitet."}},
+    [D_DAIGO_OFFER] = {2,
+                       {"Es sitzt neben einer Schale und\nruehrt sich nicht? Und die "
+                        "Tiere\nlaufen alle diesen Bogen?",
+                        "Gut. Zeig mir, wo die Spuren\nlaufen. Dort stecken wir die "
+                        "neue\nGrenze ab. Ich komme mit."}},
+    [D_DAIGO_WALKING] = {1,
+                         {"Geh voran. Drei Pfaehle, dann ist\nSchluss mit dem "
+                          "Streit."}},
+    [D_STAKE_SET] = {1, {"Ihr treibt einen Pfahl in den\nBoden, neben die Spuren."}},
     [D_X_WOOD] = {1, {"Kaum Holz auf dem Stapel.\nUnd der Winter kommt bald."}},
     [D_X_HOUSE_MARK] = {1, {"Neben Sumis Tuer ist ein\nHauszeichen eingebrannt."}},
     [D_X_HOUSE_MARK_MATCH] = {1,
@@ -160,12 +193,22 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
                             {"Du haeltst die Scherben hin. Der\nKami sieht sie an. "
                              "Etwas knackt\nwie brechendes Holz."}},
     /* An empty page shows the last message: the numbers of the closing round. */
+    [D_ENC_OFFER_BOWL] = {2,
+                          {"Du stellst die geflickte Schale\nins Moos. Die goldenen "
+                           "Naehte\nfangen das Licht.",
+                           "Der Kami beugt sich darueber.\nDas Knurren hoert auf. "
+                           "Es setzt\nsich neben die Schale."}},
     [D_ENC_VICTORY] = {2,
                        {"", "Der Kami zerfaellt zu Laub und\nAsche. Im Hain wird es "
                             "still.\nSehr still."}},
     [D_ENC_DEFEAT] = {2,
                       {"", "Du kommst am Nordtor wieder zu\ndir. Jemand hat dich "
                            "gefunden\nund heimgebracht."}},
+    [D_SCENE_MEND] = {2,
+                      {"Der dritte Pfahl steht. Daigo\ntritt die Erde fest und sagt "
+                       "lange\nnichts.",
+                       "Zwischen den Staemmen sitzt der\nKami bei der Schale. Es "
+                       "sieht\neuch zu und bleibt sitzen."}},
     [D_SCENE_BOUNDARY] = {2,
                           {"Der Stein rutscht in die Mulde,\nals haette er nie "
                            "woanders\ngelegen. Das Moos passt genau.",
@@ -197,43 +240,63 @@ const char *const notes[NOTE_COUNT] = {
     [N_KAMI_SHARDS] = "Als ich die Scherben zeigte, wurde\nder Kami zorniger.",
     [N_FOUGHT] = "Der Kami ist zerfallen. Im Hain\nist es sehr still.",
     [N_BOUNDARY] = "Der Stein liegt wieder in seiner\nMulde. Der Kami blieb im Hain.",
+    [N_MENDED] = "Oriha und ich haben die Schale\ngeflickt. Der Lack trocknet.",
+    [N_BOWL_READY] = "Die Schale ist trocken. Die Naehte\nglaenzen golden.",
+    [N_KAMI_CALM] = "Vor der geflickten Schale hat der\nKami sich hingesetzt.",
+    [N_DEAL] = "Daigo will mit mir eine neue\nGrenze abstecken.",
+    [N_MEND] = "Drei Pfaehle stehen entlang der\nSpuren. Der Kami blieb sitzen.",
 };
 
 #define MARKS (OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK))
 const DialogueRule dialogue_rules[] = {
     /* The bowl's story outranks every reaction: it is the only source of N_OWNER. */
     {NPC_SUMI, MARKS, OBS(OBS_BOWL_OWNER), OBS(OBS_BOWL_OWNER), D_SUMI_OWNER, N_OWNER,
-     ITEM_NONE, OUT_ANY},
+     ITEM_NONE, OUT_ANY, OPEN_NOTHING},
     /* The task stays reachable before her reaction to an outcome. */
     {NPC_SUMI, 0, OBS(OBS_ASKED_BY_SUMI), OBS(OBS_ASKED_BY_SUMI), D_SUMI_TASK, N_ASKED,
-     ITEM_NONE, OUT_NONE},
-    {NPC_SUMI, 0, 0, 0, D_SUMI_FOUGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT},
-    {NPC_SUMI, 0, 0, 0, D_SUMI_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY},
+     ITEM_NONE, OUT_NONE, OPEN_NOTHING},
+    {NPC_SUMI, 0, 0, 0, D_SUMI_FOUGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT, OPEN_NOTHING},
+    {NPC_SUMI, 0, 0, 0, D_SUMI_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY, OPEN_NOTHING},
+    {NPC_SUMI, 0, 0, 0, D_SUMI_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND, OPEN_NOTHING},
     {NPC_SUMI, OBS(OBS_BOWL_OWNER), 0, 0, D_SUMI_OWNER_KNOWN, NOTE_NONE, ITEM_NONE,
-     OUT_ANY},
+     OUT_ANY, OPEN_NOTHING},
     {NPC_SUMI, OBS(OBS_ASKED_BY_SUMI), 0, 0, D_SUMI_WAITING, NOTE_NONE, ITEM_NONE,
-     OUT_ANY},
-    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | OBS(OBS_BOWL_OWNER), 0, 0, D_ORIHA_OWNER,
-     NOTE_NONE, ITEM_NONE, OUT_ANY},
+     OUT_ANY, OPEN_NOTHING},
+    /* The bowl on her shelf: handed over once the lacquer has dried. */
+    {NPC_ORIHA, OBS(OBS_BOWL_READY), 0, 0, D_ORIHA_READY, N_BOWL_READY, ITEM_BOWL,
+     OUT_ANY, OPEN_NOTHING},
+    {NPC_ORIHA, OBS(OBS_BOWL_READY), 0, 0, D_ORIHA_AFTER, NOTE_NONE, ITEM_NONE,
+     OUT_ANY, OPEN_NOTHING},
+    {NPC_ORIHA, OBS(OBS_BOWL_DRYING), 0, 0, D_ORIHA_DRYING, NOTE_NONE, ITEM_NONE,
+     OUT_ANY, OPEN_NOTHING},
+    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | OBS(OBS_BOWL_OWNER), 0, 0, D_ORIHA_MEND,
+     NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_MEND},
     {NPC_ORIHA, OBS(OBS_BOWL_SHARDS), 0, 0, D_ORIHA_SHARDS, NOTE_NONE, ITEM_NONE,
-     OUT_ANY},
-    {NPC_ORIHA, 0, 0, 0, D_ORIHA, NOTE_NONE, ITEM_NONE, OUT_ANY},
-    {NPC_MIO, OBS(OBS_FOX_TENDED), 0, 0, D_MIO_THANKS, NOTE_NONE, ITEM_NONE, OUT_ANY},
+     OUT_ANY, OPEN_NOTHING},
+    {NPC_ORIHA, 0, 0, 0, D_ORIHA, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
+    {NPC_MIO, OBS(OBS_FOX_TENDED), 0, 0, D_MIO_THANKS, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
     /* Mio keeps helping while the fox is hurt: the herb can be used up elsewhere. */
     {NPC_MIO, OBS(OBS_FOX_WOUNDED), OBS(OBS_MIO_HERB), OBS(OBS_MIO_HERB), D_MIO_HERB,
-     N_HERB, ITEM_HERB, OUT_ANY},
+     N_HERB, ITEM_HERB, OUT_ANY, OPEN_NOTHING},
     {NPC_MIO, OBS(OBS_FOX_WOUNDED), 0, 0, D_MIO_HERB_MORE, NOTE_NONE, ITEM_HERB,
-     OUT_ANY},
-    {NPC_MIO, OBS(OBS_MIO_HERB), 0, 0, D_MIO_HERB_AGAIN, NOTE_NONE, ITEM_NONE, OUT_ANY},
-    {NPC_MIO, 0, 0, 0, D_MIO, NOTE_NONE, ITEM_NONE, OUT_ANY},
+     OUT_ANY, OPEN_NOTHING},
+    {NPC_MIO, OBS(OBS_MIO_HERB), 0, 0, D_MIO_HERB_AGAIN, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
+    {NPC_MIO, 0, 0, 0, D_MIO, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
     {NPC_KENTA, OBS(OBS_KENTA_STARE), 0, 0, D_KENTA_AGAIN, NOTE_NONE, ITEM_NONE,
-     OUT_ANY},
-    {NPC_KENTA, 0, 0, OBS(OBS_KENTA_STARE), D_KENTA, N_KENTA, ITEM_NONE, OUT_ANY},
-    {NPC_DAIGO, 0, 0, 0, D_DAIGO_FOUGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT},
-    {NPC_DAIGO, 0, 0, 0, D_DAIGO_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY},
+     OUT_ANY, OPEN_NOTHING},
+    {NPC_KENTA, 0, 0, OBS(OBS_KENTA_STARE), D_KENTA, N_KENTA, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
+    {NPC_DAIGO, 0, 0, 0, D_DAIGO_FOUGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT, OPEN_NOTHING},
+    {NPC_DAIGO, 0, 0, 0, D_DAIGO_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY, OPEN_NOTHING},
+    {NPC_DAIGO, 0, 0, 0, D_DAIGO_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND, OPEN_NOTHING},
+    /* The compromise: he comes along once the kami sits and the tracks are known. */
+    {NPC_DAIGO, OBS(OBS_KAMI_CALMED) | OBS(OBS_TRACKS) | OBS(OBS_LEDGER_DEBT),
+     OBS(OBS_DAIGO_DEAL), OBS(OBS_DAIGO_DEAL), D_DAIGO_OFFER, N_DEAL, ITEM_NONE,
+     OUT_NONE, OPEN_FOLLOW},
+    {NPC_DAIGO, OBS(OBS_DAIGO_DEAL), 0, 0, D_DAIGO_WALKING, NOTE_NONE, ITEM_NONE,
+     OUT_NONE, OPEN_FOLLOW},
     {NPC_DAIGO, OBS(OBS_LEDGER_DEBT), 0, 0, D_DAIGO_LEDGER, NOTE_NONE, ITEM_NONE,
-     OUT_ANY},
-    {NPC_DAIGO, 0, 0, 0, D_DAIGO, NOTE_NONE, ITEM_NONE, OUT_ANY},
+     OUT_ANY, OPEN_NOTHING},
+    {NPC_DAIGO, 0, 0, 0, D_DAIGO, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
 };
 const uint8_t dialogue_rule_count =
     (uint8_t)(sizeof dialogue_rules / sizeof dialogue_rules[0]);
@@ -305,6 +368,12 @@ const TileOverride tile_overrides[] = {
     /* Alte Grenze: the grove keeps its edge, the camp loses its ground. */
     {MAP_FOREST, 16, 11, 'h', 0, OUT_BOUNDARY},
     {MAP_FOREST, 14, 28, '.', 0, OUT_BOUNDARY},
+    /* Kompromiss: deadwood for the village, the old edge stays cut. */
+    {MAP_FOREST, 13, 30, 'z', 0, OUT_MEND},
+    {MAP_FOREST, 22, 10, 'x', 0, OUT_MEND},
+    /* Orihas shelf: the bowl rests there while the lacquer dries. */
+    {MAP_VILLAGE, 22, 4, 'q', OBS(OBS_BOWL_READY), OUT_ANY},
+    {MAP_VILLAGE, 22, 4, 'b', OBS(OBS_BOWL_DRYING), OUT_ANY},
     {MAP_FOREST, 5, 20, 'f', OBS(OBS_FOX_TENDED), OUT_ANY},
     /* Paw prints: around the camp, along the grove edge, to the stone gap. */
     TRACK(8, 19),
@@ -352,10 +421,22 @@ const EncounterOption encounter_options[] = {
 const uint8_t encounter_option_count =
     (uint8_t)(sizeof encounter_options / sizeof encounter_options[0]);
 const EncounterOffer encounter_offers[] = {
+    {ITEM_BOWL, OBS(OBS_KAMI_CALMED), MOOD_CALM, D_ENC_OFFER_BOWL, N_KAMI_CALM},
     {ITEM_SHARDS, OBS(OBS_KAMI_ANGERED), MOOD_ANGRY, D_ENC_OFFER_SHARDS, N_KAMI_SHARDS},
 };
 const uint8_t encounter_offer_count =
     (uint8_t)(sizeof encounter_offers / sizeof encounter_offers[0]);
+
+const MendPiece mend_pieces[MEND_PIECES] = {
+    {"Bodenstueck", "Der Boden fehlt."},
+    {"Wandstueck", "Die Wand hat einen Sprung."},
+    {"Randstueck", "Am Rand fehlt ein Stueck."},
+    {"Stueck mit dem Zeichen", "Neben dem Zeichen klafft ein Riss."},
+};
+const uint8_t mend_display[MEND_PIECES] = {2, 0, 3, 1};
+
+/* The stakes stand on the animal tracks, between the old stones. */
+const StakeSpot stakes[STAKE_COUNT] = {{14, 14}, {22, 15}, {30, 14}};
 
 /* Buildings say what they are, whether or not anyone is in. */
 const Place places[] = {

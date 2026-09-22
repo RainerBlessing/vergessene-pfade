@@ -237,6 +237,162 @@ static void offering_shards_angers_it(void) {
   assert(g.mood == MOOD_ANGRY && game_knows(&g, OBS_KAMI_ANGERED));
 }
 
+/* Kintsugi and the compromise: the long way round, step by step. */
+static void read_out(Game *g) {
+  while (g->state == GAME_DIALOGUE)
+    game_action(g, ACT_CONFIRM);
+}
+static void take_the_shards(Game *g) {
+  face(g, MAP_FOREST, 38, 21, 0, -1); /* the offering stone */
+  game_action(g, ACT_CONFIRM);
+  read_out(g);
+  const Action look[] = {ACT_INVENTORY, ACT_DOWN, ACT_CONFIRM};
+  play(g, look, 3); /* the mark burnt into the bottom */
+  read_out(g);
+  face(g, MAP_VILLAGE, 4, 7, 0, -1); /* the same mark beside Sumi's door */
+  game_action(g, ACT_CONFIRM);
+  read_out(g);
+  face(g, MAP_VILLAGE, 5, 5, 0, -1);
+  game_action(g, ACT_CONFIRM);
+  assert(g->dialogue == D_SUMI_OWNER);
+  read_out(g);
+}
+/* The piece that belongs into the gap that is open now. */
+static void set_fitting_piece(Game *g) {
+  uint8_t pieces[MEND_PIECES];
+  uint8_t count = game_mend_pieces(g, pieces);
+  for (uint8_t i = 0; i < count; i++)
+    if (pieces[i] == g->mend_placed)
+      g->selection = i;
+  game_action(g, ACT_CONFIRM);
+}
+
+static void mend_the_bowl(void) {
+  Game g;
+  start(&g);
+  take_the_shards(&g);
+  face(&g, MAP_VILLAGE, 24, 5, 0, -1); /* Oriha, once she knows the story */
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_ORIHA_MEND);
+  read_out(&g);
+  assert(g.state == GAME_MEND);
+  /* A piece that does not fit costs nothing. */
+  uint8_t pieces[MEND_PIECES];
+  uint8_t count = game_mend_pieces(&g, pieces);
+  for (uint8_t i = 0; i < count; i++)
+    if (pieces[i] != g.mend_placed)
+      g.selection = i;
+  game_action(&g, ACT_CONFIRM);
+  assert(g.mend_placed == 0 && g.state == GAME_MEND);
+  for (int i = 0; i < MEND_PIECES; i++)
+    set_fitting_piece(&g);
+  assert(g.mend_placed == MEND_PIECES);
+  assert(g.dialogue == D_MEND_DONE && game_knows(&g, OBS_BOWL_DRYING));
+  read_out(&g);
+  assert(game_tile(&g, MAP_VILLAGE, 22, 4) == 'b'); /* it stands on her shelf */
+  /* The lacquer dries while the player is in the forest. */
+  assert(!game_knows(&g, OBS_BOWL_READY));
+  face(&g, MAP_VILLAGE, 16, 1, 0, -1);
+  game_action(&g, ACT_UP);
+  assert(g.map == MAP_FOREST && !game_knows(&g, OBS_BOWL_READY));
+  face(&g, MAP_FOREST, 24, 38, 0, 1);
+  game_action(&g, ACT_DOWN);
+  assert(g.map == MAP_VILLAGE && game_knows(&g, OBS_BOWL_READY));
+  assert(game_tile(&g, MAP_VILLAGE, 22, 4) == 'q');
+  face(&g, MAP_VILLAGE, 24, 5, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_ORIHA_READY && g.bag[ITEM_BOWL] == 1);
+}
+
+/* Everything the foreman wants to hear before he stakes out a new boundary. */
+static void prepare_the_compromise(Game *g) {
+  take_the_shards(g);
+  face(g, MAP_VILLAGE, 24, 5, 0, -1);
+  game_action(g, ACT_CONFIRM);
+  read_out(g);
+  for (int i = 0; i < MEND_PIECES; i++)
+    set_fitting_piece(g);
+  read_out(g);
+  g->obs |= OBS(OBS_BOWL_READY);
+  face(g, MAP_VILLAGE, 24, 5, 0, -1);
+  game_action(g, ACT_CONFIRM);
+  read_out(g);
+  assert(g->bag[ITEM_BOWL] == 1);
+  /* The fox, the tracks and the ledger. */
+  face(g, MAP_FOREST, 5, 21, 0, -1);
+  game_action(g, ACT_CONFIRM);
+  read_out(g);
+  face(g, MAP_VILLAGE, 11, 11, 0, -1);
+  game_action(g, ACT_CONFIRM);
+  read_out(g);
+  face(g, MAP_FOREST, 5, 21, 0, -1);
+  const Action use[] = {ACT_INVENTORY, ACT_CONFIRM};
+  play(g, use, 2);
+  read_out(g);
+  face(g, MAP_FOREST, 8, 20, 0, -1);
+  game_action(g, ACT_CONFIRM);
+  read_out(g);
+  assert(game_knows(g, OBS_TRACKS));
+  face(g, MAP_FOREST, 12, 31, 0, -1); /* the order book in the camp */
+  game_action(g, ACT_CONFIRM);
+  read_out(g);
+  assert(game_knows(g, OBS_LEDGER_DEBT));
+}
+
+static void the_bowl_calms_the_spirit(void) {
+  Game g;
+  start(&g);
+  prepare_the_compromise(&g);
+  face(&g, MAP_FOREST, 25, 12, 0, -1);
+  game_action(&g, ACT_UP);
+  assert(g.state == GAME_ENCOUNTER);
+  uint8_t options[ENCOUNTER_OPTION_LIMIT];
+  uint8_t count = game_encounter_options(&g, options);
+  for (uint8_t i = 0; i < count; i++)
+    if (encounter_options[options[i]].action == ENC_OFFER)
+      g.selection = i;
+  game_action(&g, ACT_CONFIRM);
+  assert(g.mood == MOOD_CALM && game_knows(&g, OBS_KAMI_CALMED));
+  assert(g.dialogue == D_ENC_OFFER_BOWL);
+}
+
+static void stake_out_a_new_boundary(void) {
+  Game g;
+  start(&g);
+  prepare_the_compromise(&g);
+  g.obs |= OBS(OBS_KAMI_CALMED);
+  face(&g, MAP_FOREST, 11, 32, 0, -1); /* Daigo stands at 11,31 */
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_DAIGO_OFFER && game_knows(&g, OBS_DAIGO_DEAL));
+  read_out(&g);
+  assert(g.daigo_follows);
+  /* He walks in the player's footsteps, so he is there at every stake. */
+  for (int i = 0; i < STAKE_COUNT; i++) {
+    g.x = (int8_t)stakes[i].x;
+    g.y = (int8_t)(stakes[i].y + 1);
+    g.daigo_x = g.x;
+    g.daigo_y = (int8_t)(g.y + 1);
+    g.dx = 0;
+    g.dy = -1;
+    game_action(&g, ACT_UP); /* onto the stake spot, Daigo follows */
+    assert(g.y == (int8_t)stakes[i].y && g.daigo_y == (int8_t)(stakes[i].y + 1));
+    game_action(&g, ACT_CONFIRM);
+    assert((g.staked & (1u << i)) != 0);
+    read_out(&g);
+  }
+  assert(g.outcome == OUT_MEND && !g.daigo_follows);
+  assert(game_tile(&g, MAP_FOREST, stakes[0].x, stakes[0].y) == 'p');
+  assert(game_tile(&g, MAP_FOREST, 13, 30) == 'z'); /* deadwood for the village */
+  assert(game_tile(&g, MAP_FOREST, 22, 10) == 'x'); /* the old edge stays cut */
+  face(&g, MAP_VILLAGE, 5, 5, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_SUMI_MEND);
+  read_out(&g);
+  face(&g, MAP_FOREST, 11, 32, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_DAIGO_MEND);
+}
+
 static void notes_are_unique(void) {
   Game g;
   start(&g);
@@ -289,6 +445,9 @@ int main(void) {
   pushing_needs_both_observations();
   restore_old_boundary();
   a_stuck_stone_rolls_back();
+  mend_the_bowl();
+  the_bowl_calms_the_spirit();
+  stake_out_a_new_boundary();
   notes_are_unique();
   every_dialogue_fits_the_screen();
   printf("alle Tests bestanden\n");

@@ -36,6 +36,11 @@ bool game_knows(const Game *g, ObsId o) { return (g->obs & OBS(o)) != 0; }
 char game_tile(const Game *g, uint8_t map, int8_t x, int8_t y) {
   if (map == MAP_FOREST && x == g->stone_x && y == g->stone_y)
     return 'G'; /* the stone the loggers dragged out of its hollow */
+  if (map == MAP_FOREST)
+    for (uint8_t i = 0; i < STAKE_COUNT; i++)
+      if ((g->staked & (1u << i)) && stakes[i].x == (uint8_t)x &&
+          stakes[i].y == (uint8_t)y)
+        return 'p';
   for (uint8_t i = 0; i < tile_override_count; i++) {
     const TileOverride *o = &tile_overrides[i];
     if (o->map == map && o->x == (uint8_t)x && o->y == (uint8_t)y &&
@@ -51,11 +56,25 @@ bool game_passable(const Game *g, uint8_t map, int8_t x, int8_t y) {
   const TileDef *t = tile_def(game_tile(g, map, x, y));
   return t && (t->flags & TF_PASSABLE);
 }
+void game_npc_pos(const Game *g, uint8_t npc, int8_t *x, int8_t *y) {
+  *x = npc == NPC_DAIGO ? g->daigo_x : (int8_t)npcs[npc].x;
+  *y = npc == NPC_DAIGO ? g->daigo_y : (int8_t)npcs[npc].y;
+}
 int8_t game_npc_at(const Game *g, int8_t x, int8_t y) {
-  for (uint8_t i = 0; i < NPC_COUNT; i++)
-    if (npcs[i].map == g->map && npcs[i].x == (uint8_t)x && npcs[i].y == (uint8_t)y)
+  for (uint8_t i = 0; i < NPC_COUNT; i++) {
+    int8_t nx, ny;
+    game_npc_pos(g, i, &nx, &ny);
+    if (npcs[i].map == g->map && nx == x && ny == y)
       return (int8_t)i;
+  }
   return -1;
+}
+uint8_t game_mend_pieces(const Game *g, uint8_t *out) {
+  uint8_t n = 0;
+  for (uint8_t i = 0; i < MEND_PIECES; i++)
+    if (mend_display[i] >= g->mend_placed)
+      out[n++] = mend_display[i];
+  return n;
 }
 uint8_t game_owned_items(const Game *g, uint8_t *out) {
   uint8_t n = 0;
@@ -87,6 +106,7 @@ static void open_scene(Game *g, const char *title, uint8_t dialogue) {
   g->state = GAME_DIALOGUE;
 }
 static void open_dialogue(Game *g, int8_t npc, char examined, uint8_t dialogue) {
+  g->opens = OPEN_NOTHING;
   g->npc = npc;
   g->examined = examined;
   g->dialogue = dialogue;
@@ -106,6 +126,8 @@ void game_init(Game *g) {
   g->hp = PLAYER_HP;
   g->stone_x = STONE_START_X;
   g->stone_y = STONE_START_Y;
+  g->daigo_x = (int8_t)npcs[NPC_DAIGO].x;
+  g->daigo_y = (int8_t)npcs[NPC_DAIGO].y;
   g->kami_hp = KAMI_HP;
   g->random = 42;
   g->npc = SPEAKER_SCENE;
@@ -149,6 +171,7 @@ static void talk(Game *g, int8_t npc) {
       g->bag[r->gives]++;
     learn(g, r->grants, r->note);
     open_dialogue(g, npc, 0, r->dialogue);
+    g->opens = r->opens; /* after opening: open_dialogue clears it */
     return;
   }
 }
@@ -189,6 +212,8 @@ static const ExaminePoint *point_for_item(const Game *g, uint8_t item) {
 static void reset_stone(Game *g) {
   g->stone_x = STONE_START_X;
   g->stone_y = STONE_START_Y;
+  g->daigo_x = (int8_t)npcs[NPC_DAIGO].x;
+  g->daigo_y = (int8_t)npcs[NPC_DAIGO].y;
   g->obs &= ~OBS(OBS_STONE_MOVED);
 }
 static void use_point(Game *g, const ExaminePoint *p, char examined) {
@@ -207,8 +232,11 @@ static void examine_nothing(Game *g, int8_t x, int8_t y) {
   msg_add(g, tile ? tile->name : "Dort");
   msg_add(g, ": nichts Besonderes.");
 }
+static bool stake_here(Game *g);
 /* Facing tile first, then the tile underfoot (passable points cannot be faced). */
 static void examine(Game *g) {
+  if (stake_here(g))
+    return;
   int8_t fx = g->x + g->dx, fy = g->y + g->dy;
   const ExaminePoint *p = point_at(g, fx, fy);
   if (p) {
@@ -233,6 +261,8 @@ static bool heal(Game *g) {
     g->hp = PLAYER_HP;
   g->stone_x = STONE_START_X;
   g->stone_y = STONE_START_Y;
+  g->daigo_x = (int8_t)npcs[NPC_DAIGO].x;
+  g->daigo_y = (int8_t)npcs[NPC_DAIGO].y;
   return true;
 }
 static void inventory_action(Game *g, Action a) {
@@ -272,6 +302,70 @@ static void notebook_action(Game *g, Action a) {
     g->scroll--;
   else if (a == ACT_DOWN && g->scroll < last)
     g->scroll++;
+}
+
+/* Kintsugi: each piece is set into the gap it belongs to. A piece that does not
+ * fit costs nothing; the seams stay visible. */
+static void mend_action(Game *g, Action a) {
+  uint8_t pieces[MEND_PIECES];
+  uint8_t count = game_mend_pieces(g, pieces);
+  if (a == ACT_CANCEL) {
+    g->state = GAME_EXPLORATION;
+    return;
+  }
+  if (count == 0)
+    return;
+  if (a == ACT_UP)
+    g->selection = (uint8_t)((g->selection + count - 1) % count);
+  if (a == ACT_DOWN)
+    g->selection = (uint8_t)((g->selection + 1) % count);
+  if (a != ACT_CONFIRM)
+    return;
+  if (g->selection >= count)
+    g->selection = 0;
+  bool fits = pieces[g->selection] == g->mend_placed;
+  if (fits)
+    g->mend_placed++;
+  g->selection = 0;
+  if (!fits) { /* a piece that does not fit costs nothing */
+    msg_clear(g);
+    msg_add(g, dialogues[D_MEND_WRONG].pages[0]);
+    return;
+  }
+  msg_clear(g);
+  if (g->mend_placed == MEND_PIECES) {
+    if (g->bag[ITEM_SHARDS])
+      g->bag[ITEM_SHARDS]--;
+    learn(g, OBS(OBS_BOWL_DRYING), N_MENDED);
+    open_scene(g, "In Orihas Werkstatt", D_MEND_DONE);
+  }
+}
+
+/* Driving in a stake: only where the tracks run, and only with Daigo there. */
+static bool stake_here(Game *g) {
+  int8_t dx = (int8_t)(g->daigo_x - g->x), dy = (int8_t)(g->daigo_y - g->y);
+  if (!g->daigo_follows || g->map != MAP_FOREST || dx * dx + dy * dy > 1)
+    return false; /* the two of them drive it in together */
+  for (uint8_t i = 0; i < STAKE_COUNT; i++) {
+    if (stakes[i].x != (uint8_t)g->x || stakes[i].y != (uint8_t)g->y ||
+        (g->staked & (1u << i)))
+      continue;
+    g->staked |= (uint8_t)(1u << i);
+    uint8_t count = 0;
+    for (uint8_t k = 0; k < STAKE_COUNT; k++)
+      count = (uint8_t)(count + ((g->staked >> k) & 1u));
+    if (count == STAKE_COUNT) {
+      g->daigo_follows = false;
+      g->daigo_x = (int8_t)npcs[NPC_DAIGO].x;
+      g->daigo_y = (int8_t)npcs[NPC_DAIGO].y;
+      learn(g, 0, N_MEND);
+      g->outcome = OUT_MEND;
+      open_scene(g, "Die neue Grenze", D_SCENE_MEND);
+    } else
+      open_scene(g, "Entlang der Spuren", D_STAKE_SET);
+    return true;
+  }
+  return false;
 }
 
 /* --- the encounter --- */
@@ -362,6 +456,8 @@ static void fight_round(Game *g, bool herb) {
     g->hp = PLAYER_HP;
   g->stone_x = STONE_START_X;
   g->stone_y = STONE_START_Y;
+  g->daigo_x = (int8_t)npcs[NPC_DAIGO].x;
+  g->daigo_y = (int8_t)npcs[NPC_DAIGO].y;
     g->kami_hp = KAMI_HP; /* the spirit recovers as well */
     g->fighting = 0;
     carried_home(g);
@@ -428,8 +524,13 @@ static void encounter_action(Game *g, Action a) {
 }
 
 /* --- walking and pushing --- */
+/* The follower steps aside (they swap), everyone else blocks. */
+static bool blocking_npc(const Game *g, int8_t x, int8_t y) {
+  int8_t npc = game_npc_at(g, x, y);
+  return npc >= 0 && !(npc == NPC_DAIGO && g->daigo_follows);
+}
 static bool can_enter(const Game *g, int8_t x, int8_t y) {
-  return game_npc_at(g, x, y) < 0 && game_passable(g, g->map, x, y);
+  return !blocking_npc(g, x, y) && game_passable(g, g->map, x, y);
 }
 bool game_can_push(const Game *g) {
   return matches(g, OBS(OBS_STONE_DRAGGED) | OBS(OBS_STONE_HOLLOW), 0) &&
@@ -475,8 +576,13 @@ static void move(Game *g, int8_t dx, int8_t dy) {
     begin_encounter(g); /* a settled grove lets you pass */
     return;
   }
+  int8_t from_x = g->x, from_y = g->y;
   g->x += dx;
   g->y += dy;
+  if (g->daigo_follows) { /* he walks in your footsteps */
+    g->daigo_x = from_x;
+    g->daigo_y = from_y;
+  }
   if (!place_at(g, g->map, g->x, g->y))
     g->place = 0; /* outside again: the next room may repeat its name */
   else
@@ -486,9 +592,18 @@ static void move(Game *g, int8_t dx, int8_t dy) {
   for (uint8_t i = 0; i < TRANSITION_COUNT; i++) {
     const Transition *t = &transitions[i];
     if (g->map == t->map && (uint8_t)g->x == t->x && (uint8_t)g->y == t->y) {
+      bool from_forest = g->map == MAP_FOREST;
       g->map = t->to_map;
       g->x = (int8_t)t->to_x;
       g->y = (int8_t)t->to_y;
+      /* The lacquer needs rest: it has dried by the time you are back. */
+      if (from_forest && g->map == MAP_VILLAGE && game_knows(g, OBS_BOWL_DRYING))
+        learn(g, OBS(OBS_BOWL_READY), NOTE_NONE);
+      if (g->daigo_follows) { /* he stays in the forest, at his camp */
+        g->daigo_follows = false;
+        g->daigo_x = (int8_t)npcs[NPC_DAIGO].x;
+        g->daigo_y = (int8_t)npcs[NPC_DAIGO].y;
+      }
       g->place = 0; /* the name belongs to the room actually entered */
       enter_place(g);
       return;
@@ -514,12 +629,22 @@ void game_action(Game *g, Action a) {
       return;
     g->state = GAME_EXPLORATION;
     msg_clear(g); /* the scene's echo of the last round ends with it */
+    /* Escape closes and nothing more; reading to the end can lead on. */
+    if (a == ACT_CONFIRM && g->opens == OPEN_MEND) {
+      g->state = GAME_MEND;
+      g->selection = 0;
+    } else if (a == ACT_CONFIRM && g->opens == OPEN_FOLLOW)
+      g->daigo_follows = true;
+    g->opens = OPEN_NOTHING;
     return;
   case GAME_INVENTORY:
     inventory_action(g, a);
     return;
   case GAME_ENCOUNTER:
     encounter_action(g, a);
+    return;
+  case GAME_MEND:
+    mend_action(g, a);
     return;
   case GAME_EXPLORATION:
     break;

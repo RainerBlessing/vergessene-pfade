@@ -97,6 +97,29 @@ static void notebook_shows_what_was_written(void) {
   expect_row(4, "  der Pfote dunkler Lehm.");
 }
 
+/* The repair view: the gap names what is missing, the pieces lie beside it. */
+static void mend_view_shows_gap_and_pieces(void) {
+  Game g;
+  start(&g);
+  g.state = GAME_MEND;
+  g.map = MAP_VILLAGE;
+  g.x = 24;
+  g.y = 5;
+  g.selection = 0;
+  render(&g);
+  expect_row(16, "Die Schale");
+  expect_row(17, "Der Boden fehlt.");
+  expect_row(18, "> Randstueck");
+  expect_row(19, "  Bodenstueck");
+  expect_row(24, "W/S waehlen   RETURN setzen");
+  /* A piece that does not fit says so and changes nothing. */
+  game_action(&g, ACT_CONFIRM);
+  assert(g.mend_placed == 0);
+  render(&g);
+  expect_row(18, "Das passt nicht an diese");
+  expect_row(19, "Bruchkante.");
+}
+
 static void the_map_is_drawn(void) {
   Game g;
   start(&g);
@@ -113,6 +136,7 @@ int main(void) {
   dialogue_pages_are_complete();
   notebook_opens();
   notebook_shows_what_was_written();
+  mend_view_shows_gap_and_pieces();
   printf("Bildschirm-Tests bestanden\n");
   return 0;
 }

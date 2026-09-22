@@ -4,9 +4,10 @@ Text-Modus-Fassung des Walddorf-Slice für den Commodore 64, gebaut mit
 llvm-mos. Aufbau, Toolchain und VICE-Start sind von
 `~/projekte/c64u/fps-monitor` übernommen.
 
-**Umfang:** Erkundung von Dorf und Wald, die Begegnung am Hainrand und **zwei
-Ausgänge**: „bekämpfen“ und „alte Grenze wiederherstellen“. Nicht enthalten:
-Kintsugi, Nacht im Gasthaus, Morgen-Phase, Klang. Stand und Stufen:
+**Umfang:** Erkundung von Dorf und Wald, die Begegnung am Hainrand und **alle
+drei Ausgänge**: „bekämpfen“, „alte Grenze wiederherstellen“ und „Kintsugi und
+Kompromiss“. Nicht enthalten: Nacht im Gasthaus, Morgen-Phase, Klang. Stand und
+Stufen:
 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
 
 Die Regeln sind dieselbe Tabellenlogik wie in der SDL-Fassung (`../src`), nur
@@ -46,6 +47,7 @@ Emulatorläufe brauchen eine Anzeige und Wartezeiten und wären unzuverlässig.
 | RETURN / Leertaste | reden, untersuchen, weiterlesen |
 | I | Tasche; RETURN benutzt den gewählten Gegenstand |
 | N (oder RUN/STOP) | Notizbuch auf und zu |
+| W/S und RETURN | in Begegnung, Tasche und Reparaturansicht wählen |
 
 Steht ein Text unten im Bild, schließt **N** zuerst diesen Text; erst der
 zweite Druck öffnet das Notizbuch. Im Notizbuch blättern W und S.
@@ -60,6 +62,20 @@ irgendwo fest, rollt ihn ein Blick darauf an den Anfang der Spur zurück.
 Liegt er wieder in der Mulde, zieht sich der Kami zurück, der Hain behält
 seinen Rand, und das Lager verliert seinen besten Grund — Sumi und Daigo sagen
 dazu Verschiedenes.
+
+## Kintsugi und Kompromiss
+
+Die lange Kette, jeder Schritt aus einer Beobachtung heraus: Scherben am
+Opferstein aufheben → in der Tasche das eingebrannte Zeichen ansehen → dasselbe
+Zeichen an Sumis Tür → Sumi erzählt von ihrer Großmutter → Oriha holt den
+Goldlack. In der Reparaturansicht wird je ein Stück an die offene Bruchkante
+gesetzt; was nicht passt, kostet nichts. Danach steht die Schale sichtbar in
+Orihas Regal und trocknet — fertig ist sie nach der Rückkehr aus dem Wald, nicht
+nach einem unsichtbaren Zähler. Die geflickte Schale dem Kami darbringen macht
+ihn ruhig; erst dann, und nur mit Tierspuren und Auftragsbuch, geht Daigo mit
+und steckt mit dir drei Pfähle entlang der Spuren ab (RETURN auf dem Feld, Daigo
+muss daneben stehen). Dafür bekommt das Dorf Totholz, der alte Hainrand bleibt
+verloren.
 
 ## Bild
 

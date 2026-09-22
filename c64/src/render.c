@@ -101,9 +101,12 @@ static void map_view(const Game *g) {
     if (o->map == g->map && game_shows(g, o))
       in_view(cx, cy, o->x, o->y, o->symbol);
   }
-  for (uint8_t i = 0; i < NPC_COUNT; i++)
+  for (uint8_t i = 0; i < NPC_COUNT; i++) {
+    int8_t nx, ny;
+    game_npc_pos(g, i, &nx, &ny);
     if (npcs[i].map == g->map)
-      overlay(cx, cy, npcs[i].x, npcs[i].y, (uint8_t)npcs[i].glyph, COLOR_CYAN);
+      overlay(cx, cy, (uint8_t)nx, (uint8_t)ny, (uint8_t)npcs[i].glyph, COLOR_CYAN);
+  }
   overlay(cx, cy, (uint8_t)g->x, (uint8_t)g->y, 0 /* '@' */, COLOR_WHITE);
 }
 
@@ -179,6 +182,30 @@ static void encounter_panel(const Game *g) {
   hint("W/S waehlen   RETURN tun");
 }
 
+/* The repair: the gap says what is missing, the pieces lie beside the bowl.
+ * Nothing counts anything down -- the gaps do that by being there. */
+static void mend_panel(const Game *g) {
+  uint8_t pieces[MEND_PIECES];
+  uint8_t count = game_mend_pieces(g, pieces), y = ENCOUNTER_TOP + 1;
+  map_stale = true; /* the panel covers the lower rows of the map */
+  separator(ENCOUNTER_TOP);
+  screen_row(y, COLOR_YELLOW);
+  screen_text(0, y++, "Die Schale", COLOR_YELLOW);
+  if (g->mend_placed < MEND_PIECES) {
+    screen_row(y, COLOR_WHITE);
+    screen_text(0, y++, mend_pieces[g->mend_placed].gap, COLOR_WHITE);
+  }
+  if (g->message[0])
+    y = screen_lines(0, y, g->message, COLOR_LIGHTGREEN);
+  for (uint8_t i = 0; i < count && y < SCREEN_ROWS - 1; i++) {
+    screen_row(y, COLOR_WHITE);
+    screen_text(0, y, i == g->selection ? ">" : " ", COLOR_YELLOW);
+    screen_text(2, y++, mend_pieces[pieces[i]].shard, COLOR_WHITE);
+  }
+  blank(y);
+  hint("W/S waehlen   RETURN setzen");
+}
+
 static void notebook(const Game *g) {
   map_stale = true;
   screen_clear();
@@ -217,6 +244,10 @@ void render(const Game *g) {
   map_view(g);
   if (g->state == GAME_ENCOUNTER) {
     encounter_panel(g);
+    return;
+  }
+  if (g->state == GAME_MEND) {
+    mend_panel(g);
     return;
   }
   separator(PANEL_TOP);

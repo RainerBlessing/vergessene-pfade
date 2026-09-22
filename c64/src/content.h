@@ -24,17 +24,21 @@ typedef enum {
   OBS_TRACKS,
   OBS_KAMI_SEEN,
   OBS_KAMI_ANGERED,
+  OBS_BOWL_DRYING,
+  OBS_BOWL_READY,
+  OBS_KAMI_CALMED,
+  OBS_DAIGO_DEAL,
   OBS_STONE_MOVED, /* the stone stands neither where it was dragged to nor home */
   OBS_COUNT
 } ObsId;
 typedef uint32_t Obs;
 #define OBS(o) ((Obs)1 << (o))
 
-typedef enum { OUT_NONE, OUT_FIGHT, OUT_BOUNDARY, OUTCOME_COUNT } Outcome;
+typedef enum { OUT_NONE, OUT_FIGHT, OUT_BOUNDARY, OUT_MEND, OUTCOME_COUNT } Outcome;
 /* In a rule: applies whatever has been decided. */
 #define OUT_ANY OUTCOME_COUNT
 
-typedef enum { ITEM_NONE, ITEM_HERB, ITEM_SHARDS, ITEM_COUNT } ItemId;
+typedef enum { ITEM_NONE, ITEM_HERB, ITEM_SHARDS, ITEM_BOWL, ITEM_COUNT } ItemId;
 typedef struct {
   const char *name;
   uint8_t heal;
@@ -64,9 +68,15 @@ typedef enum {
   D_SUMI_OWNER_KNOWN,
   D_SUMI_FOUGHT,
   D_SUMI_BOUNDARY,
+  D_SUMI_MEND,
   D_ORIHA,
   D_ORIHA_SHARDS,
-  D_ORIHA_OWNER,
+  D_ORIHA_MEND,
+  D_ORIHA_DRYING,
+  D_ORIHA_READY,
+  D_ORIHA_AFTER,
+  D_MEND_WRONG,
+  D_MEND_DONE,
   D_MIO,
   D_MIO_HERB,
   D_MIO_HERB_MORE,
@@ -78,6 +88,10 @@ typedef enum {
   D_DAIGO_LEDGER,
   D_DAIGO_FOUGHT,
   D_DAIGO_BOUNDARY,
+  D_DAIGO_MEND,
+  D_DAIGO_OFFER,
+  D_DAIGO_WALKING,
+  D_STAKE_SET,
   D_X_WOOD,
   D_X_HOUSE_MARK,
   D_X_HOUSE_MARK_MATCH,
@@ -108,9 +122,11 @@ typedef enum {
   D_ENC_ATTACK,
   D_ENC_RETREAT,
   D_ENC_OFFER_SHARDS,
+  D_ENC_OFFER_BOWL,
   D_ENC_VICTORY,
   D_ENC_DEFEAT,
   D_SCENE_BOUNDARY,
+  D_SCENE_MEND,
   DIALOGUE_COUNT
 } DialogueId;
 #define DIALOGUE_PAGES 3
@@ -145,15 +161,23 @@ typedef enum {
   N_KAMI_SHARDS,
   N_FOUGHT,
   N_BOUNDARY,
+  N_MENDED,
+  N_BOWL_READY,
+  N_KAMI_CALM,
+  N_DEAL,
+  N_MEND,
   NOTE_COUNT
 } NoteId;
 extern const char *const notes[NOTE_COUNT];
 
+/* What a conversation opens once its last page is read. */
+typedef enum { OPEN_NOTHING, OPEN_MEND, OPEN_FOLLOW } DialogueOpens;
 /* First matching rule wins. */
 typedef struct {
   uint8_t npc;
   Obs needs, forbids, grants;
   uint8_t dialogue, note, gives, outcome; /* outcome OUT_ANY: whatever was decided */
+  uint8_t opens;
 } DialogueRule;
 extern const DialogueRule dialogue_rules[];
 extern const uint8_t dialogue_rule_count;
@@ -211,6 +235,22 @@ extern const uint8_t encounter_lines[ENC_COUNT][MOOD_COUNT];
 #define STONE_START_Y 16
 #define STONE_HOLLOW_X 24
 #define STONE_HOLLOW_Y 12
+
+/* Kintsugi: the pieces in the order they go back, each with the gap it fills. */
+#define MEND_PIECES 4
+typedef struct {
+  const char *shard, *gap;
+} MendPiece;
+extern const MendPiece mend_pieces[MEND_PIECES];
+/* The order the pieces are listed in, so the right one is not simply first. */
+extern const uint8_t mend_display[MEND_PIECES];
+
+/* Where the new boundary is staked out, along the animal tracks. */
+#define STAKE_COUNT 3
+typedef struct {
+  uint8_t x, y;
+} StakeSpot;
+extern const StakeSpot stakes[STAKE_COUNT];
 
 /* Rooms that name themselves for a moment when the player steps inside. */
 typedef struct {
