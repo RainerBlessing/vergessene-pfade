@@ -5,8 +5,12 @@ Ziel: prüfen, ob der Loop **Erkunden → Beobachten → Verstehen → Handeln**
 Toolchain und VICE-Start ist `~/projekte/c64u/fps-monitor`.
 
 Umfang (mit Rainer abgestimmt): Erkundung beider Karten, die Begegnung am
-Hainrand und alle drei Ausgänge. Nicht im POC: Nacht im Gasthaus, Morgen-Phase,
-Klang.
+Hainrand und alle drei Ausgänge. Nicht im POC: Nacht im Gasthaus, Morgen-Phase
+([#4](../../../issues/4)), Klang ([#5](../../../issues/5)).
+
+Alle Stufen hier sind fertig. Was als Nächstes ansteht, steht in den Issues,
+nicht in diesem Plan: erst einmal durchspielen ([#7](../../../issues/7)) und auf
+echter Hardware prüfen ([#6](../../../issues/6)); Ausbau danach.
 
 Die Spiellogik ist dieselbe Tabellenlogik wie in der SDL-Fassung (`../src`),
 nur auf diesen Umfang gekürzt. Texte sind wörtlich übernommen.

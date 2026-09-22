@@ -3,6 +3,12 @@
 Quelle: `Die_vergessenen_Pfade_Game_Concept.pdf` (Review-Fassung 09/2026), Kapitel 7.
 Spielbares Design des Slices: [docs/walddorf-slice.md](docs/walddorf-slice.md).
 
+Dieser Plan beschreibt, **was** die Stufen erreichen sollen. Der **Stand** der
+noch offenen Stufen steht nicht hier, sondern in den GitHub-Issues, damit er nur
+an einer Stelle gepflegt wird: [#1](../../issues/1) (5A), [#2](../../issues/2)
+(5B), [#3](../../issues/3) (6). Die C64-Fassung hat einen eigenen Plan unter
+[c64/IMPLEMENTATION_PLAN.md](c64/IMPLEMENTATION_PLAN.md).
+
 ## Ziel des POC
 
 Ein etwa 30 Minuten langer, spielbarer PC-Prototyp beantwortet eine Frage: **Trägt
@@ -335,7 +341,7 @@ Der Log wird im Core als Ereignispuffer geführt; `main.c` schreibt die Datei.
 **Tests**:
 - Alle Unit- und Journey-Tests grün.
 - Dokumentierter interner Durchlauf je Ausgang.
-**Status**: Not Started
+**Status**: offen, verfolgt in [#1](../../issues/1)
 
 ### Optionaler Nachtrag zu 5A: Dorftiefe (nur bei Bedarf nach dem Durchlauf)
 
@@ -381,7 +387,7 @@ keine neue Mechanik und keine neue Figur.
 - Auswertung in `docs/playtest-results.md` mit Go/No-Go für Stage 6.
 **Tests**:
 - Jede Session hat Log, Interview-Notizen und Zeitmessung.
-**Status**: Not Started
+**Status**: offen, verfolgt in [#2](../../issues/2)
 
 ## Stage 6 (nur bei positivem Ergebnis): Politur, Windows, C64U-Evaluierung
 **Goal**: Den validierten Slice vorzeigbar machen und die nächste Entscheidung vorbereiten.
@@ -391,7 +397,7 @@ keine neue Mechanik und keine neue Figur.
 - Kurze C64U-Evaluierung: Speicherbedarf der Tabellen und Karten, was portierbar ist.
 **Tests**:
 - Tests grün unter Linux und Windows; `--verify` im Windows-Paket mit Exit 0.
-**Status**: Not Started
+**Status**: offen, verfolgt in [#3](../../issues/3)
 
 ---
 
