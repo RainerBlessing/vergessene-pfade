@@ -1099,6 +1099,26 @@ static int test_signs(const char *assets) {
   CHECK(g.place_ticks == 0);
   return 0;
 }
+/* A new notebook entry says so for a moment; nothing already written repeats it. */
+static int test_note_notice(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  CHECK(g.note_ticks == 0);
+  stand(&g, MAP_VILLAGE, 5, 5, 0, -1); /* facing Sumi */
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.note_count == 1 && g.note_ticks > 0);
+  dismiss(&g);
+  CHECK(g.note_ticks > 0); /* the notice outlives the conversation */
+  for (int i = 0; i < 64 && g.note_ticks > 0; i++)
+    game_action(&g, ACT_NONE);
+  CHECK(g.note_ticks == 0); /* and fades on its own */
+  /* Asking her again writes nothing, so nothing is announced. */
+  stand(&g, MAP_VILLAGE, 5, 5, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.note_count == 1 && g.note_ticks == 0);
+  dismiss(&g);
+  return 0;
+}
 /* Examining the futon explains it; only the answer tries to sleep. */
 static int test_futon_explains(const char *assets) {
   Game g;
@@ -1390,7 +1410,7 @@ int main(int argc, char **argv) {
       test_defeat(argv[1]) || test_boundary(argv[1]) || test_mend(argv[1]) ||
       test_compromise(argv[1]) || test_daigo_stays(argv[1]) || test_phases(argv[1]) ||
       test_consequences(argv[1]) || test_night_offer(argv[1]) || test_signs(argv[1]) ||
-      test_futon_explains(argv[1]) || test_futon(argv[1]) ||
+      test_note_notice(argv[1]) || test_futon_explains(argv[1]) || test_futon(argv[1]) ||
       test_change_precedence(argv[1]) || test_visitor_before_teaser(argv[1]) ||
       test_den_with_kits(argv[1]) || test_fox_after_fight(argv[1]) ||
       test_daigo_reactions(argv[1]) || test_no_late_deal(argv[1]) ||

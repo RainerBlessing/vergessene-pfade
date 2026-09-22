@@ -115,6 +115,9 @@ static void world(Renderer *r, const Game *g) {
        g->place_ticks > 0 && g->place ? g->place
        : g->map == MAP_VILLAGE        ? "KIRIYAMA"
                                       : "DER WALD");
+  /* A new notebook entry says so; no count, no marker on the entry itself. */
+  if (g->note_ticks > 0)
+    text(r, 200, 4, 3, "NOTIZ ERGAENZT");
   box(r, 0, 176, 320, 24, 0);
   color(r, 1);
   formatted(r, 8, 178, "LP %02d/%02d  I TASCHE  ESC NOTIZBUCH", g->player.hp,

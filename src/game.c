@@ -102,8 +102,10 @@ static void learn(Game *g, Obs grants, NoteId note) {
   for (int i = 0; i < g->note_count; i++)
     if (g->notes[i] == note)
       return;
-  if (g->note_count < NOTE_LIMIT)
+  if (g->note_count < NOTE_LIMIT) {
     g->notes[g->note_count++] = note;
+    g->note_ticks = NOTE_TICKS; /* only a new entry announces itself */
+  }
 }
 /* Keeps g->message: a scene page left empty shows it (see dialogue_panel). */
 static void open_scene(Game *g, const char *title, DialogueId dialogue) {
@@ -615,6 +617,8 @@ static void move(Game *g, int dx, int dy) {
 void game_action(Game *g, Action a) {
   if (g->place_ticks > 0) /* the room's name fades after a few moves */
     g->place_ticks--;
+  if (g->note_ticks > 0) /* so does the notice about a new entry */
+    g->note_ticks--;
   if (a == ACT_DEBUG) {
     g->debug = !g->debug;
     return;

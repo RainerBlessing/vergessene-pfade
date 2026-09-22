@@ -66,6 +66,7 @@ typedef struct {
   const char *scene; /* panel title while npc == SPEAKER_SCENE */
   const char *place; /* the room the player just stepped into */
   int place_ticks;   /* how much longer its name is shown */
+  int note_ticks;    /* how much longer the fresh-entry notice is shown */
   unsigned steps;    /* counts moves; the frontend turns changes into footfalls */
   Obs obs;
   NoteId notes[NOTE_LIMIT];

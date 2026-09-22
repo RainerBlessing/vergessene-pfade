@@ -310,6 +310,8 @@ typedef struct {
 extern const Place places[];
 extern const int place_count;
 #define PLACE_TICKS 14 /* actions the name stays on screen */
+/* A fresh notebook entry says so for a while, without naming a count. */
+#define NOTE_TICKS 14
 
 /* The two answers to the question about the night, in this order. */
 #define NIGHT_CHOICES 2
