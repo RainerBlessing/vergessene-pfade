@@ -513,6 +513,59 @@ static void encounter_texts_are_single_page(void) {
   assert(dialogues[D_ENC_APPEAR].count == 1);
 }
 
+/* Die Karten kommen aus assets/maps und werden auch anderswo bearbeitet.
+ * Dieser Test haelt fest, was der Slice braucht: dass man ueberall hinkommt
+ * und nirgends in einer Ecke mit nur einem Ausgang landet (#18). */
+#define FOREST_CELLS (64 * 64)
+static void the_forest_stays_walkable(void) {
+  Game g;
+  start(&g);
+  g.map = MAP_FOREST;
+  static bool seen[FOREST_CELLS];
+  static uint16_t queue[FOREST_CELLS];
+  uint16_t head = 0, tail = 0;
+  uint8_t w = map_width(MAP_FOREST), h = map_height(MAP_FOREST);
+  queue[tail++] = (uint16_t)(38 * w + 24); /* das Nordtor des Dorfes */
+  seen[38 * w + 24] = true;
+  while (head < tail) {
+    uint16_t at = queue[head++];
+    int8_t x = (int8_t)(at % w), y = (int8_t)(at / w);
+    const int8_t step[4][2] = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}};
+    for (uint8_t i = 0; i < 4; i++) {
+      int8_t nx = (int8_t)(x + step[i][0]), ny = (int8_t)(y + step[i][1]);
+      if (nx < 0 || ny < 0 || (uint8_t)nx >= w || (uint8_t)ny >= h)
+        continue;
+      uint16_t n = (uint16_t)(ny * w + nx);
+      if (!seen[n] && game_passable(&g, MAP_FOREST, nx, ny)) {
+        seen[n] = true;
+        queue[tail++] = n;
+      }
+    }
+  }
+  /* Alles, was der Slice im Wald braucht. */
+  const uint8_t must[][2] = {{5, 21}, {12, 31}, {11, 32}, {38, 21}, {23, 16},
+                             {24, 13}, {24, 12}, {14, 14}, {22, 15}, {30, 14},
+                             {8, 19}, {34, 13}, {24, 11}};
+  for (uint8_t i = 0; i < sizeof must / sizeof must[0]; i++)
+    assert(seen[must[i][1] * w + must[i][0]]);
+  /* Sackgassen: Felder mit nur einem Ausgang. Das alte Gitter hatte 44. */
+  uint8_t dead = 0;
+  for (uint8_t y = 0; y < h; y++)
+    for (uint8_t x = 0; x < w; x++) {
+      if (!game_passable(&g, MAP_FOREST, (int8_t)x, (int8_t)y))
+        continue;
+      uint8_t outs = 0;
+      const int8_t step[4][2] = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}};
+      for (uint8_t i = 0; i < 4; i++)
+        if (game_passable(&g, MAP_FOREST, (int8_t)(x + step[i][0]),
+                          (int8_t)(y + step[i][1])))
+          outs++;
+      if (outs <= 1)
+        dead++;
+    }
+  assert(dead <= 20);
+}
+
 static void every_dialogue_fits_the_screen(void) {
   for (int d = 1; d < DIALOGUE_COUNT; d++)
     for (int p = 0; p < dialogues[d].count; p++) {
@@ -565,6 +618,7 @@ int main(void) {
   two_items_still_get_chosen();
   notes_are_unique();
   encounter_texts_are_single_page();
+  the_forest_stays_walkable();
   every_dialogue_fits_the_screen();
   printf("alle Tests bestanden\n");
   return 0;
