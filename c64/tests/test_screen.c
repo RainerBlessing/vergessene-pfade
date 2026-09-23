@@ -29,6 +29,7 @@ static void expect_row(uint8_t y, const char *text) {
   row_text(y, seen);
   if (strcmp(seen, text)) {
     printf("Zeile %u:\n  erwartet: \"%s\"\n  gesehen:  \"%s\"\n", y, text, seen);
+    fflush(stdout);
     assert(0);
   }
 }
@@ -120,6 +121,75 @@ static void mend_view_shows_gap_and_pieces(void) {
   expect_row(19, "Bruchkante.");
 }
 
+/* In der Begegnung steht neben dem Text auch, was die Runde gebracht hat. */
+static void encounter_shows_the_round(void) {
+  Game g;
+  start(&g);
+  g.map = MAP_FOREST;
+  g.x = 25;
+  g.y = 12;
+  g.dx = 0;
+  g.dy = -1;
+  game_action(&g, ACT_UP);
+  assert(g.state == GAME_ENCOUNTER);
+  render(&g);
+  expect_row(14, "Waldkami    ZORNIG");
+  expect_row(15, "Zwischen den Staemmen richtet sich");
+  /* Angreifen: der Text bleibt, die Zahlen der Runde kommen darunter. */
+  uint8_t options[ENCOUNTER_OPTION_LIMIT];
+  uint8_t count = game_encounter_options(&g, options);
+  for (uint8_t i = 0; i < count; i++)
+    if (encounter_options[options[i]].action == ENC_ATTACK)
+      g.selection = i;
+  game_action(&g, ACT_CONFIRM);
+  render(&g);
+  expect_row(15, "Du machst einen Schritt nach vorn.");
+  char seen[SCREEN_COLS + 1];
+  row_text(17, seen);
+  assert(strstr(seen, "Dein Hieb verursacht") == seen);
+  row_text(14, seen);
+  assert(strstr(seen, "DU") != 0); /* der Balken ist der eigene */
+}
+
+/* Was gezeichnet wird, muss dem entsprechen, was game_tile() sagt -- sonst
+ * zeigt die Karte etwas anderes als das Spiel meint (Regal: trocknend/fertig). */
+static void drawn_map_matches_the_rules(const Game *g) {
+  int8_t cx, cy;
+  game_camera(g, SCREEN_COLS, 17 /* Kartenzeilen, siehe render.c */, &cx, &cy);
+  for (uint8_t vy = 0; vy < 17; vy++)
+    for (uint8_t vx = 0; vx < SCREEN_COLS; vx++) {
+      int8_t x = (int8_t)(cx + vx), y = (int8_t)(cy + vy);
+      if ((uint8_t)x >= map_width(g->map) || (uint8_t)y >= map_height(g->map))
+        continue;
+      if (game_npc_at(g, x, y) >= 0 || (x == g->x && y == g->y))
+        continue;
+      const TileDef *t = tile_def(game_tile(g, g->map, x, y));
+      uint8_t drawn = test_screen[(vy + 1) * SCREEN_COLS + vx];
+      if (!t || drawn == t->screen)
+        continue;
+      printf("Feld %d,%d: gezeichnet %u, erwartet %u (%c)\n", x, y, drawn, t->screen,
+             game_tile(g, g->map, x, y));
+      fflush(stdout);
+      assert(0);
+    }
+}
+
+static void the_shelf_shows_the_dried_bowl(void) {
+  Game g;
+  start(&g);
+  g.map = MAP_VILLAGE;
+  g.x = 24;
+  g.y = 6;
+  g.obs |= OBS(OBS_BOWL_DRYING);
+  render(&g);
+  assert(game_tile(&g, MAP_VILLAGE, 22, 4) == 'b');
+  drawn_map_matches_the_rules(&g);
+  g.obs |= OBS(OBS_BOWL_READY); /* beides gesetzt: fertig gewinnt */
+  render(&g);
+  assert(game_tile(&g, MAP_VILLAGE, 22, 4) == 'q');
+  drawn_map_matches_the_rules(&g);
+}
+
 static void the_map_is_drawn(void) {
   Game g;
   start(&g);
@@ -137,6 +207,8 @@ int main(void) {
   notebook_opens();
   notebook_shows_what_was_written();
   mend_view_shows_gap_and_pieces();
+  encounter_shows_the_round();
+  the_shelf_shows_the_dried_bowl();
   printf("Bildschirm-Tests bestanden\n");
   return 0;
 }

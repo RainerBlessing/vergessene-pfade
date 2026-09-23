@@ -502,6 +502,7 @@ static void encounter_action(Game *g, Action a) {
   if (g->selection >= count)
     g->selection = 0;
   uint8_t action = encounter_options[options[g->selection]].action;
+  msg_clear(g); /* last round's numbers belong to the last round */
   const EncounterOffer *offer = action == ENC_OFFER ? offer_at_hand(g) : 0;
   uint8_t before = g->mood;
   g->mood = offer ? offer->result : encounter_transitions[action][before];

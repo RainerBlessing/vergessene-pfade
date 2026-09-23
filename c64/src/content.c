@@ -193,11 +193,10 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
                             {"Du haeltst die Scherben hin. Der\nKami sieht sie an. "
                              "Etwas knackt\nwie brechendes Holz."}},
     /* An empty page shows the last message: the numbers of the closing round. */
-    [D_ENC_OFFER_BOWL] = {2,
-                          {"Du stellst die geflickte Schale\nins Moos. Die goldenen "
-                           "Naehte\nfangen das Licht.",
-                           "Der Kami beugt sich darueber.\nDas Knurren hoert auf. "
-                           "Es setzt\nsich neben die Schale."}},
+    /* Eine Seite: die Begegnungstafel blaettert nicht, dort zaehlt jede Zeile. */
+    [D_ENC_OFFER_BOWL] = {1,
+                          {"Du stellst die geflickte Schale ins\nMoos. Der Kami "
+                           "beugt sich darueber.\nEs setzt sich neben die Schale."}},
     [D_ENC_VICTORY] = {2,
                        {"", "Der Kami zerfaellt zu Laub und\nAsche. Im Hain wird es "
                             "still.\nSehr still."}},
@@ -449,7 +448,7 @@ const uint8_t place_count = (uint8_t)(sizeof places / sizeof places[0]);
 /* One page, skippable. Blank entries are spacing. */
 const char *const title_page[TITLE_LINES] = {
     "DIE VERGESSENEN PFADE",
-    "C64-POC: Erkundung und Begegnung",
+    "C64-POC: Erkunden, Verstehen, Handeln",
     "",
     "Erkunde das Dorf und den Wald.",
     "Sprich mit den Menschen, untersuche",

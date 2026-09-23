@@ -405,6 +405,20 @@ static void notes_are_unique(void) {
   assert(g.note_count == before);
 }
 
+/* Die Begegnungstafel zeigt nur eine Seite; mehrseitige Texte waeren dort
+ * nicht zu lesen. Die Szenen nach Sieg und Niederlage sind ausgenommen -- die
+ * laufen als Dialog ab. */
+static void encounter_texts_are_single_page(void) {
+  for (int a = 0; a < ENC_COUNT; a++)
+    for (int m = 0; m < MOOD_COUNT; m++) {
+      uint8_t d = encounter_lines[a][m];
+      assert(d == D_NONE || dialogues[d].count == 1);
+    }
+  for (int i = 0; i < encounter_offer_count; i++)
+    assert(dialogues[encounter_offers[i].dialogue].count == 1);
+  assert(dialogues[D_ENC_APPEAR].count == 1);
+}
+
 static void every_dialogue_fits_the_screen(void) {
   for (int d = 1; d < DIALOGUE_COUNT; d++)
     for (int p = 0; p < dialogues[d].count; p++) {
@@ -449,6 +463,7 @@ int main(void) {
   the_bowl_calms_the_spirit();
   stake_out_a_new_boundary();
   notes_are_unique();
+  encounter_texts_are_single_page();
   every_dialogue_fits_the_screen();
   printf("alle Tests bestanden\n");
   return 0;

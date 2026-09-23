@@ -4,7 +4,8 @@
 
 #define VIEW_H 17     /* map rows, below the status line */
 #define PANEL_TOP 18  /* the separator; the panel is what follows it */
-#define ENCOUNTER_TOP 15
+#define ENCOUNTER_TOP 13 /* the encounter needs room for text, round and options */
+#define MEND_TOP 15
 
 static void separator(uint8_t y) {
   for (uint8_t x = 0; x < SCREEN_COLS; x++)
@@ -96,8 +97,10 @@ static void map_view(const Game *g) {
   /* On top of the map, in the order game_tile() resolves them. */
   if (g->map == MAP_FOREST)
     in_view(cx, cy, (uint8_t)g->stone_x, (uint8_t)g->stone_y, 'G');
-  for (uint8_t i = 0; i < tile_override_count; i++) {
-    const TileOverride *o = &tile_overrides[i];
+  /* Rueckwaerts, damit am Ende die erste passende Ueberschreibung oben liegt --
+   * genau die, die game_tile() auch nimmt (Regal: fertig schlaegt trocknend). */
+  for (uint8_t i = tile_override_count; i > 0; i--) {
+    const TileOverride *o = &tile_overrides[i - 1];
     if (o->map == g->map && game_shows(g, o))
       in_view(cx, cy, o->x, o->y, o->symbol);
   }
@@ -163,8 +166,8 @@ static void encounter_panel(const Game *g) {
   screen_row(y, COLOR_LIGHTRED);
   screen_text(0, y, "Waldkami", COLOR_LIGHTRED);
   screen_text(12, y, mood_names[g->mood], COLOR_LIGHTRED);
-  if (g->fighting) {
-    screen_text(28, y, "LP", COLOR_WHITE);
+  if (g->fighting) { /* the bar is the player's own state, so it says so */
+    screen_text(28, y, "DU", COLOR_WHITE);
     for (uint8_t i = 0; i < 10; i++) /* a bar, not a number: no counters */
       screen_put((uint8_t)(31 + i), y, (uint8_t)(g->hp * 10 / PLAYER_HP > i ? 160 : 45),
                  COLOR_LIGHTGREEN);
@@ -173,6 +176,9 @@ static void encounter_panel(const Game *g) {
   const Dialogue *d = &dialogues[g->dialogue];
   const char *text = g->page < d->count ? d->pages[g->page] : "";
   y = screen_lines(0, y, *text ? text : g->message, COLOR_WHITE);
+  /* What the round did belongs on screen next to what was said. */
+  if (*text && g->message[0])
+    y = screen_lines(0, y, g->message, COLOR_LIGHTGREEN);
   for (uint8_t i = 0; i < count && y < SCREEN_ROWS - 1; i++) {
     screen_row(y, COLOR_WHITE);
     screen_text(0, y, i == g->selection ? ">" : " ", COLOR_YELLOW);
@@ -186,9 +192,9 @@ static void encounter_panel(const Game *g) {
  * Nothing counts anything down -- the gaps do that by being there. */
 static void mend_panel(const Game *g) {
   uint8_t pieces[MEND_PIECES];
-  uint8_t count = game_mend_pieces(g, pieces), y = ENCOUNTER_TOP + 1;
+  uint8_t count = game_mend_pieces(g, pieces), y = MEND_TOP + 1;
   map_stale = true; /* the panel covers the lower rows of the map */
-  separator(ENCOUNTER_TOP);
+  separator(MEND_TOP);
   screen_row(y, COLOR_YELLOW);
   screen_text(0, y++, "Die Schale", COLOR_YELLOW);
   if (g->mend_placed < MEND_PIECES) {
