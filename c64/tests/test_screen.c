@@ -190,6 +190,18 @@ static void the_shelf_shows_the_dried_bowl(void) {
   drawn_map_matches_the_rules(&g);
 }
 
+/* Die offene Tasche hebt sich ab und laesst sich mit einem Schritt verlassen. */
+static void the_open_bag_is_marked(void) {
+  Game g;
+  start(&g);
+  g.bag[ITEM_HERB] = 1;
+  game_action(&g, ACT_INVENTORY);
+  render(&g);
+  expect_row(20, "> Heilkraut");
+  for (uint8_t x = 0; x < 6; x++)
+    assert(test_screen[19 * SCREEN_COLS + x] >= 128); /* TASCHE steht invers */
+}
+
 static void the_map_is_drawn(void) {
   Game g;
   start(&g);
@@ -209,6 +221,7 @@ int main(void) {
   mend_view_shows_gap_and_pieces();
   encounter_shows_the_round();
   the_shelf_shows_the_dried_bowl();
+  the_open_bag_is_marked();
   printf("Bildschirm-Tests bestanden\n");
   return 0;
 }

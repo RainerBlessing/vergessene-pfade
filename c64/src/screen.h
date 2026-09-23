@@ -20,6 +20,8 @@ void screen_row(uint8_t y, uint8_t color);
 /* One line of ASCII, stopping at the end of the line or at '\n'.
  * Returns what is left of the text after the line break, or 0. */
 const char *screen_text(uint8_t x, uint8_t y, const char *text, uint8_t color);
+/* Kehrt n Zeichen ab (x,y) um -- fuer Tafeln, die den Rest des Bildes anhalten. */
+void screen_invert(uint8_t x, uint8_t y, uint8_t n);
 /* Several lines, one per '\n'; returns the row after the last one. */
 uint8_t screen_lines(uint8_t x, uint8_t y, const char *text, uint8_t color);
 #endif

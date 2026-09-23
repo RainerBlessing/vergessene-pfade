@@ -144,7 +144,8 @@ static void inventory_panel(const Game *g, uint8_t top) {
   uint8_t owned[ITEM_COUNT];
   uint8_t count = game_owned_items(g, owned), y = top + 1;
   screen_row(y, COLOR_YELLOW);
-  screen_text(0, y++, "TASCHE", COLOR_YELLOW);
+  screen_text(0, y, "TASCHE", COLOR_YELLOW);
+  screen_invert(0, y++, 6); /* damit offen auch offen aussieht */
   if (!count) {
     screen_row(y, COLOR_WHITE);
     screen_text(2, y++, "Nichts dabei.", COLOR_WHITE);

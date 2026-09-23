@@ -45,6 +45,12 @@ void screen_row(uint8_t y, uint8_t color) {
     screen_put(x, y, 32, color);
 }
 
+void screen_invert(uint8_t x, uint8_t y, uint8_t n) {
+  uint16_t at = row_offset[y] + x;
+  while (n--)
+    SCREEN_RAM[at++] |= 0x80;
+}
+
 const char *screen_text(uint8_t x, uint8_t y, const char *text, uint8_t color) {
   while (*text && *text != '\n' && x < SCREEN_COLS)
     screen_put(x++, y, screen_code(*text++), color);

@@ -87,8 +87,8 @@ static void bowl_story_needs_both_marks(void) {
   assert(g.bag[ITEM_SHARDS] == 1 && game_knows(&g, OBS_BOWL_SHARDS));
   while (g.state == GAME_DIALOGUE)
     game_action(&g, ACT_CONFIRM);
-  const Action look[] = {ACT_INVENTORY, ACT_DOWN, ACT_CONFIRM};
-  play(&g, look, 3);
+  const Action look[] = {ACT_INVENTORY, ACT_CONFIRM}; /* nur die Scherben dabei */
+  play(&g, look, 2);
   assert(game_knows(&g, OBS_BOWL_MARK));
   while (g.state == GAME_DIALOGUE)
     game_action(&g, ACT_CONFIRM);
@@ -246,8 +246,8 @@ static void take_the_shards(Game *g) {
   face(g, MAP_FOREST, 38, 21, 0, -1); /* the offering stone */
   game_action(g, ACT_CONFIRM);
   read_out(g);
-  const Action look[] = {ACT_INVENTORY, ACT_DOWN, ACT_CONFIRM};
-  play(g, look, 3); /* the mark burnt into the bottom */
+  const Action look[] = {ACT_INVENTORY, ACT_CONFIRM};
+  play(g, look, 2); /* the mark burnt into the bottom */
   read_out(g);
   face(g, MAP_VILLAGE, 4, 7, 0, -1); /* the same mark beside Sumi's door */
   game_action(g, ACT_CONFIRM);
@@ -461,6 +461,32 @@ static void an_item_reaches_the_neighbour(void) {
   assert(game_knows(&g, OBS_FOX_TENDED) && g.bag[ITEM_HERB] == 0);
 }
 
+/* Die Tasche haelt niemanden fest (#19). */
+static void a_step_closes_the_bag(void) {
+  Game g;
+  start(&g);
+  face(&g, MAP_VILLAGE, 16, 5, 0, 1);
+  g.bag[ITEM_HERB] = 1; /* nur ein Gegenstand: nichts zu waehlen */
+  game_action(&g, ACT_INVENTORY);
+  assert(g.state == GAME_INVENTORY);
+  game_action(&g, ACT_DOWN);
+  assert(g.state == GAME_EXPLORATION && g.y == 6);
+}
+
+static void two_items_still_get_chosen(void) {
+  Game g;
+  start(&g);
+  face(&g, MAP_VILLAGE, 16, 5, 0, 1);
+  g.bag[ITEM_HERB] = 1;
+  g.bag[ITEM_SHARDS] = 1;
+  game_action(&g, ACT_INVENTORY);
+  game_action(&g, ACT_DOWN);
+  assert(g.state == GAME_INVENTORY && g.selection == 1 && g.y == 5);
+  /* Links und rechts waehlen nichts aus -- sie gehen. */
+  game_action(&g, ACT_LEFT);
+  assert(g.state == GAME_EXPLORATION && g.x == 15);
+}
+
 static void notes_are_unique(void) {
   Game g;
   start(&g);
@@ -535,6 +561,8 @@ int main(void) {
   nothing_around_still_says_so();
   healing_leaves_the_world_alone();
   an_item_reaches_the_neighbour();
+  a_step_closes_the_bag();
+  two_items_still_get_chosen();
   notes_are_unique();
   encounter_texts_are_single_page();
   every_dialogue_fits_the_screen();

@@ -55,6 +55,7 @@ Emulatorläufe brauchen eine Anzeige und Wartezeiten und wären unzuverlässig.
 | RETURN / Leertaste | reden, untersuchen, weiterlesen |
 | | untersucht wird, was in Blickrichtung liegt — sonst, was unter dir oder daneben liegt |
 | I | Tasche; RETURN benutzt den gewählten Gegenstand |
+| | eine Laufrichtung schließt die Tasche und geht den Schritt; W und S wählen nur, solange es etwas zu wählen gibt |
 | N (oder RUN/STOP) | Notizbuch auf und zu |
 | W/S und RETURN | in Begegnung, Tasche und Reparaturansicht wählen |
 

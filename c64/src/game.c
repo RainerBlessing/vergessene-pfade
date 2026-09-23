@@ -278,6 +278,22 @@ static void examine(Game *g) {
   }
   examine_nothing(g, fx, fy);
 }
+static void move(Game *g, int8_t dx, int8_t dy);
+/* Ein Schritt, wenn die Taste eine Richtung war. */
+static bool walk(Game *g, Action a) {
+  if (a == ACT_UP)
+    move(g, 0, -1);
+  else if (a == ACT_DOWN)
+    move(g, 0, 1);
+  else if (a == ACT_LEFT)
+    move(g, -1, 0);
+  else if (a == ACT_RIGHT)
+    move(g, 1, 0);
+  else
+    return false;
+  return true;
+}
+
 /* --- the bag --- */
 static bool heal(Game *g) {
   if (!g->bag[ITEM_HERB] || g->hp >= PLAYER_HP)
@@ -293,6 +309,17 @@ static void inventory_action(Game *g, Action a) {
   uint8_t count = game_owned_items(g, owned);
   if (a == ACT_CANCEL || a == ACT_INVENTORY) {
     g->state = GAME_EXPLORATION;
+    return;
+  }
+  /* Die Tasche haelt niemanden fest: eine Richtung, in der es hier nichts zu
+   * waehlen gibt, schliesst sie und geht den Schritt (#19). */
+  bool selecting = count > 1 && (a == ACT_UP || a == ACT_DOWN);
+  if (!selecting && a != ACT_CONFIRM) {
+    uint8_t was = g->state;
+    g->state = GAME_EXPLORATION;
+    msg_clear(g);
+    if (!walk(g, a))
+      g->state = was; /* keine Richtung: die Tasche bleibt offen */
     return;
   }
   if (count == 0)
@@ -695,14 +722,7 @@ void game_action(Game *g, Action a) {
   if (a == ACT_NONE)
     return;
   msg_clear(g);
-  if (a == ACT_UP)
-    move(g, 0, -1);
-  else if (a == ACT_DOWN)
-    move(g, 0, 1);
-  else if (a == ACT_LEFT)
-    move(g, -1, 0);
-  else if (a == ACT_RIGHT)
-    move(g, 1, 0);
+  walk(g, a);
 }
 
 void game_camera(const Game *g, uint8_t view_w, uint8_t view_h, int8_t *x, int8_t *y) {
