@@ -393,6 +393,74 @@ static void stake_out_a_new_boundary(void) {
   assert(g.dialogue == D_DAIGO_MEND);
 }
 
+/* Untersuchen: der Blick zaehlt zuerst, aber was daneben liegt, wird gefunden. */
+static void examine_reaches_all_four_neighbours(void) {
+  Game g;
+  start(&g);
+  /* Das Hauszeichen liegt noerdlich, die Blickrichtung zeigt nach Westen. */
+  face(&g, MAP_VILLAGE, 4, 7, -1, 0);
+  game_action(&g, ACT_CONFIRM);
+  assert(game_knows(&g, OBS_HOUSE_MARK));
+  assert(g.dialogue == D_X_HOUSE_MARK);
+}
+
+static void the_facing_tile_wins(void) {
+  Game g;
+  start(&g);
+  /* Mulde im Norden, Schleifspur im Sueden: der Blick entscheidet. */
+  face(&g, MAP_FOREST, 24, 13, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(game_knows(&g, OBS_STONE_HOLLOW) && !game_knows(&g, OBS_STONE_DRAGGED));
+  while (g.state == GAME_DIALOGUE)
+    game_action(&g, ACT_CONFIRM);
+  face(&g, MAP_FOREST, 24, 13, 0, 1);
+  game_action(&g, ACT_CONFIRM);
+  assert(game_knows(&g, OBS_STONE_DRAGGED));
+}
+
+static void nothing_around_still_says_so(void) {
+  Game g;
+  start(&g);
+  face(&g, MAP_FOREST, 24, 25, 0, -1); /* freies Feld, nichts in Reichweite */
+  game_action(&g, ACT_CONFIRM);
+  assert(g.state == GAME_EXPLORATION);
+  assert(strstr(g.message, "nichts Besonderes") != 0);
+}
+
+/* Das Heilkraut heilt -- und tut sonst nichts. */
+static void healing_leaves_the_world_alone(void) {
+  Game g;
+  start(&g);
+  see_stone_and_hollow(&g);
+  face(&g, MAP_FOREST, 25, 16, -1, 0);
+  game_action(&g, ACT_LEFT); /* Stein einmal zur Seite geschoben */
+  assert(g.stone_x == 23);
+  g.bag[ITEM_HERB] = 1;
+  g.hp = 10;
+  g.daigo_follows = true;
+  g.daigo_x = 20;
+  g.daigo_y = 20;
+  const Action use[] = {ACT_INVENTORY, ACT_CONFIRM};
+  play(&g, use, 2);
+  assert(g.hp > 10);
+  assert(g.stone_x == 23 && g.stone_y == STONE_START_Y);
+  assert(g.daigo_x == 20 && g.daigo_y == 20);
+}
+
+/* Das Kraut wirkt auch, wenn der Fuchs nicht genau in Blickrichtung liegt. */
+static void an_item_reaches_the_neighbour(void) {
+  Game g;
+  start(&g);
+  face(&g, MAP_FOREST, 5, 21, 0, -1);
+  game_action(&g, ACT_CONFIRM); /* verletzter Fuchs */
+  read_out(&g);
+  g.bag[ITEM_HERB] = 1;
+  face(&g, MAP_FOREST, 6, 20, 1, 0); /* neben dem Bau, Blick nach Osten */
+  const Action use[] = {ACT_INVENTORY, ACT_CONFIRM};
+  play(&g, use, 2);
+  assert(game_knows(&g, OBS_FOX_TENDED) && g.bag[ITEM_HERB] == 0);
+}
+
 static void notes_are_unique(void) {
   Game g;
   start(&g);
@@ -462,6 +530,11 @@ int main(void) {
   mend_the_bowl();
   the_bowl_calms_the_spirit();
   stake_out_a_new_boundary();
+  examine_reaches_all_four_neighbours();
+  the_facing_tile_wins();
+  nothing_around_still_says_so();
+  healing_leaves_the_world_alone();
+  an_item_reaches_the_neighbour();
   notes_are_unique();
   encounter_texts_are_single_page();
   every_dialogue_fits_the_screen();

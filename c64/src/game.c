@@ -177,6 +177,8 @@ static void talk(Game *g, int8_t npc) {
 }
 
 /* --- examining --- */
+/* Reihenfolge der Nachbarn: Norden, Osten, Sueden, Westen. */
+static const int8_t neighbours[4][2] = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}};
 static bool stone_at(const Game *g, int8_t x, int8_t y) {
   return g->map == MAP_FOREST && x == g->stone_x && y == g->stone_y;
 }
@@ -197,13 +199,27 @@ static const ExaminePoint *point_at(const Game *g, int8_t x, int8_t y) {
   }
   return 0;
 }
-static const ExaminePoint *point_for_item(const Game *g, uint8_t item) {
-  char facing = game_tile(g, g->map, g->x + g->dx, g->y + g->dy);
+/* Gegenstaende gehen denselben Weg wie das Untersuchen: erst die Blickrichtung,
+ * dann die uebrigen Nachbarn (#17). Punkte ohne Kachel gelten ueberall. */
+static const ExaminePoint *item_point_at(const Game *g, uint8_t item, char tile) {
   for (uint8_t i = 0; i < examine_point_count; i++) {
     const ExaminePoint *p = &examine_points[i];
     if (p->kind != POINT_ITEM || p->item != item || !matches(g, p->needs, 0))
       continue;
-    if (!p->symbol || (p->map == g->map && p->symbol == facing))
+    if (!p->symbol || (p->map == g->map && p->symbol == tile))
+      return p;
+  }
+  return 0;
+}
+static const ExaminePoint *point_for_item(const Game *g, uint8_t item) {
+  const ExaminePoint *p =
+      item_point_at(g, item, game_tile(g, g->map, g->x + g->dx, g->y + g->dy));
+  if (p)
+    return p;
+  for (uint8_t i = 0; i < 4; i++) {
+    int8_t x = (int8_t)(g->x + neighbours[i][0]), y = (int8_t)(g->y + neighbours[i][1]);
+    p = item_point_at(g, item, game_tile(g, g->map, x, y));
+    if (p && p->symbol) /* ohne Kachel hat schon der erste Versuch gegriffen */
       return p;
   }
   return 0;
@@ -233,11 +249,13 @@ static void examine_nothing(Game *g, int8_t x, int8_t y) {
   msg_add(g, ": nichts Besonderes.");
 }
 static bool stake_here(Game *g);
-/* Facing tile first, then the tile underfoot (passable points cannot be faced). */
+/* Blickrichtung zuerst, dann das eigene Feld, dann die uebrigen Nachbarn.
+ * Der Blick entscheidet also weiter, was gemeint ist -- aber wer neben einer
+ * Sache steht, findet sie auch, ohne sich erst dagegen zu druecken (#17). */
 static void examine(Game *g) {
   if (stake_here(g))
     return;
-  int8_t fx = g->x + g->dx, fy = g->y + g->dy;
+  int8_t fx = (int8_t)(g->x + g->dx), fy = (int8_t)(g->y + g->dy);
   const ExaminePoint *p = point_at(g, fx, fy);
   if (p) {
     use_point(g, p, game_tile(g, g->map, fx, fy));
@@ -248,9 +266,18 @@ static void examine(Game *g) {
     use_point(g, p, game_tile(g, g->map, g->x, g->y));
     return;
   }
+  for (uint8_t i = 0; i < 4; i++) {
+    int8_t x = (int8_t)(g->x + neighbours[i][0]), y = (int8_t)(g->y + neighbours[i][1]);
+    if (x == fx && y == fy) /* schon angesehen */
+      continue;
+    p = point_at(g, x, y);
+    if (p) {
+      use_point(g, p, game_tile(g, g->map, x, y));
+      return;
+    }
+  }
   examine_nothing(g, fx, fy);
 }
-
 /* --- the bag --- */
 static bool heal(Game *g) {
   if (!g->bag[ITEM_HERB] || g->hp >= PLAYER_HP)
@@ -259,10 +286,6 @@ static bool heal(Game *g) {
   g->hp += items[ITEM_HERB].heal;
   if (g->hp > PLAYER_HP)
     g->hp = PLAYER_HP;
-  g->stone_x = STONE_START_X;
-  g->stone_y = STONE_START_Y;
-  g->daigo_x = (int8_t)npcs[NPC_DAIGO].x;
-  g->daigo_y = (int8_t)npcs[NPC_DAIGO].y;
   return true;
 }
 static void inventory_action(Game *g, Action a) {

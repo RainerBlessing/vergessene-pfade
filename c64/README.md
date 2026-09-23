@@ -53,6 +53,7 @@ Emulatorläufe brauchen eine Anzeige und Wartezeiten und wären unzuverlässig.
 |---|---|
 | W A S D oder Cursortasten | gehen |
 | RETURN / Leertaste | reden, untersuchen, weiterlesen |
+| | untersucht wird, was in Blickrichtung liegt — sonst, was unter dir oder daneben liegt |
 | I | Tasche; RETURN benutzt den gewählten Gegenstand |
 | N (oder RUN/STOP) | Notizbuch auf und zu |
 | W/S und RETURN | in Begegnung, Tasche und Reparaturansicht wählen |
