@@ -298,7 +298,7 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
     [D_I_BOWL_MARK] = {1, {"Auf dem Boden einer Scherbe ist\nein Zeichen eingebrannt."}},
     [D_I_BOWL_MARK_MATCH] = {1,
                              {"Auf dem Boden einer Scherbe ist\nein Zeichen "
-                              "eingebrannt. Wie\nneben Sumis Tuer."}},
+                              "eingebrannt. Dasselbe\nwie an Sumis Tuer?"}},
 };
 
 /* At most 2 lines of 36 characters; no digits or slashes (test_game). */

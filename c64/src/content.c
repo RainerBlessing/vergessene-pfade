@@ -1,7 +1,7 @@
 #include "content.h"
 
 const ItemDef items[ITEM_COUNT] = {
-    {"", 0}, {"Heilkraut", 8}, {"Scherben der Schale", 0}, {"Geflickte Schale", 0}};
+    {"", 0}, {"Heilkraut", 8}, {"Scherben", 0}, {"Geflickte Schale", 0}};
 
 const Npc npcs[NPC_COUNT] = {{MAP_VILLAGE, 5, 4, 'S', "Sumi / Dorfaelteste"},
                              {MAP_VILLAGE, 24, 4, 'O', "Oriha / Lackmeisterin"},
