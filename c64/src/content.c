@@ -58,6 +58,9 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
     [D_ORIHA_MARK] = {1,
                       {"Ein Hauszeichen, kein Zeichen\neiner Toepferei. Frag die "
                        "Leute,\nan deren Tuer es steht."}},
+    [D_ORIHA_MARK_MATCH] = {1,
+                            {"An Sumis Tuer steht es, ja.\nDann frag sie nach "
+                             "der Schale."}},
     [D_ORIHA_MEND] = {2,
                       {"Sumis Grossmutter also. Dann hat\ndiese Schale eine "
                        "Geschichte,\ndie ich kenne.",
@@ -273,10 +276,13 @@ const DialogueRule dialogue_rules[] = {
      OUT_ANY, OPEN_NOTHING},
     {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | OBS(OBS_BOWL_OWNER), 0, 0, D_ORIHA_MEND,
      NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_MEND},
-    /* Wer beide Zeichen gesehen hat, bekommt eine Antwort darauf -- die
-     * Geschichte selbst erzaehlt weiter nur Sumi. */
-    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | MARKS, OBS(OBS_BOWL_OWNER), 0, D_ORIHA_MARK,
-     NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
+    /* Wer beide Zeichen verbunden hat, wird nicht noch einmal losgeschickt --
+     * er bekommt die naechste Tuer genannt. Die Geschichte erzaehlt nur Sumi. */
+    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | MARKS, OBS(OBS_BOWL_OWNER), 0,
+     D_ORIHA_MARK_MATCH, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
+    /* Nur das Zeichen auf der Scherbe gesehen: was fuer ein Zeichen es ist. */
+    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | OBS(OBS_BOWL_MARK), OBS(OBS_HOUSE_MARK), 0,
+     D_ORIHA_MARK, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
     {NPC_ORIHA, OBS(OBS_BOWL_SHARDS), 0, 0, D_ORIHA_SHARDS, NOTE_NONE, ITEM_NONE,
      OUT_ANY, OPEN_NOTHING},
     {NPC_ORIHA, 0, 0, 0, D_ORIHA, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
