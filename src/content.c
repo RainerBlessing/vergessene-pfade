@@ -544,6 +544,11 @@ const ExaminePoint examine_points[] = {
     {.kind = POINT_SYMBOL, .map = MAP_FOREST, .symbol = 'g', .dialogue = D_X_FOX_KITS},
     {.kind = POINT_SYMBOL,
      .map = MAP_FOREST,
+     .symbol = 'P',
+     .needs = OBS(OBS_FOX_TENDED),
+     .dialogue = D_X_TRACKS},
+    {.kind = POINT_SYMBOL,
+     .map = MAP_FOREST,
      .symbol = 't',
      .needs = OBS(OBS_FOX_TENDED),
      .grants = OBS(OBS_TRACKS),
@@ -600,9 +605,16 @@ const ExaminePoint examine_points[] = {
 };
 const int examine_point_count = (int)(sizeof examine_points / sizeof examine_points[0]);
 
+/* Sobald der Handel steht, sind die drei Stellen zu sehen: Suchen gehoert nicht
+ * zu dieser Entscheidung, sie ist laengst gefallen (#21). */
+#define MARK(x, y)                                                                       \
+  {MAP_FOREST, x, y, 'P', OBS(OBS_DAIGO_DEAL), OUT_ANY, PHASE_ANY, TAG_NEUTRAL}
 #define TRACK(x, y)                                                                      \
   {MAP_FOREST, x, y, 't', OBS(OBS_FOX_TENDED), OUT_ANY, PHASE_ANY, TAG_NEUTRAL}
 const TileOverride tile_overrides[] = {
+    MARK(14, 14),
+    MARK(22, 15),
+    MARK(30, 14),
     /* Orihas shelf: the bowl rests there while the lacquer dries. */
     {MAP_VILLAGE, 22, 4, 'q', OBS(OBS_BOWL_READY), OUT_ANY, PHASE_ANY, TAG_NEUTRAL},
     {MAP_VILLAGE, 22, 4, 'b', OBS(OBS_BOWL_DRYING), OUT_ANY, PHASE_ANY, TAG_NEUTRAL},

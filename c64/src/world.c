@@ -52,6 +52,8 @@ static const TileDef tiles[] = {
     {'c', 3, 9, 0, "Werkbank"},
     {'z', 26, 9, 0, "Totholzstapel"},
     {'p', 9, 9, PASS, "Grenzpfahl"},
+    /* Wo ein Pfahl hin soll, sobald der Handel steht (#21). */
+    {'P', 33 /* '!' */, 7, PASS, "Markierte Stelle"},
 };
 static const uint8_t tile_count = (uint8_t)(sizeof tiles / sizeof tiles[0]);
 

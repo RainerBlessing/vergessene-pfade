@@ -888,6 +888,10 @@ static int test_compromise(const char *assets) {
   for (int i = 0; i < DIALOGUE_PAGES && g.state == GAME_DIALOGUE; i++)
     game_action(&g, ACT_CONFIRM);
   CHECK(g.daigo_follows && game_knows(&g, OBS_DAIGO_DEAL));
+  /* Once the deal stands, the three spots are visible -- searching is not part
+   * of this decision, it has long been made. */
+  for (int i = 0; i < STAKE_COUNT; i++)
+    CHECK(game_tile(&g, MAP_FOREST, stakes[i].x, stakes[i].y) == 'P');
   /* He walks in the player's footsteps and never blocks the way. */
   int px = g.x, py = g.y;
   game_action(&g, ACT_DOWN);

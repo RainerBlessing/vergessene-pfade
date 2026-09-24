@@ -479,6 +479,22 @@ static void daigo_answers_the_calmed_spirit(void) {
   assert(g.dialogue == D_DAIGO_OFFER);
 }
 
+/* Sobald Daigo mitgeht, sind die drei Stellen zu sehen -- vorher nicht, und
+ * nach dem Einschlagen steht dort ein Pfahl (#21). */
+static void the_stake_spots_become_visible(void) {
+  Game g;
+  start(&g);
+  for (uint8_t i = 0; i < STAKE_COUNT; i++)
+    assert(game_tile(&g, MAP_FOREST, (int8_t)stakes[i].x, (int8_t)stakes[i].y) != 'P');
+  g.obs |= OBS(OBS_DAIGO_DEAL);
+  for (uint8_t i = 0; i < STAKE_COUNT; i++) {
+    assert(game_tile(&g, MAP_FOREST, (int8_t)stakes[i].x, (int8_t)stakes[i].y) == 'P');
+    assert(game_passable(&g, MAP_FOREST, (int8_t)stakes[i].x, (int8_t)stakes[i].y));
+  }
+  g.staked = 1;
+  assert(game_tile(&g, MAP_FOREST, (int8_t)stakes[0].x, (int8_t)stakes[0].y) == 'p');
+}
+
 static void stake_out_a_new_boundary(void) {
   Game g;
   start(&g);
@@ -811,6 +827,7 @@ int main(void) {
   the_bowl_calms_the_spirit();
   offered_shards_stay_in_the_bag();
   daigo_answers_the_calmed_spirit();
+  the_stake_spots_become_visible();
   stake_out_a_new_boundary();
   examine_reaches_all_four_neighbours();
   the_facing_tile_wins();

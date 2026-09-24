@@ -53,7 +53,8 @@ const TileDef tiles[] = {
     {.symbol = 'n', .passable = false, .transition = false, .name = "Schild"},
     {.symbol = 'w', .passable = false, .transition = false, .name = "Schild"},
     {.symbol = 'c', .passable = false, .transition = false, .name = "Werkbank"},
-    {.symbol = 'z', .passable = false, .transition = false, .name = "Totholzstapel"}};
+    {.symbol = 'z', .passable = false, .transition = false, .name = "Totholzstapel"},
+    {.symbol = 'P', .passable = true, .transition = false, .name = "Markierte Stelle"}};
 const int tile_count = (int)(sizeof tiles / sizeof tiles[0]);
 const TileDef *tile_def(char s) {
   for (int i = 0; i < tile_count; i++)

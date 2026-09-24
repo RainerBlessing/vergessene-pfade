@@ -364,6 +364,8 @@ const ExaminePoint examine_points[] = {
      OBS(OBS_FOX_WOUNDED), D_X_FOX, N_FOX},
     {POINT_SYMBOL, MAP_FOREST, 0, 0, 'f', ITEM_NONE, ITEM_NONE, ITEM_NONE, 0, 0,
      D_X_FOX_TENDED, NOTE_NONE},
+    {POINT_SYMBOL, MAP_FOREST, 0, 0, 'P', ITEM_NONE, ITEM_NONE, ITEM_NONE,
+     OBS(OBS_FOX_TENDED), 0, D_X_TRACKS, NOTE_NONE},
     {POINT_SYMBOL, MAP_FOREST, 0, 0, 't', ITEM_NONE, ITEM_NONE, ITEM_NONE,
      OBS(OBS_FOX_TENDED), OBS(OBS_TRACKS), D_X_TRACKS, N_TRACKS},
     /* Items */
@@ -377,8 +379,14 @@ const ExaminePoint examine_points[] = {
 const uint8_t examine_point_count =
     (uint8_t)(sizeof examine_points / sizeof examine_points[0]);
 
+/* Sobald der Handel steht, sind die drei Stellen zu sehen: Suchen gehoert nicht
+ * zu dieser Entscheidung, sie ist laengst gefallen (#21). */
+#define MARK(x, y) {MAP_FOREST, x, y, 'P', OBS(OBS_DAIGO_DEAL), OUT_ANY}
 #define TRACK(x, y) {MAP_FOREST, x, y, 't', OBS(OBS_FOX_TENDED), OUT_ANY}
 const TileOverride tile_overrides[] = {
+    MARK(14, 14),
+    MARK(22, 15),
+    MARK(30, 14),
     /* What the fight changed comes first: it is the newer state of the world. */
     {MAP_VILLAGE, 23, 13, 'W', 0, OUT_FIGHT},
     {MAP_VILLAGE, 24, 13, 'W', 0, OUT_FIGHT},

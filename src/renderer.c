@@ -79,11 +79,12 @@ bool renderer_init(Renderer *r, SDL_Renderer *sdl, const char *assets) {
 }
 void renderer_destroy(Renderer *r) { SDL_DestroyTexture(r->atlas); }
 static int tile_art(char t) {
-  static const char symbols[] = ".,~T^#H_+><*SBr=Rls[]GxOoYmdAkWMhFftbqpuegjvnwcz";
+  static const char symbols[] = ".,~T^#H_+><*SBr=Rls[]GxOoYmdAkWMhFftbqpuegjvnwczP";
   static const int art[] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11,
                             19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
                             31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 42, 43,
-                            44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55};
+                            44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55,
+                            56};
   const char *at = strchr(symbols, t);
   return at ? art[at - symbols] : 4;
 }
