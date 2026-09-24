@@ -459,6 +459,23 @@ static void offered_shards_stay_in_the_bag(void) {
   assert(g.bag[ITEM_SHARDS] == 1);
 }
 
+/* Der Kami sitzt: Daigo sagt, was ihm noch fehlt -- aber nicht, wo es steht. */
+static void daigo_answers_the_calmed_spirit(void) {
+  Game g;
+  start(&g);
+  g.obs |= OBS(OBS_KAMI_CALMED);
+  face(&g, MAP_FOREST, 11, 32, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_DAIGO_CALM);
+  read_out(&g);
+  assert(!game_knows(&g, OBS_DAIGO_DEAL) && !g.daigo_follows);
+  /* Erst mit Spuren und Auftragsbuch wird daraus ein Vorschlag. */
+  g.obs |= OBS(OBS_TRACKS) | OBS(OBS_LEDGER_DEBT);
+  face(&g, MAP_FOREST, 11, 32, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_DAIGO_OFFER);
+}
+
 static void stake_out_a_new_boundary(void) {
   Game g;
   start(&g);
@@ -717,6 +734,7 @@ int main(void) {
   mend_the_bowl();
   the_bowl_calms_the_spirit();
   offered_shards_stay_in_the_bag();
+  daigo_answers_the_calmed_spirit();
   stake_out_a_new_boundary();
   examine_reaches_all_four_neighbours();
   the_facing_tile_wins();

@@ -877,7 +877,9 @@ static int test_compromise(const char *assets) {
   game_action(&g, ACT_CANCEL);
   g.obs |= OBS(OBS_KAMI_CALMED) | OBS(OBS_TRACKS);
   game_action(&g, ACT_CONFIRM);
-  CHECK(g.dialogue == D_DAIGO && !g.daigo_follows); /* his ledger is still unread */
+  /* The sitting kami is news to him, so he says what he still needs -- but his
+   * ledger is unread, so there is no deal yet. */
+  CHECK(g.dialogue == D_DAIGO_CALM && !g.daigo_follows);
   game_action(&g, ACT_CANCEL);
   g.obs |= OBS(OBS_LEDGER_DEBT);
   game_action(&g, ACT_CONFIRM);

@@ -118,6 +118,9 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
     [D_DAIGO_MEND] = {1,
                       {"Bis zu den Pfaehlen also. Das ist\nweniger Holz. Aber es "
                        "ist Holz,\num das niemand streitet."}},
+    [D_DAIGO_CALM] = {1,
+                      {"Ein Geist, der sitzt und nichts tut?\nDann zeig mir, wo "
+                       "meine Leute\ngefahrlos schlagen koennen."}},
     [D_DAIGO_OFFER] = {2,
                        {"Es sitzt neben einer Schale und\nruehrt sich nicht? Und die "
                         "Tiere\nlaufen alle diesen Bogen?",
@@ -306,6 +309,10 @@ const DialogueRule dialogue_rules[] = {
      OUT_NONE, OPEN_FOLLOW},
     {NPC_DAIGO, OBS(OBS_DAIGO_DEAL), 0, 0, D_DAIGO_WALKING, NOTE_NONE, ITEM_NONE,
      OUT_NONE, OPEN_FOLLOW},
+    /* Der Kami sitzt, aber Daigo fehlt noch etwas: Er sagt, was er braucht,
+     * ohne zu sagen, wo es steht. */
+    {NPC_DAIGO, OBS(OBS_KAMI_CALMED), OBS(OBS_DAIGO_DEAL), 0, D_DAIGO_CALM, NOTE_NONE,
+     ITEM_NONE, OUT_NONE, OPEN_NOTHING},
     {NPC_DAIGO, OBS(OBS_LEDGER_DEBT), 0, 0, D_DAIGO_LEDGER, NOTE_NONE, ITEM_NONE,
      OUT_ANY, OPEN_NOTHING},
     {NPC_DAIGO, 0, 0, 0, D_DAIGO, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
