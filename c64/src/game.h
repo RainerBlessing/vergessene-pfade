@@ -20,7 +20,8 @@ typedef enum {
   GAME_INVENTORY,
   GAME_NOTEBOOK,
   GAME_ENCOUNTER,
-  GAME_MEND
+  GAME_MEND,
+  GAME_END /* die Schlusstafel des Ausschnitts */
 } GameState;
 
 #define NOTE_LIMIT 24
@@ -51,6 +52,7 @@ typedef struct {
   /* Die zuletzt versperrte Richtung: Beim zweiten Versuch in dieselbe Richtung
    * sagt das Spiel, was im Weg steht (#20). */
   int8_t blocked_dx, blocked_dy;
+  bool ended; /* die Schlusstafel kommt einmal */
   uint8_t bag[ITEM_COUNT];
   int16_t hp, kami_hp;
   uint32_t random;

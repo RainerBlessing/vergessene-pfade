@@ -87,6 +87,13 @@ und steckt mit dir drei Pfähle entlang der Spuren ab (RETURN auf dem Feld, Daig
 muss daneben stehen). Dafür bekommt das Dorf Totholz, der alte Hainrand bleibt
 verloren.
 
+## Schluss
+
+Nach dem Ausgang und Sumis Wort dazu sagt der Ausschnitt, dass er zu Ende ist:
+eine Tafel mit dem Satz zum gewählten Ausgang und dem, was in der vollen Fassung
+folgen würde (Nacht, Morgen, die Spur am Schrein). Sie kommt einmal; danach läuft
+die Welt weiter, das Notizbuch bleibt lesbar.
+
 ## Bild
 
 40x25 Zeichen: Zeile 0 nennt den Ort, darunter liegt der scrollende

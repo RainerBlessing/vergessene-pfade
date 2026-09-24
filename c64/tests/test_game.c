@@ -16,6 +16,14 @@ static void start(Game *g) {
     game_action(g, ACT_CONFIRM); /* read the arrival scene */
   assert(g->state == GAME_EXPLORATION);
 }
+/* Einen Text zu Ende lesen -- und die Schlusstafel wegdruecken, falls er eine
+ * ausgeloest hat. */
+static void read_out(Game *g) {
+  while (g->state == GAME_DIALOGUE)
+    game_action(g, ACT_CONFIRM);
+  if (g->state == GAME_END)
+    game_action(g, ACT_CONFIRM);
+}
 static void face(Game *g, uint8_t map, int8_t x, int8_t y, int8_t dx, int8_t dy) {
   g->map = map;
   g->x = x;
@@ -252,8 +260,7 @@ static void restore_old_boundary(void) {
   face(&g, MAP_VILLAGE, 5, 5, 0, -1);
   game_action(&g, ACT_CONFIRM);
   assert(g.dialogue == D_SUMI_BOUNDARY);
-  while (g.state == GAME_DIALOGUE)
-    game_action(&g, ACT_CONFIRM);
+  read_out(&g);
   face(&g, MAP_FOREST, 11, 32, 0, -1);
   game_action(&g, ACT_CONFIRM);
   assert(g.dialogue == D_DAIGO_BOUNDARY);
@@ -289,10 +296,6 @@ static void offering_shards_angers_it(void) {
 }
 
 /* Kintsugi and the compromise: the long way round, step by step. */
-static void read_out(Game *g) {
-  while (g->state == GAME_DIALOGUE)
-    game_action(g, ACT_CONFIRM);
-}
 static void take_the_shards(Game *g) {
   face(g, MAP_FOREST, 38, 21, 0, -1); /* the offering stone */
   game_action(g, ACT_CONFIRM);
@@ -641,6 +644,34 @@ static void one_ending_at_a_time(void) {
   assert(h.staked == 0 && h.outcome == OUT_BOUNDARY);
 }
 
+/* Nach dem Ausgang und Sumis Wort sagt der Ausschnitt, dass er zu Ende ist --
+ * einmal, danach laeuft die Welt weiter (#22). */
+static void the_slice_says_when_it_ends(void) {
+  Game g;
+  start(&g);
+  see_stone_and_hollow(&g);
+  face(&g, MAP_FOREST, STONE_START_X, (int8_t)(STONE_START_Y + 1), 0, -1);
+  for (int i = 0; i < 4; i++)
+    game_action(&g, ACT_UP);
+  while (g.state == GAME_DIALOGUE)
+    game_action(&g, ACT_CONFIRM);
+  assert(g.outcome == OUT_BOUNDARY && !g.ended);
+  face(&g, MAP_VILLAGE, 5, 5, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_SUMI_BOUNDARY);
+  while (g.state == GAME_DIALOGUE)
+    game_action(&g, ACT_CONFIRM);
+  assert(g.state == GAME_END && g.ended);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.state == GAME_EXPLORATION);
+  /* Beim zweiten Mal bleibt sie weg. */
+  face(&g, MAP_VILLAGE, 5, 5, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  while (g.state == GAME_DIALOGUE)
+    game_action(&g, ACT_CONFIRM);
+  assert(g.state == GAME_EXPLORATION);
+}
+
 static void notes_are_unique(void) {
   Game g;
   start(&g);
@@ -748,6 +779,17 @@ static void every_dialogue_fits_the_screen(void) {
   }
 }
 
+/* Titel- und Schlusstafel stehen drei Zeichen eingerueckt: Was laenger ist als
+ * 37 Zeichen, faellt am rechten Rand ab. */
+static void the_panels_fit_the_screen(void) {
+  for (int i = 0; i < TITLE_LINES; i++)
+    assert(strlen(title_page[i]) <= 37);
+  for (int i = 0; i < CLOSING_LINES; i++)
+    assert(strlen(closing_page[i]) <= 37);
+  for (int i = 0; i < OUTCOME_COUNT; i++)
+    assert(strlen(closing_line[i]) <= 37);
+}
+
 int main(void) {
   walk_between_maps();
   walls_block();
@@ -778,10 +820,12 @@ int main(void) {
   a_step_closes_the_bag();
   two_items_still_get_chosen();
   one_ending_at_a_time();
+  the_slice_says_when_it_ends();
   notes_are_unique();
   encounter_texts_are_single_page();
   the_forest_stays_walkable();
   every_dialogue_fits_the_screen();
+  the_panels_fit_the_screen();
   printf("alle Tests bestanden\n");
   return 0;
 }

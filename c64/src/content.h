@@ -174,7 +174,7 @@ typedef enum {
 extern const char *const notes[NOTE_COUNT];
 
 /* What a conversation opens once its last page is read. */
-typedef enum { OPEN_NOTHING, OPEN_MEND, OPEN_FOLLOW } DialogueOpens;
+typedef enum { OPEN_NOTHING, OPEN_MEND, OPEN_FOLLOW, OPEN_END } DialogueOpens;
 /* First matching rule wins. */
 typedef struct {
   uint8_t npc;
@@ -271,6 +271,11 @@ extern const uint8_t place_count;
 
 #define TITLE_LINES 15
 extern const char *const title_page[TITLE_LINES];
+
+/* Die Schlusstafel: ein Satz je Ausgang, dann was der Ausschnitt offen laesst. */
+extern const char *const closing_line[OUTCOME_COUNT];
+#define CLOSING_LINES 9
+extern const char *const closing_page[CLOSING_LINES];
 
 /* The spirit's numbers; the player's are in game.h. */
 #define KAMI_HP 24

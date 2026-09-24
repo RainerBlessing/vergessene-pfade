@@ -222,6 +222,19 @@ static void the_house_mark_stands_out(void) {
   assert(test_color[at] == mark->color);
 }
 
+/* Die Schlusstafel nennt den Ausgang und sagt, dass hier Schluss ist (#22). */
+static void the_closing_panel_names_the_ending(void) {
+  Game g;
+  start(&g);
+  g.state = GAME_END;
+  g.outcome = OUT_MEND;
+  render(&g);
+  expect_row(2, "   HIER ENDET DER AUSSCHNITT");
+  expect_row(4, "   Drei Pfaehle und eine Schale im Moos.");
+  expect_row(6, "   In der vollen Fassung folgt eine");
+  expect_row(24, "RETURN: weiterlaufen");
+}
+
 static void the_map_is_drawn(void) {
   Game g;
   start(&g);
@@ -243,6 +256,7 @@ int main(void) {
   the_shelf_shows_the_dried_bowl();
   the_open_bag_is_marked();
   the_house_mark_stands_out();
+  the_closing_panel_names_the_ending();
   printf("Bildschirm-Tests bestanden\n");
   return 0;
 }

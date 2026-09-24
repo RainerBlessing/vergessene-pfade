@@ -263,9 +263,9 @@ const DialogueRule dialogue_rules[] = {
     /* The task stays reachable before her reaction to an outcome. */
     {NPC_SUMI, 0, OBS(OBS_ASKED_BY_SUMI), OBS(OBS_ASKED_BY_SUMI), D_SUMI_TASK, N_ASKED,
      ITEM_NONE, OUT_NONE, OPEN_NOTHING},
-    {NPC_SUMI, 0, 0, 0, D_SUMI_FOUGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT, OPEN_NOTHING},
-    {NPC_SUMI, 0, 0, 0, D_SUMI_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY, OPEN_NOTHING},
-    {NPC_SUMI, 0, 0, 0, D_SUMI_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND, OPEN_NOTHING},
+    {NPC_SUMI, 0, 0, 0, D_SUMI_FOUGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT, OPEN_END},
+    {NPC_SUMI, 0, 0, 0, D_SUMI_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY, OPEN_END},
+    {NPC_SUMI, 0, 0, 0, D_SUMI_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND, OPEN_END},
     {NPC_SUMI, OBS(OBS_BOWL_OWNER), 0, 0, D_SUMI_OWNER_KNOWN, NOTE_NONE, ITEM_NONE,
      OUT_ANY, OPEN_NOTHING},
     {NPC_SUMI, OBS(OBS_ASKED_BY_SUMI), 0, 0, D_SUMI_WAITING, NOTE_NONE, ITEM_NONE,
@@ -466,6 +466,27 @@ const Place places[] = {
     {MAP_VILLAGE, 2, 3, 8, 4, "Sumis Haus", OBS(OBS_ASKED_BY_SUMI)},
 };
 const uint8_t place_count = (uint8_t)(sizeof places / sizeof places[0]);
+
+/* Was das Dorf am Ende hat -- und was es dafuer nicht mehr hat. */
+const char *const closing_line[OUTCOME_COUNT] = {
+    [OUT_NONE] = "",
+    [OUT_FIGHT] = "Stille im Hain. Das Dorf hat Holz.",
+    [OUT_BOUNDARY] = "Die Steine stehen. Das Lager nicht.",
+    [OUT_MEND] = "Drei Pfaehle und eine Schale im Moos.",
+};
+
+/* Die Schlusstafel. Der Satz zum Ausgang steht darueber. */
+const char *const closing_page[CLOSING_LINES] = {
+    "HIER ENDET DER AUSSCHNITT",
+    "",
+    "In der vollen Fassung folgt eine",
+    "Nacht im Gasthaus und ein Morgen, der",
+    "zeigt, was aus der Entscheidung",
+    "geworden ist. Am Schrein liegt dann",
+    "eine Spur, die niemand erklaert.",
+    "",
+    "RETURN: weiterlaufen",
+};
 
 /* One page, skippable. Blank entries are spacing. */
 const char *const title_page[TITLE_LINES] = {

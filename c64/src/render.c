@@ -231,6 +231,17 @@ static void notebook(const Game *g) {
   hint("W/S blaettern   N schliessen");
 }
 
+/* Die Schlusstafel: was entschieden wurde, und was der Ausschnitt offen laesst. */
+static void closing(const Game *g) {
+  map_stale = true;
+  screen_clear();
+  screen_text(3, 2, closing_page[0], COLOR_YELLOW);
+  screen_text(3, 4, closing_line[g->outcome], COLOR_LIGHTGREEN);
+  for (uint8_t i = 2; i < CLOSING_LINES - 1; i++)
+    screen_text(3, (uint8_t)(4 + i), closing_page[i], COLOR_WHITE);
+  hint(closing_page[CLOSING_LINES - 1]); /* wie ueberall unten am Rand */
+}
+
 static void title(void) {
   map_stale = true;
   screen_clear();
@@ -245,6 +256,10 @@ void render(const Game *g) {
   }
   if (g->state == GAME_NOTEBOOK) {
     notebook(g);
+    return;
+  }
+  if (g->state == GAME_END) {
+    closing(g);
     return;
   }
   status_line(g);

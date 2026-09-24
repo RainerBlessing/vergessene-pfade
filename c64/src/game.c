@@ -725,6 +725,10 @@ void game_action(Game *g, Action a) {
       g->selection = 0;
     } else if (a == ACT_CONFIRM && g->opens == OPEN_FOLLOW)
       g->daigo_follows = true;
+    else if (a == ACT_CONFIRM && g->opens == OPEN_END && !g->ended) {
+      g->ended = true; /* einmal, danach laeuft die Welt weiter */
+      g->state = GAME_END;
+    }
     g->opens = OPEN_NOTHING;
     return;
   case GAME_INVENTORY:
@@ -735,6 +739,10 @@ void game_action(Game *g, Action a) {
     return;
   case GAME_MEND:
     mend_action(g, a);
+    return;
+  case GAME_END:
+    if (a == ACT_CONFIRM || a == ACT_CANCEL)
+      g->state = GAME_EXPLORATION;
     return;
   case GAME_EXPLORATION:
     break;
