@@ -44,6 +44,57 @@ static void walls_block(void) {
   assert(g.x == 1 && g.y == 1); /* the village wall stays put */
 }
 
+/* Ein versperrter Schritt schweigt beim ersten Mal und antwortet beim zweiten
+ * in dieselbe Richtung (#20). */
+static void the_second_try_gets_an_answer(void) {
+  Game g;
+  start(&g);
+  face(&g, MAP_VILLAGE, 1, 1, -1, 0);
+  game_action(&g, ACT_LEFT);
+  assert(g.message[0] == 0); /* einmal dagegenlaufen sagt nichts */
+  game_action(&g, ACT_LEFT);
+  assert(strstr(g.message, "Dorfmauer") != 0);
+  assert(strstr(g.message, "versperrt den Weg") != 0);
+}
+
+static void a_new_direction_starts_over(void) {
+  Game g;
+  start(&g);
+  face(&g, MAP_VILLAGE, 1, 1, -1, 0);
+  game_action(&g, ACT_LEFT);
+  game_action(&g, ACT_UP); /* andere Richtung, auch versperrt */
+  assert(g.message[0] == 0);
+  game_action(&g, ACT_UP);
+  assert(g.message[0] != 0);
+  /* Ein Schritt, der gelingt, setzt zurueck. */
+  game_action(&g, ACT_DOWN);
+  assert(g.y == 2 && g.message[0] == 0);
+  face(&g, MAP_VILLAGE, 1, 1, -1, 0);
+  game_action(&g, ACT_LEFT);
+  assert(g.message[0] == 0);
+}
+
+static void the_stone_says_it_does_not_budge(void) {
+  Game g;
+  start(&g);
+  face(&g, MAP_FOREST, STONE_START_X, (int8_t)(STONE_START_Y + 1), 0, -1);
+  game_action(&g, ACT_UP);
+  assert(g.message[0] == 0);
+  game_action(&g, ACT_UP);
+  assert(strstr(g.message, "ruehrt sich nicht") != 0);
+  assert(g.stone_y == STONE_START_Y); /* und er liegt weiter, wo er lag */
+}
+
+static void a_person_in_the_way_says_so(void) {
+  Game g;
+  start(&g);
+  face(&g, MAP_VILLAGE, 5, 5, 0, -1); /* unter Sumi */
+  game_action(&g, ACT_UP);
+  assert(g.message[0] == 0);
+  game_action(&g, ACT_UP);
+  assert(strstr(g.message, "jemand im Weg") != 0);
+}
+
 static void fox_unlocks_tracks(void) {
   Game g;
   start(&g);
@@ -597,6 +648,10 @@ static void every_dialogue_fits_the_screen(void) {
 int main(void) {
   walk_between_maps();
   walls_block();
+  the_second_try_gets_an_answer();
+  a_new_direction_starts_over();
+  the_stone_says_it_does_not_budge();
+  a_person_in_the_way_says_so();
   fox_unlocks_tracks();
   bowl_story_needs_both_marks();
   retreat_ends_encounter();

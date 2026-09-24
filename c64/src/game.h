@@ -48,6 +48,9 @@ typedef struct {
   bool daigo_follows;
   uint8_t staked;          /* bit per stake already driven in */
   uint8_t opens;           /* what the open conversation leads to */
+  /* Die zuletzt versperrte Richtung: Beim zweiten Versuch in dieselbe Richtung
+   * sagt das Spiel, was im Weg steht (#20). */
+  int8_t blocked_dx, blocked_dy;
   uint8_t bag[ITEM_COUNT];
   int16_t hp, kami_hp;
   uint32_t random;

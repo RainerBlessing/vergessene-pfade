@@ -610,18 +610,50 @@ static bool push_stone(Game *g, int8_t dx, int8_t dy) {
   }
   return true;
 }
+/* Ein versperrter Schritt schweigt beim ersten Mal -- wer sieht, wogegen er
+ * laeuft, braucht keinen Text. Erst der zweite Versuch in dieselbe Richtung
+ * bekommt eine Antwort (#20). */
+static void blocked(Game *g, int8_t dx, int8_t dy, const char *what) {
+  if (g->blocked_dx != dx || g->blocked_dy != dy) {
+    g->blocked_dx = dx;
+    g->blocked_dy = dy;
+    return;
+  }
+  msg_clear(g);
+  msg_add(g, what);
+}
 static void move(Game *g, int8_t dx, int8_t dy) {
   g->dx = dx;
   g->dy = dy;
-  if (stone_at(g, (int8_t)(g->x + dx), (int8_t)(g->y + dy))) {
+  int8_t tx = (int8_t)(g->x + dx), ty = (int8_t)(g->y + dy);
+  if (stone_at(g, tx, ty)) {
     if (push_stone(g, dx, dy)) {
       g->x += dx;
       g->y += dy;
+      g->blocked_dx = 0;
+      g->blocked_dy = 0;
+    } else /* er laesst sich bewegen -- nur weiss man noch nicht, warum */
+      blocked(g, dx, dy, "Der Grenzstein ruehrt sich nicht.");
+    return;
+  }
+  if (!can_enter(g, tx, ty)) {
+    if (game_npc_at(g, tx, ty) >= 0)
+      blocked(g, dx, dy, "Da steht jemand im Weg.");
+    else {
+      const TileDef *t = tile_def(game_tile(g, g->map, tx, ty));
+      if (g->blocked_dx != dx || g->blocked_dy != dy) {
+        g->blocked_dx = dx;
+        g->blocked_dy = dy;
+      } else {
+        msg_clear(g);
+        msg_add(g, t ? t->name : "Etwas");
+        msg_add(g, " versperrt den Weg.");
+      }
     }
     return;
   }
-  if (!can_enter(g, g->x + dx, g->y + dy))
-    return;
+  g->blocked_dx = 0;
+  g->blocked_dy = 0;
   const TileDef *tile = tile_def(game_tile(g, g->map, g->x + dx, g->y + dy));
   if ((tile->flags & TF_GUARDED) && g->outcome == OUT_NONE) {
     begin_encounter(g); /* a settled grove lets you pass */
