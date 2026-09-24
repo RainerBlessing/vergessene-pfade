@@ -90,6 +90,13 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
                         {"Du hast in mein Buch gesehen?\nJa. Liefere ich nicht, "
                          "verliert\ndas Lager alles."}},
     [D_X_WOOD] = {1, {"Kaum Holz auf dem Stapel.\nUnd der Winter kommt bald."}},
+    [D_X_WOOD_FIGHT] = {1,
+                        {"Der Stapel waechst. Holz aus dem\nHain, genug fuer den "
+                         "Winter."}},
+    [D_X_WOOD_BOUNDARY] = {1,
+                           {"So leer wie gestern. Das Lager\nschlaegt nicht mehr."}},
+    [D_X_WOOD_MEND] = {1,
+                       {"Totholz vom Hainrand. Weniger, als\nder Auftrag verlangt."}},
     [D_X_HOUSE_MARK] = {1, {"Neben Sumis Tuer ist ein\nHauszeichen eingebrannt."}},
     [D_X_HOUSE_MARK_MATCH] = {1,
                               {"Neben Sumis Tuer ist ein\nHauszeichen eingebrannt. "
@@ -458,6 +465,22 @@ const ExaminePoint examine_points[] = {
      .grants = OBS(OBS_HOUSE_MARK),
      .dialogue = D_X_HOUSE_MARK,
      .note = N_HOUSE_MARK},
+    /* Der Stapel sagt, was man sieht: nach jedem Ausgang etwas anderes. */
+    {.kind = POINT_SYMBOL,
+     .map = MAP_VILLAGE,
+     .symbol = 'W',
+     .dialogue = D_X_WOOD_FIGHT,
+     .only_after = OUT_FIGHT},
+    {.kind = POINT_SYMBOL,
+     .map = MAP_VILLAGE,
+     .symbol = 'W',
+     .dialogue = D_X_WOOD_BOUNDARY,
+     .only_after = OUT_BOUNDARY},
+    {.kind = POINT_SYMBOL,
+     .map = MAP_VILLAGE,
+     .symbol = 'W',
+     .dialogue = D_X_WOOD_MEND,
+     .only_after = OUT_MEND},
     {.kind = POINT_SYMBOL, .map = MAP_VILLAGE, .symbol = 'W', .dialogue = D_X_WOOD},
     /* Forest: the moved stone comes before the generic stone rule. */
     /* The moved stone, wherever it stands: stuck away from both ends, it is

@@ -96,6 +96,9 @@ typedef enum {
   D_DAIGO_WALKING,
   D_STAKE_SET,
   D_X_WOOD,
+  D_X_WOOD_FIGHT,
+  D_X_WOOD_BOUNDARY,
+  D_X_WOOD_MEND,
   D_X_HOUSE_MARK,
   D_X_HOUSE_MARK_MATCH,
   D_X_CLAW,
@@ -196,6 +199,9 @@ typedef struct {
   uint8_t item, gives, takes;
   Obs needs, grants;
   uint8_t dialogue, note;
+  /* Nur nach diesem Ausgang; OUT_NONE heisst: immer. Am Ende der Struktur,
+   * damit bestehende Eintraege unveraendert bleiben. */
+  uint8_t only_after;
 } ExaminePoint;
 extern const ExaminePoint examine_points[];
 extern const uint8_t examine_point_count;

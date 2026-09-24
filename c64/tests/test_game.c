@@ -688,6 +688,21 @@ static void the_slice_says_when_it_ends(void) {
   assert(g.state == GAME_EXPLORATION);
 }
 
+/* Der Holzstapel sagt, was man sieht -- nach jedem Ausgang etwas anderes (#16). */
+static void the_woodpile_knows_the_ending(void) {
+  const uint8_t expected[OUTCOME_COUNT] = {
+      [OUT_NONE] = D_X_WOOD, [OUT_FIGHT] = D_X_WOOD_FIGHT,
+      [OUT_BOUNDARY] = D_X_WOOD_BOUNDARY, [OUT_MEND] = D_X_WOOD_MEND};
+  for (uint8_t outcome = 0; outcome < OUTCOME_COUNT; outcome++) {
+    Game g;
+    start(&g);
+    g.outcome = outcome;
+    face(&g, MAP_VILLAGE, 22, 14, 0, -1); /* unter dem Holzstapel */
+    game_action(&g, ACT_CONFIRM);
+    assert(g.dialogue == expected[outcome]);
+  }
+}
+
 static void notes_are_unique(void) {
   Game g;
   start(&g);
@@ -838,6 +853,7 @@ int main(void) {
   two_items_still_get_chosen();
   one_ending_at_a_time();
   the_slice_says_when_it_ends();
+  the_woodpile_knows_the_ending();
   notes_are_unique();
   encounter_texts_are_single_page();
   the_forest_stays_walkable();

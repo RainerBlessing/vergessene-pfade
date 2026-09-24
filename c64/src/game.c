@@ -188,6 +188,8 @@ static const ExaminePoint *point_at(const Game *g, int8_t x, int8_t y) {
     const ExaminePoint *p = &examine_points[i];
     if (p->kind == POINT_ITEM || !matches(g, p->needs, 0) || p->map != g->map)
       continue;
+    if (p->only_after != OUT_NONE && p->only_after != g->outcome)
+      continue; /* was der Stapel sagt, haengt am Ausgang */
     if (p->kind == POINT_STONE) {
       if (stone_at(g, x, y))
         return p;

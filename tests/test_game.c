@@ -867,6 +867,23 @@ static void stand_with_daigo(Game *g, int x, int y) {
   g->daigo_x = x;
   g->daigo_y = y + 1;
 }
+/* The woodpile says what can be seen -- a different line after each ending. */
+static int test_woodpile(const char *assets) {
+  const DialogueId expected[OUTCOME_COUNT] = {[OUT_NONE] = D_X_WOOD,
+                                              [OUT_FIGHT] = D_X_WOOD_FIGHT,
+                                              [OUT_BOUNDARY] = D_X_WOOD_BOUNDARY,
+                                              [OUT_MEND] = D_X_WOOD_MEND};
+  for (Outcome outcome = OUT_NONE; outcome < OUTCOME_COUNT; outcome++) {
+    Game g;
+    CHECK(game_init(&g, assets));
+    g.state = GAME_EXPLORATION;
+    g.outcome = outcome;
+    stand(&g, MAP_VILLAGE, 22, 14, 0, -1);
+    game_action(&g, ACT_CONFIRM);
+    CHECK(g.dialogue == expected[outcome]);
+  }
+  return 0;
+}
 static int test_compromise(const char *assets) {
   Game g;
   CHECK(game_init(&g, assets));
@@ -1415,6 +1432,7 @@ int main(int argc, char **argv) {
       test_fight(argv[1]) || test_outcome_keeps_threads(argv[1]) ||
       test_defeat(argv[1]) || test_boundary(argv[1]) || test_mend(argv[1]) ||
       test_compromise(argv[1]) || test_daigo_stays(argv[1]) || test_phases(argv[1]) ||
+      test_woodpile(argv[1]) ||
       test_consequences(argv[1]) || test_night_offer(argv[1]) || test_signs(argv[1]) ||
       test_note_notice(argv[1]) || test_futon_explains(argv[1]) || test_futon(argv[1]) ||
       test_change_precedence(argv[1]) || test_visitor_before_teaser(argv[1]) ||
