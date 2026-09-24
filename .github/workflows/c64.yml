@@ -54,6 +54,12 @@ jobs:
       - name: Regeln und Bildschirm testen
         run: make test
 
+      - name: Inhalte vergleichen
+        working-directory: .
+        run: |
+          python3 -m unittest tools.test_content_drift
+          python3 tools/content_drift.py
+
       - name: PRG bauen
         run: make build
 
