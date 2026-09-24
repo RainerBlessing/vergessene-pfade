@@ -287,6 +287,9 @@ typedef struct {
   Mood result;
   DialogueId dialogue;
   NoteId note;
+  /* Was dabei aus der Hand geht: Die geflickte Schale bleibt im Moos stehen,
+   * die Scherben haelt man nur hin. */
+  ItemId takes;
 } EncounterOffer;
 extern const EncounterOffer encounter_offers[];
 extern const int encounter_offer_count;

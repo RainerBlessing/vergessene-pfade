@@ -436,6 +436,27 @@ static void the_bowl_calms_the_spirit(void) {
   game_action(&g, ACT_CONFIRM);
   assert(g.mood == MOOD_CALM && game_knows(&g, OBS_KAMI_CALMED));
   assert(g.dialogue == D_ENC_OFFER_BOWL);
+  /* Sie steht jetzt im Moos, nicht mehr in der Tasche. */
+  assert(g.bag[ITEM_BOWL] == 0);
+  uint8_t options2[ENCOUNTER_OPTION_LIMIT];
+  uint8_t after = game_encounter_options(&g, options2);
+  for (uint8_t i = 0; i < after; i++)
+    assert(encounter_options[options2[i]].action != ENC_OFFER);
+}
+
+/* Die Scherben werden nur hingehalten -- die behaelt man. */
+static void offered_shards_stay_in_the_bag(void) {
+  Game g;
+  step_into_the_grove(&g);
+  g.bag[ITEM_SHARDS] = 1;
+  uint8_t options[ENCOUNTER_OPTION_LIMIT];
+  uint8_t count = game_encounter_options(&g, options);
+  for (uint8_t i = 0; i < count; i++)
+    if (encounter_options[options[i]].action == ENC_OFFER)
+      g.selection = i;
+  game_action(&g, ACT_CONFIRM);
+  assert(game_knows(&g, OBS_KAMI_ANGERED));
+  assert(g.bag[ITEM_SHARDS] == 1);
 }
 
 static void stake_out_a_new_boundary(void) {
@@ -695,6 +716,7 @@ int main(void) {
   oriha_answers_what_was_seen();
   mend_the_bowl();
   the_bowl_calms_the_spirit();
+  offered_shards_stay_in_the_bag();
   stake_out_a_new_boundary();
   examine_reaches_all_four_neighbours();
   the_facing_tile_wins();

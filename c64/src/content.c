@@ -433,8 +433,10 @@ const EncounterOption encounter_options[] = {
 const uint8_t encounter_option_count =
     (uint8_t)(sizeof encounter_options / sizeof encounter_options[0]);
 const EncounterOffer encounter_offers[] = {
-    {ITEM_BOWL, OBS(OBS_KAMI_CALMED), MOOD_CALM, D_ENC_OFFER_BOWL, N_KAMI_CALM},
-    {ITEM_SHARDS, OBS(OBS_KAMI_ANGERED), MOOD_ANGRY, D_ENC_OFFER_SHARDS, N_KAMI_SHARDS},
+    {ITEM_BOWL, OBS(OBS_KAMI_CALMED), MOOD_CALM, D_ENC_OFFER_BOWL, N_KAMI_CALM,
+     ITEM_BOWL},
+    {ITEM_SHARDS, OBS(OBS_KAMI_ANGERED), MOOD_ANGRY, D_ENC_OFFER_SHARDS, N_KAMI_SHARDS,
+     ITEM_NONE},
 };
 const uint8_t encounter_offer_count =
     (uint8_t)(sizeof encounter_offers / sizeof encounter_offers[0]);

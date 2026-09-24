@@ -227,6 +227,9 @@ typedef struct {
   uint8_t item;
   Obs grants;
   uint8_t result, dialogue, note;
+  /* Was dabei aus der Hand geht: Die geflickte Schale bleibt im Moos stehen,
+   * die Scherben haelt man nur hin. */
+  uint8_t takes;
 } EncounterOffer;
 extern const EncounterOffer encounter_offers[];
 extern const uint8_t encounter_offer_count;

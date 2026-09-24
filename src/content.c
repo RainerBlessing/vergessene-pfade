@@ -694,9 +694,10 @@ _Static_assert(sizeof encounter_options / sizeof encounter_options[0] <=
                "raise ENCOUNTER_OPTION_LIMIT");
 const EncounterOffer encounter_offers[] = {
     /* The mended bowl comes first: it is what the player would hold out. */
-    {ITEM_BOWL, 0, OBS(OBS_KAMI_CALMED), MOOD_CALM, D_ENC_OFFER_BOWL, N_KAMI_CALM},
+    {ITEM_BOWL, 0, OBS(OBS_KAMI_CALMED), MOOD_CALM, D_ENC_OFFER_BOWL, N_KAMI_CALM,
+     ITEM_BOWL},
     {ITEM_SHARDS, 0, OBS(OBS_KAMI_ANGERED), MOOD_ANGRY, D_ENC_OFFER_SHARDS,
-     N_KAMI_SHARDS},
+     N_KAMI_SHARDS, ITEM_NONE},
 };
 const int encounter_offer_count =
     (int)(sizeof encounter_offers / sizeof encounter_offers[0]);

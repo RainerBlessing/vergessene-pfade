@@ -557,6 +557,8 @@ static void encounter_action(Game *g, Action a) {
   uint8_t before = g->mood;
   g->mood = offer ? offer->result : encounter_transitions[action][before];
   if (offer) {
+    if (offer->takes != ITEM_NONE && g->bag[offer->takes])
+      g->bag[offer->takes]--; /* die Schale bleibt im Moos stehen */
     learn(g, offer->grants, offer->note);
     g->dialogue = offer->dialogue;
   } else

@@ -518,6 +518,8 @@ static void encounter_action(Game *g, Action a) {
   Mood before = g->mood;
   g->mood = offer ? offer->result : encounter_transitions[action][before];
   if (offer) {
+    if (offer->takes != ITEM_NONE) /* die Schale bleibt im Moos stehen */
+      inventory_remove(&g->player.inventory, offer->takes, 1);
     learn(g, offer->grants, offer->note);
     show(g, offer->dialogue);
   } else
