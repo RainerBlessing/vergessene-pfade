@@ -71,6 +71,7 @@ typedef enum {
   D_SUMI_OWNER_KNOWN,
   D_ORIHA,
   D_ORIHA_SHARDS,
+  D_ORIHA_MARK,
   D_ORIHA_OWNER,
   D_MIO,
   D_MIO_HERB,

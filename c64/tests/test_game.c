@@ -318,6 +318,29 @@ static void set_fitting_piece(Game *g) {
   game_action(g, ACT_CONFIRM);
 }
 
+/* Wer die beiden Zeichen verbunden hat, bekommt von Oriha eine Antwort darauf
+ * -- die Geschichte selbst erzaehlt weiter nur Sumi. */
+static void oriha_answers_the_marks(void) {
+  Game g;
+  start(&g);
+  g.bag[ITEM_SHARDS] = 1;
+  g.obs |= OBS(OBS_BOWL_SHARDS);
+  face(&g, MAP_VILLAGE, 24, 5, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_ORIHA_SHARDS); /* ohne Zeichen: die Frage nach der Geschichte */
+  read_out(&g);
+  g.obs |= OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK);
+  face(&g, MAP_VILLAGE, 24, 5, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_ORIHA_MARK);
+  read_out(&g);
+  assert(!game_knows(&g, OBS_BOWL_OWNER)); /* sie verraet die Geschichte nicht */
+  g.obs |= OBS(OBS_BOWL_OWNER);
+  face(&g, MAP_VILLAGE, 24, 5, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_ORIHA_MEND);
+}
+
 static void mend_the_bowl(void) {
   Game g;
   start(&g);
@@ -661,6 +684,7 @@ int main(void) {
   pushing_needs_both_observations();
   restore_old_boundary();
   a_stuck_stone_rolls_back();
+  oriha_answers_the_marks();
   mend_the_bowl();
   the_bowl_calms_the_spirit();
   stake_out_a_new_boundary();

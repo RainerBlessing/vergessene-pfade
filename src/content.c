@@ -50,6 +50,9 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
     [D_ORIHA_SHARDS] = {1,
                         {"Scherben einer Opferschale.\nWem gehoerte sie? Ohne "
                          "ihre\nGeschichte fasse ich sie nicht an."}},
+    [D_ORIHA_MARK] = {1,
+                      {"Ein Hauszeichen, kein Zeichen\neiner Toepferei. Frag die "
+                       "Leute,\nan deren Tuer es steht."}},
     [D_ORIHA_OWNER] = {1,
                        {"Sumis Grossmutter also. Dann hat\ndiese Schale eine lange "
                         "Geschichte.\nLass mich darueber nachdenken."}},
@@ -386,6 +389,10 @@ const DialogueRule dialogue_rules[] = {
      OPEN_NOTHING, PHASE_ANY},
     {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | OBS(OBS_BOWL_OWNER), 0, 0, D_ORIHA_MEND, NOTE_NONE,
      ITEM_NONE, OUT_ANY, OPEN_MEND, PHASE_ANY},
+    /* Wer beide Zeichen gesehen hat, bekommt eine Antwort darauf -- die
+     * Geschichte selbst erzaehlt weiter nur Sumi. */
+    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | MARKS, OBS(OBS_BOWL_OWNER), 0, D_ORIHA_MARK,
+     NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING, PHASE_ANY},
     {NPC_ORIHA, OBS(OBS_BOWL_SHARDS), 0, 0, D_ORIHA_SHARDS, NOTE_NONE, ITEM_NONE, OUT_ANY,
      OPEN_NOTHING, PHASE_ANY},
     {NPC_ORIHA, 0, 0, 0, D_ORIHA, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING, PHASE_ANY},
