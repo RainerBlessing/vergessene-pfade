@@ -202,6 +202,26 @@ static void the_open_bag_is_marked(void) {
     assert(test_screen[19 * SCREEN_COLS + x] >= 128); /* TASCHE steht invers */
 }
 
+/* Die Hausmarke neben Sumis Tuer muss sich von der Wand unterscheiden, sonst
+ * findet sie niemand (#15). */
+static void the_house_mark_stands_out(void) {
+  const TileDef *wall = tile_def('H');
+  const TileDef *mark = tile_def('M');
+  assert(wall && mark);
+  assert(mark->screen != wall->screen || mark->color != wall->color);
+  Game g;
+  start(&g);
+  g.map = MAP_VILLAGE;
+  g.x = 4;
+  g.y = 7;
+  render(&g);
+  int8_t cx, cy;
+  game_camera(&g, SCREEN_COLS, 17, &cx, &cy);
+  uint16_t at = (uint16_t)((6 - cy + 1) * SCREEN_COLS + (4 - cx));
+  assert(test_screen[at] == mark->screen);
+  assert(test_color[at] == mark->color);
+}
+
 static void the_map_is_drawn(void) {
   Game g;
   start(&g);
@@ -222,6 +242,7 @@ int main(void) {
   encounter_shows_the_round();
   the_shelf_shows_the_dried_bowl();
   the_open_bag_is_marked();
+  the_house_mark_stands_out();
   printf("Bildschirm-Tests bestanden\n");
   return 0;
 }

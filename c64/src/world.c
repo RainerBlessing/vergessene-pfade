@@ -12,7 +12,9 @@ static const TileDef tiles[] = {
     {'^', 160, 11, 0, "Fels"},
     {'#', 160, 9, 0, "Dorfmauer"},
     {'H', 160, 9, 0, "Hauswand"},
-    {'M', 160, 9, 0, "Hauswand"},
+    /* Die Hausmarke sah aus wie jede andere Wand -- und daran haengt die ganze
+     * Kintsugi-Kette (#15). Ein eingebranntes Zeichen, warm statt Mauerbraun. */
+    {'M', 38 /* '&' */, 8, 0, "Hauswand"},
     {'R', 160, 2, 0, "Ziegeldach"},
     {'[', 160, 2, 0, "Dachkante"},
     {']', 160, 2, 0, "Dachkante"},
