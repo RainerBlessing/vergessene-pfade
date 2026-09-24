@@ -396,6 +396,8 @@ static bool stake_here(Game *g) {
   int8_t dx = (int8_t)(g->daigo_x - g->x), dy = (int8_t)(g->daigo_y - g->y);
   if (!g->daigo_follows || g->map != MAP_FOREST || dx * dx + dy * dy > 1)
     return false; /* the two of them drive it in together */
+  if (g->outcome != OUT_NONE)
+    return false; /* was entschieden ist, ist entschieden */
   for (uint8_t i = 0; i < STAKE_COUNT; i++) {
     if (stakes[i].x != (uint8_t)g->x || stakes[i].y != (uint8_t)g->y ||
         (g->staked & (1u << i)))
@@ -586,8 +588,11 @@ static bool can_enter(const Game *g, int8_t x, int8_t y) {
   return !blocking_npc(g, x, y) && game_passable(g, g->map, x, y);
 }
 bool game_can_push(const Game *g) {
+  /* Die Ausgaenge schliessen sich aus. Der Kompromiss ist erst mit dem dritten
+   * Pfahl entschieden -- angefangen ist er aber schon vorher, und dann bleibt
+   * der Stein liegen, wo er liegt. */
   return matches(g, OBS(OBS_STONE_DRAGGED) | OBS(OBS_STONE_HOLLOW), 0) &&
-         g->outcome == OUT_NONE;
+         g->outcome == OUT_NONE && !g->daigo_follows && g->staked == 0;
 }
 /* Pushing the stone one tile. Nothing here knows why it matters: the
  * inscription and the empty hollow say that, and the player draws the line. */

@@ -607,6 +607,40 @@ static void two_items_still_get_chosen(void) {
   assert(g.state == GAME_EXPLORATION && g.x == 15);
 }
 
+/* Die Ausgaenge schliessen sich aus: Wer den Kompromiss begonnen hat, schiebt
+ * den Stein nicht mehr heim -- und wer den Stein heimgeschoben hat, steckt keine
+ * Grenze mehr ab. */
+static void one_ending_at_a_time(void) {
+  Game g;
+  start(&g);
+  see_stone_and_hollow(&g);
+  assert(game_can_push(&g));
+  g.obs |= OBS(OBS_KAMI_CALMED) | OBS(OBS_TRACKS) | OBS(OBS_LEDGER_DEBT);
+  face(&g, MAP_FOREST, 11, 32, 0, -1);
+  game_action(&g, ACT_CONFIRM); /* Daigo schlaegt die neue Grenze vor */
+  read_out(&g);
+  assert(g.daigo_follows && !game_can_push(&g));
+
+  /* Andersherum: erst der Stein, dann kein Pfahl mehr. */
+  Game h;
+  start(&h);
+  see_stone_and_hollow(&h);
+  face(&h, MAP_FOREST, STONE_START_X, (int8_t)(STONE_START_Y + 1), 0, -1);
+  for (int i = 0; i < 4; i++)
+    game_action(&h, ACT_UP);
+  read_out(&h);
+  assert(h.outcome == OUT_BOUNDARY);
+  h.daigo_follows = true;
+  h.x = (int8_t)stakes[0].x;
+  h.y = (int8_t)stakes[0].y;
+  h.daigo_x = h.x;
+  h.daigo_y = (int8_t)(h.y + 1);
+  h.dx = 0;
+  h.dy = -1;
+  game_action(&h, ACT_CONFIRM);
+  assert(h.staked == 0 && h.outcome == OUT_BOUNDARY);
+}
+
 static void notes_are_unique(void) {
   Game g;
   start(&g);
@@ -743,6 +777,7 @@ int main(void) {
   an_item_reaches_the_neighbour();
   a_step_closes_the_bag();
   two_items_still_get_chosen();
+  one_ending_at_a_time();
   notes_are_unique();
   encounter_texts_are_single_page();
   the_forest_stays_walkable();
