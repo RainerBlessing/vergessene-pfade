@@ -28,7 +28,7 @@ jobs:
 
       - name: llvm-mos-SDK aus dem Cache holen
         id: sdk-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.local/share/llvm-mos-sdk
           key: llvm-mos-sdk-${{ runner.os }}-${{ env.LLVM_MOS_VERSION }}
