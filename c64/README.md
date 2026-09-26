@@ -43,6 +43,11 @@ curl -L -o /tmp/llvm-mos-linux.tar.xz \
 tar -xf /tmp/llvm-mos-linux.tar.xz -C ~/.local/share/llvm-mos-sdk --strip-components=1
 ```
 
+Was lokal wirklich liegt, sagt `~/.local/share/llvm-mos-sdk/bin/clang --version`:
+die Zeile nennt Fassung und llvm-mos-Commit. Ein selbst gebautes Rolling-SDK
+baut zwar auch, ist aber nicht die Fassung, gegen die CI prüft — dann das
+Verzeichnis leeren und die Befehle oben noch einmal laufen lassen.
+
 In GitHub Actions läuft derselbe `make maps` / `make test` / `make build`; die
 `.prg` hängt als Artefakt am Lauf. VICE ist dort bewusst nicht dabei: die
 Emulatorläufe brauchen eine Anzeige und Wartezeiten und wären unzuverlässig.
