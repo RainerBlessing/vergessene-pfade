@@ -11,14 +11,15 @@ static void msg_add(Game *g, const char *s) {
   g->message[n] = 0;
 }
 static void msg_num(Game *g, int16_t v) {
-  char digits[6], out[7];
+  char digits[3], out[4];
   uint8_t n = 0, k = 0;
-  if (v < 0)
-    v = 0;
+  /* Nur Schadenszahlen, also hoechstens dreistellig: acht Bit reichen, und die
+   * 16-Bit-Division waere auf dem 6502 eine Hilfsroutine (#25). */
+  uint8_t u = v < 0 ? 0 : (v > 255 ? 255 : (uint8_t)v);
   do {
-    digits[n++] = (char)('0' + v % 10);
-    v /= 10;
-  } while (v);
+    digits[n++] = (char)('0' + u % 10);
+    u = (uint8_t)(u / 10);
+  } while (u);
   while (n)
     out[k++] = digits[--n];
   out[k] = 0;

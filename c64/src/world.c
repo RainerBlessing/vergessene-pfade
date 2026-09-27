@@ -73,18 +73,45 @@ const TileDef *tile_def(char symbol) {
   return i < tile_count ? &tiles[i] : 0;
 }
 
+/* Die Karten liegen lauflaengenkodiert im Programm (siehe maps.h): roh waeren
+ * es 2688 Zellen, kodiert sind es 1114 Bytes plus 128 Bytes Zeilentabelle.
+ * Ausgepackt wird eine Zeile auf einmal, und die letzte bleibt liegen: das Bild
+ * zeichnet zeilenweise, und map_at() fragt meist dieselbe Zeile mehrmals. */
+static char row_cells[FOREST_W]; /* die breitere Karte gibt die Groesse vor */
+static uint8_t row_map = MAP_COUNT, row_y;
+
 const char *map_row(uint8_t map, uint8_t y) {
-  const char *cells = map == MAP_VILLAGE ? village_cells : forest_cells;
-  return cells + (int)y * map_width(map);
+  if (map == row_map && y == row_y)
+    return row_cells;
+  const uint8_t *src;
+  uint8_t width;
+  if (map == MAP_VILLAGE) {
+    src = village_cells + village_rows[y];
+    width = VILLAGE_W;
+  } else {
+    src = forest_cells + forest_rows[y];
+    width = FOREST_W;
+  }
+  uint8_t n = 0;
+  while (n < width) {
+    uint8_t b = *src++;
+    if (b & 0x80) { /* Wiederholung: Anzahl im Byte, Zeichen dahinter */
+      char c = (char)*src++;
+      for (uint8_t k = (uint8_t)(b & 0x7f); k; k--)
+        row_cells[n++] = c;
+    } else
+      row_cells[n++] = (char)b;
+  }
+  row_map = map;
+  row_y = y;
+  return row_cells;
 }
 
 uint8_t map_width(uint8_t map) { return map == MAP_VILLAGE ? VILLAGE_W : FOREST_W; }
 uint8_t map_height(uint8_t map) { return map == MAP_VILLAGE ? VILLAGE_H : FOREST_H; }
 
 char map_at(uint8_t map, int8_t x, int8_t y) {
-  uint8_t w = map_width(map), h = map_height(map);
-  if (x < 0 || y < 0 || (uint8_t)x >= w || (uint8_t)y >= h)
+  if (x < 0 || y < 0 || (uint8_t)x >= map_width(map) || (uint8_t)y >= map_height(map))
     return '^'; /* off the map is rock: impassable and unremarkable */
-  const char *cells = map == MAP_VILLAGE ? village_cells : forest_cells;
-  return cells[(int)y * w + x];
+  return map_row(map, (uint8_t)y)[x];
 }

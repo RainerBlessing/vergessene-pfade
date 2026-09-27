@@ -782,6 +782,32 @@ static void the_forest_stays_walkable(void) {
   assert(dead <= 20);
 }
 
+/* Die Karten liegen lauflaengenkodiert im Programm (#25). Der Test packt sie
+ * wieder aus und vergleicht Zelle fuer Zelle mit assets/maps -- sonst faellt
+ * ein Fehler im Kodierer erst als falsche Kachel im Bild auf. */
+static void maps_match_the_assets(void) {
+  const struct {
+    uint8_t map;
+    const char *path;
+  } files[] = {{MAP_VILLAGE, "../assets/maps/village.map"},
+               {MAP_FOREST, "../assets/maps/forest.map"}};
+  for (uint8_t f = 0; f < 2; f++) {
+    FILE *in = fopen(files[f].path, "r");
+    assert(in);
+    unsigned w, h;
+    assert(fscanf(in, "%u %u\n", &w, &h) == 2);
+    assert(w == map_width(files[f].map) && h == map_height(files[f].map));
+    char line[128];
+    for (unsigned y = 0; y < h; y++) {
+      assert(fgets(line, sizeof line, in));
+      assert(strlen(line) == w + 1); /* Zeile plus Zeilenumbruch */
+      for (unsigned x = 0; x < w; x++)
+        assert(map_at(files[f].map, (int8_t)x, (int8_t)y) == line[x]);
+    }
+    fclose(in);
+  }
+}
+
 static void every_dialogue_fits_the_screen(void) {
   for (int d = 1; d < DIALOGUE_COUNT; d++)
     for (int p = 0; p < dialogues[d].count; p++) {
@@ -857,6 +883,7 @@ int main(void) {
   notes_are_unique();
   encounter_texts_are_single_page();
   the_forest_stays_walkable();
+  maps_match_the_assets();
   every_dialogue_fits_the_screen();
   the_panels_fit_the_screen();
   printf("alle Tests bestanden\n");

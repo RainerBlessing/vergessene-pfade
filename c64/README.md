@@ -20,6 +20,7 @@ stammen unverändert aus `../assets/maps`.
 make            # build/vergessene-pfade.prg
 make test       # Host-Tests (Regeln und Bildschirmaufbau)
 make maps       # src/maps.h aus ../assets/maps neu erzeugen
+make size       # was die .prg belegt, siehe „Speicher“
 ./run-vice.sh   # bauen und in VICE starten
 ```
 
@@ -106,6 +107,60 @@ Kartenausschnitt (17 Zeilen), darunter die Texttafel. In der Begegnung wächst
 die Tafel nach oben, damit die Handlungen daneben passen. Der Zeichensatz ist
 der Kleinbuchstaben-Satz, damit die Texte lesbar bleiben.
 
+## Speicher
+
+`make size` liest das ELF neben der `.prg` und sagt, was wohin geht:
+
+```
+  Datei (mit Ladeadresse)   28352
+  RAM belegt                28737  (43% von 64K)
+
+  Gruppe                    Bytes
+  Code                      14366
+  Nur-Lese-Daten            13948
+  Daten                        36
+  BSS                         387
+```
+
+Die Nur-Lese-Daten sind zum größten Teil **Text**: rund 10 250 Bytes Dialoge,
+Notizen und Tafeln, gegenüber rund 3 700 Bytes benannter Tabellen. Wer Platz
+sucht, sucht ihn dort — nicht in den Tabellen. `make size` weist beides getrennt
+aus und nennt die größten Symbole; `SIZE_TOP=40 make size` zeigt mehr davon.
+
+Was gemessen und **übernommen** wurde (#25):
+
+| Änderung | PRG |
+|---|---|
+| Ausgangspunkt | 29 801 |
+| Karten lauflängenkodiert (2 688 Zellen → 1 114 Bytes + 128 Bytes Zeilentabelle) | −1 276 |
+| Schadenszahlen und HP-Balken ohne 16-Bit-Division | −173 |
+| **Stand** | **28 352** |
+
+Was gemessen und **nicht** übernommen wurde:
+
+- **Dialoge als ein Textblock je Dialog** (Seiten durch `\f` getrennt, statt drei
+  Seitenzeigern): spart 363 Bytes Tabelle, kostet 364 Bytes Code fürs Suchen der
+  Seite. Auf dem 6502 ist Zeichenkette-durchlaufen teurer als der Zeiger, den es
+  einspart — unterm Strich null.
+- **`first_page + count` mit einer zentralen Seitentabelle** (der Vorschlag aus
+  #25): spart 138 Bytes und bleibt beim direkten Zugriff. Dafür müssten die
+  `first_page`-Werte für 73 Dialoge von Hand stimmen; jeder neue Dialog
+  verschiebt alle folgenden. Für 0,5 % der `.prg` ist das die falsche Art von
+  Handarbeit — richtig wird das erst mit einem Erzeuger, und der gehört zu
+  [#11](../../../issues/11).
+- **Umlaufende Auswahl ohne Modulo**: kostet 7 Bytes, weil `__umodhi3` für den
+  Zufallswurf (`% 3`) sowieso im Programm steht.
+- **`-Oz`**: `make clean build size OPT=-Oz` ergibt 25 968 Bytes, also 2 384
+  weniger. Nicht als Vorgabe übernommen, weil `-Oz` gegen Inlining arbeitet und
+  der Bildaufbau (unten) die einzige Stelle ist, an der das weh tut — und diese
+  Messung braucht VICE. Bis dahin ist `-Oz` nur ein Schalter.
+- **LTO** ist bei llvm-mos die Vorgabe und lohnt deutlich: `OPT="-Os -fno-lto"`
+  ergibt 30 578 Bytes. Sie ist auch der Grund, warum in `make size` fast der
+  ganze Code unter `main` steht — die Funktionen anderer Übersetzungseinheiten
+  landen dort hineingezogen.
+
+Keine dieser Änderungen setzt REU oder Ultimate-Hardware voraus.
+
 ## Geschwindigkeit
 
 Ein ganzes Bild neu zu zeichnen kostet rund **36 000 Takte** (~36 ms bei 1 MHz,
@@ -119,6 +174,12 @@ nötig waren drei Dinge, die eine Neufassung nicht verlieren sollte:
   werden.
 - Das Kartenfeld wird nur neu gezeichnet, wenn sich dort etwas ändern konnte
   (`map_is_current`). Weiterlesen in einem Dialog ist dadurch sofort da.
+
+Seit #25 liegen die Karten komprimiert im Programm, also kommt pro gezeichneter
+Zeile ein Auspacken dazu: 17 Zeilen à höchstens 48 Zellen, geschätzt einige
+Tausend Takte auf die 36 000. `map_row()` behält die letzte Zeile, damit die
+vielen `map_at()`-Fragen auf derselben Zeile nichts kosten. Nachgemessen ist das
+noch nicht — dafür braucht es wieder den VICE-Monitor.
 
 ## Prüfen
 

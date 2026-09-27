@@ -63,6 +63,10 @@ jobs:
       - name: PRG bauen
         run: make build
 
+      # Der Bericht steht im Lauf, damit man sieht, wann der Speicher waechst.
+      - name: Speicher berichten
+        run: make size
+
       - name: Download bereitstellen
         uses: actions/upload-artifact@v7
         with:

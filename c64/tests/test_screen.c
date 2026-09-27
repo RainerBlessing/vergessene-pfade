@@ -151,6 +151,38 @@ static void encounter_shows_the_round(void) {
   assert(strstr(seen, "DU") != 0); /* der Balken ist der eigene */
 }
 
+/* Der Balken rechnet ohne Division (#25) -- hier steht, dass er trotzdem
+ * dieselben Stufen zeigt. Er beginnt in Spalte 31; gezaehlt werden die Felder,
+ * die auf dem Bild liegen (bis Spalte 39). Volles Feld ist 160. */
+#define BAR_FROM 31
+static uint8_t bar_filled(const Game *g) {
+  render(g);
+  uint8_t n = 0;
+  for (uint8_t x = BAR_FROM; x < SCREEN_COLS; x++)
+    if (test_screen[14 * SCREEN_COLS + x] == 160)
+      n++;
+  return n;
+}
+static void the_health_bar_keeps_its_steps(void) {
+  Game g;
+  start(&g);
+  g.map = MAP_FOREST;
+  g.x = 25;
+  g.y = 12;
+  g.dx = 0;
+  g.dy = -1;
+  game_action(&g, ACT_UP);
+  g.fighting = true;
+  assert(g.hp == PLAYER_HP);
+  assert(bar_filled(&g) == SCREEN_COLS - BAR_FROM); /* voll ist voll */
+  g.hp = PLAYER_HP / 2;
+  assert(bar_filled(&g) == 5);
+  g.hp = 3; /* ein Zehntel von 24 aufwaerts: das erste Feld */
+  assert(bar_filled(&g) == 1);
+  g.hp = 0;
+  assert(bar_filled(&g) == 0);
+}
+
 /* Was gezeichnet wird, muss dem entsprechen, was game_tile() sagt -- sonst
  * zeigt die Karte etwas anderes als das Spiel meint (Regal: trocknend/fertig). */
 static void drawn_map_matches_the_rules(const Game *g) {
@@ -253,6 +285,7 @@ int main(void) {
   notebook_shows_what_was_written();
   mend_view_shows_gap_and_pieces();
   encounter_shows_the_round();
+  the_health_bar_keeps_its_steps();
   the_shelf_shows_the_dried_bowl();
   the_open_bag_is_marked();
   the_house_mark_stands_out();
