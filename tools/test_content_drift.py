@@ -13,7 +13,7 @@ import unittest
 # verzeichnis im Suchpfad stehen.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tools.content_drift import vergleiche  # noqa: E402
+from tools.content_drift import load_data, compare, vergleiche  # noqa: E402
 
 
 def _dialogue(key, pages):
@@ -183,6 +183,169 @@ class TestVergleiche(unittest.TestCase):
             ausnahmen,
         )
         self.assertEqual(bf, [])
+
+
+# --- Regeltabellen -----------------------------------------------------------
+
+PC_HEADER = """
+enum { MAP_VILLAGE, MAP_FOREST };
+typedef enum { ITEM_NONE, ITEM_HERB, ITEM_COUNT } ItemId;
+typedef enum { NOTE_NONE, N_EINS, N_ZWEI, NOTE_COUNT } NoteId;
+typedef enum { OUT_NONE, OUT_FIGHT, OUTCOME_COUNT } Outcome;
+typedef enum { PHASE_BEFORE, PHASE_MORNING, PHASE_COUNT } Phase;
+typedef struct {
+  int npc;
+  Obs needs, grants;
+  int dialogue;
+  NoteId note;
+  ItemId gives;
+  Outcome outcome;
+  Phase phase;
+} DialogueRule;
+typedef struct {
+  int map, x, y;
+  char symbol;
+  Obs needs;
+  Outcome outcome;
+} TileOverride;
+"""
+
+C64_HEADER = """
+enum { MAP_VILLAGE, MAP_FOREST, MAP_COUNT };
+typedef enum { ITEM_NONE, ITEM_HERB, ITEM_COUNT } ItemId;
+typedef enum { NOTE_NONE, N_EINS, N_ZWEI, NOTE_COUNT } NoteId;
+typedef enum { OUT_NONE, OUT_FIGHT, OUTCOME_COUNT } Outcome;
+typedef struct {
+  uint8_t npc;
+  Obs needs, grants;
+  uint8_t dialogue, note, gives, outcome;
+} DialogueRule;
+typedef struct {
+  uint8_t map, x, y;
+  char symbol;
+  Obs needs;
+  uint8_t outcome;
+} TileOverride;
+"""
+
+
+def _rules_table(entries):
+    body = ",\n".join(entries)
+    return "const DialogueRule dialogue_rules[] = {\n%s\n};" % body
+
+
+def _overrides_table(entries):
+    body = ",\n".join(entries)
+    return "const TileOverride tile_overrides[] = {\n%s\n};" % body
+
+
+def _regelbefunde(pc_body, c64_body, ausnahmen=None, tabelle="dialogue_rules"):
+    return vergleiche({tabelle: pc_body}, {tabelle: c64_body}, ausnahmen or {},
+                      PC_HEADER, C64_HEADER)
+
+
+class TestRegelTabellen(unittest.TestCase):
+    """Die Regeln sagen, wer wann was sagt. Gleiche Texte reichen nicht."""
+
+    def test_gleiche_regel_kein_befund(self):
+        """9. Benannte und positionale Schreibweise derselben Regel."""
+        pc = _rules_table(
+            ['    {.npc = 1, .needs = OBS(A), .dialogue = D_EINS,'
+             ' .note = N_EINS}'])
+        c64 = _rules_table(['    {1, OBS(A), 0, D_EINS, N_EINS, 0, 0}'])
+        self.assertEqual(_regelbefunde(pc, c64), [])
+
+    def test_abweichende_bedingung_wird_gefunden(self):
+        """10. Dieselbe Regel, andere Voraussetzung."""
+        pc = _rules_table(
+            ['    {.npc = 1, .needs = OBS(A), .dialogue = D_EINS}'])
+        c64 = _rules_table(['    {1, OBS(B), 0, D_EINS, NOTE_NONE, 0, 0}'])
+        bf = _regelbefunde(pc, c64)
+        self.assertEqual([(b[0], b[1]) for b in bf],
+                         [("Feld", "D_EINS|needs")])
+
+    def test_nur_eine_fassung_kein_befund(self):
+        """11. Eine Regel, die es nur auf dem PC gibt, ist kein Befund."""
+        pc = _rules_table(['    {.npc = 1, .dialogue = D_EINS}',
+                           '    {.npc = 1, .dialogue = D_NUR_PC}'])
+        c64 = _rules_table(['    {1, 0, 0, D_EINS, NOTE_NONE, 0, 0}'])
+        self.assertEqual(_regelbefunde(pc, c64), [])
+
+    def test_nur_pc_kennt_das_feld_kein_befund(self):
+        """12. Phase gibt es nur auf dem PC -- nichts zu vergleichen."""
+        pc = _rules_table(['    {.npc = 1, .dialogue = D_EINS,'
+                           ' .phase = PHASE_MORNING}'])
+        c64 = _rules_table(['    {1, 0, 0, D_EINS, NOTE_NONE, 0, 0}'])
+        self.assertEqual(_regelbefunde(pc, c64), [])
+
+    def test_ausgelassenes_feld_ist_null(self):
+        """13. Ausgelassen heisst null -- und ITEM_NONE heisst auch null."""
+        pc = _rules_table(['    {.npc = 1, .dialogue = D_EINS}'])
+        c64 = _rules_table(['    {1, 0, 0, D_EINS, NOTE_NONE, 0, 0}'])
+        self.assertEqual(_regelbefunde(pc, c64), [])
+
+    def test_ausnahme_braucht_grund(self):
+        """14. Erlaubt ohne Grund bleibt ein Befund."""
+        pc = _rules_table(
+            ['    {.npc = 1, .needs = OBS(A), .dialogue = D_EINS}'])
+        c64 = _rules_table(['    {1, OBS(B), 0, D_EINS, NOTE_NONE, 0, 0}'])
+        mit_grund = {"dialogue_rules": {"D_EINS|needs": "so gewollt"}}
+        self.assertEqual(_regelbefunde(pc, c64, mit_grund), [])
+        ohne = {"dialogue_rules": {"D_EINS|needs": ""}}
+        bf = _regelbefunde(pc, c64, ohne)
+        self.assertEqual([b[0] for b in bf], ["FehlenderGrund"])
+
+    def test_veraltete_ausnahme_wird_gemeldet(self):
+        """15. Erlaubnis ohne Abweichung: der Eintrag ist ueberfluessig."""
+        pc = _rules_table(['    {.npc = 1, .dialogue = D_EINS}'])
+        c64 = _rules_table(['    {1, 0, 0, D_EINS, NOTE_NONE, 0, 0}'])
+        bf = _regelbefunde(
+            pc, c64, {"dialogue_rules": {"D_EINS|needs": "Grund"}})
+        self.assertEqual([b[0] for b in bf], ["VeralteterEintrag"])
+
+    def test_makros_werden_eingesetzt(self):
+        """16. MARK(x, y) muss aufgeloest werden, sonst faellt nichts auf."""
+        pc = ("#define MARK(x, y) {MAP_FOREST, x, y, 'P', OBS(A), OUT_ANY}\n"
+              + _overrides_table(["    MARK(14, 14)"]))
+        c64 = ("#define MARK(x, y) {MAP_FOREST, x, y, 'Q', OBS(A), OUT_ANY}\n"
+               + _overrides_table(["    MARK(14, 14)"]))
+        bf = _regelbefunde(pc, c64, tabelle="tile_overrides")
+        self.assertEqual(
+            [(b[0], b[1]) for b in bf],
+            [("Feld", "MAP_FOREST:14:14:OBS(A):OUT_ANY|symbol")])
+
+    def test_andere_bedingung_ist_ein_anderer_eintrag(self):
+        """17. Die Kehrseite: bei Ueberschreibungen ist die Bedingung der
+        Schluessel. Driftet sie, findet der Eintrag drueben keinen Partner
+        und faellt aus dem Vergleich -- hier festgehalten, damit es eine
+        bewusste Entscheidung bleibt."""
+        pc = _overrides_table(["    {MAP_FOREST, 1, 2, 'P', OBS(A), OUT_ANY}"])
+        c64 = _overrides_table(
+            ["    {MAP_FOREST, 1, 2, 'P', OBS(B), OUT_ANY}"])
+        self.assertEqual(_regelbefunde(pc, c64, tabelle="tile_overrides"), [])
+
+    def test_text_ohne_regel_wird_gemeldet(self):
+        """18. Steht ein Text in beiden Fassungen, muss ihn auch in beiden
+        eine Regel zeigen -- sonst ist er unerreichbar."""
+        dialoge = _dialogues_table([_dialogue("D_EINS", ["Hallo"]),
+                                    _dialogue("D_ZWEI", ["Welt"])])
+        pc = _rules_table(['    {.npc = 1, .dialogue = D_EINS}',
+                           '    {.npc = 1, .dialogue = D_ZWEI}'])
+        c64 = _rules_table(['    {1, 0, 0, D_EINS, NOTE_NONE, 0, 0}'])
+        bf = vergleiche({"dialogues": dialoge, "dialogue_rules": pc},
+                        {"dialogues": dialoge, "dialogue_rules": c64},
+                        {}, PC_HEADER, C64_HEADER)
+        self.assertEqual([(b[0], b[1], b[3]) for b in bf],
+                         [("OhneRegel", "D_ZWEI", "C64")])
+
+    def test_echte_regeln_kein_befund(self):
+        """19. Die echten Dateien des Repos, mit der Erlaubnisliste."""
+        repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        with open(os.path.join(repo, "tools", "content_drift_allowlist.json"),
+                  encoding="utf-8") as f:
+            ausnahmen = json.load(f)
+        befunde, _ = compare(load_data(), ausnahmen)
+        self.assertEqual(befunde, [])
 
 
 if __name__ == "__main__":
