@@ -77,27 +77,34 @@ static bool camera_unchanged(const Game *g) {
   prev_cy = cy;
   return true;
 }
-/* Restores a cell to what game_tile() resolves, when the player is not there
- * and no NPC stands in it. */
-static void cell_restore(const Game *g, uint8_t x, uint8_t y) {
+/* Restores one cell to what game_tile() resolves -- Kachel, Grenzstein, Pfahl
+ * oder Ueberschreibung, in derselben Reihenfolge wie die Regeln. (mx,my) ist
+ * die Stelle auf der Karte, (vx,vy) dieselbe Stelle im Ausschnitt; die beiden
+ * fallen nur zusammen, wenn die Kamera in der Ecke steht. Der Aufrufer hat
+ * geprueft, dass dort weder der Spieler noch jemand sonst steht.
+ * Von Hand statt ueber game_tile(): der Schnellpfad ist der haeufigste Fall,
+ * und der Aufruf kostet gemessen ein Drittel des Bildaufbaus. */
+static void cell_restore(const Game *g, uint8_t mx, uint8_t my, uint8_t vx, uint8_t vy) {
   const TileDef *t = 0;
-  if (g->map == MAP_FOREST && x == (uint8_t)g->stone_x && y == (uint8_t)g->stone_y)
+  if (g->map == MAP_FOREST && mx == (uint8_t)g->stone_x && my == (uint8_t)g->stone_y)
     t = tile_def('G');
   else if (g->map == MAP_FOREST)
     for (uint8_t i = 0; i < STAKE_COUNT; i++)
-      if ((g->staked & (1u << i)) && stakes[i].x == x && stakes[i].y == y)
+      if ((g->staked & (1u << i)) && stakes[i].x == mx && stakes[i].y == my)
         t = tile_def('p');
+  /* Vorwaerts und beim ersten Treffer Schluss -- genau die Ueberschreibung,
+   * die game_tile() auch nimmt (Regal: fertig schlaegt trocknend). */
   if (!t)
-    for (uint8_t i = tile_override_count; i > 0; i--) {
-      const TileOverride *o = &tile_overrides[i - 1];
-      if (o->map == g->map && o->x == x && o->y == y && game_shows(g, o)) {
+    for (uint8_t i = 0; i < tile_override_count; i++) {
+      const TileOverride *o = &tile_overrides[i];
+      if (o->map == g->map && o->x == mx && o->y == my && game_shows(g, o)) {
         t = tile_def(o->symbol);
         break;
       }
     }
   if (!t)
-    t = tile_def(map_at(g->map, (int8_t)x, (int8_t)y));
-  screen_put(x, y, t ? t->screen : 32, t ? t->color : COLOR_BLACK);
+    t = tile_def(map_at(g->map, (int8_t)mx, (int8_t)my));
+  screen_put(vx, (uint8_t)(vy + 1), t ? t->screen : 32, t ? t->color : COLOR_BLACK);
 }
 static bool npc_at_cell(const Game *g, uint8_t x, uint8_t y) {
   for (uint8_t i = 0; i < NPC_COUNT; i++) {
@@ -120,7 +127,7 @@ static void map_view(const Game *g) {
     /* Only the player moved: restore the old cell, draw the new one. */
     uint8_t ovx = (uint8_t)(prev_x - prev_cx), ovy = (uint8_t)(prev_y - prev_cy);
     if (ovx < SCREEN_COLS && ovy < VIEW_H)
-      cell_restore(g, ovx, (uint8_t)(ovy + 1));
+      cell_restore(g, prev_x, prev_y, ovx, ovy);
     uint8_t nvx = (uint8_t)((uint8_t)g->x - prev_cx), nvy = (uint8_t)((uint8_t)g->y - prev_cy);
     if (nvx < SCREEN_COLS && nvy < VIEW_H)
       screen_put(nvx, (uint8_t)(nvy + 1), 0 /* '@' */, COLOR_WHITE);
