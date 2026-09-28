@@ -1,0 +1,34 @@
+name: Format
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  clang-format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Quellcode laden
+        uses: actions/checkout@v7
+
+      # Feste Fassung aus PyPI statt der des Laufzeitbildes: clang-format
+      # formatiert von Fassung zu Fassung verschieden, und ein Bericht, der
+      # ohne Zutun rot wird, hilft niemandem. Beim Anheben lokal dieselbe
+      # Fassung benutzen: pipx install clang-format==<Fassung>
+      - name: clang-format bereitstellen
+        run: pip install clang-format==22.1.8
+
+      # c64/src/maps.h steht in .clang-format-ignore (erzeugt von genmaps.py).
+      - name: Formatierung pruefen
+        run: |
+          clang-format --dry-run -Werror \
+            src/*.c src/*.h tests/*.c tests/*.h \
+            c64/src/*.c c64/src/*.h c64/tests/*.c c64/tests/*.h
