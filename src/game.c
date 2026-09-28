@@ -359,6 +359,21 @@ static void enter_place(Game *g) {
   g->place = place;
   g->place_ticks = PLACE_TICKS;
 }
+/* Arriving on a map -- walked through the gate or carried home, the map does
+ * not care which: the foreman stays in his forest, and the room names itself
+ * anew. */
+static void arrive(Game *g, int map, int x, int y) {
+  g->map = map;
+  g->x = x;
+  g->y = y;
+  if (g->daigo_follows) { /* he stays in the forest, at his camp */
+    g->daigo_follows = false;
+    g->daigo_x = npcs[NPC_DAIGO].x;
+    g->daigo_y = npcs[NPC_DAIGO].y;
+  }
+  g->place = NULL; /* the name belongs to the room actually entered */
+  enter_place(g);
+}
 /* The one way into the next morning, whether the night was offered by Sumi or
  * taken at the futon. It happens once, and only once something is settled. */
 static bool spend_the_night(Game *g) {
@@ -418,9 +433,7 @@ static void fight_round(Game *g, bool herb) {
     /* Carried home through the gate, facing into the village. */
     for (int i = 0; i < TRANSITION_COUNT; i++)
       if (transitions[i].to_map == MAP_VILLAGE) {
-        g->map = MAP_VILLAGE;
-        g->x = transitions[i].to_x;
-        g->y = transitions[i].to_y;
+        arrive(g, MAP_VILLAGE, transitions[i].to_x, transitions[i].to_y);
         break;
       }
     g->dx = 0;
@@ -606,19 +619,10 @@ static void move(Game *g, int dx, int dy) {
     const Transition *t = &transitions[i];
     if (g->map == t->map && g->x == t->x && g->y == t->y) {
       bool from_forest = g->map == MAP_FOREST;
-      g->map = t->to_map;
-      g->x = t->to_x;
-      g->y = t->to_y;
+      arrive(g, t->to_map, t->to_x, t->to_y);
       /* The lacquer needs rest: it has dried by the time you are back. */
       if (from_forest && g->map == MAP_VILLAGE && game_knows(g, OBS_BOWL_DRYING))
         learn(g, OBS(OBS_BOWL_READY), NOTE_NONE);
-      if (g->daigo_follows) { /* he stays in the forest, at his camp */
-        g->daigo_follows = false;
-        g->daigo_x = npcs[NPC_DAIGO].x;
-        g->daigo_y = npcs[NPC_DAIGO].y;
-      }
-      g->place = NULL; /* the name belongs to the room actually entered */
-      enter_place(g);
       return;
     }
   }

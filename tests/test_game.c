@@ -697,6 +697,9 @@ static int test_defeat(const char *assets) {
   Game g;
   CHECK(game_init(&g, assets));
   stand(&g, MAP_FOREST, 24, 12, 0, -1);
+  g.daigo_follows = true; /* the foreman walked along */
+  g.daigo_x = 24;
+  g.daigo_y = 13;
   game_action(&g, ACT_UP);
   g.player.hp = 3; /* one blow from falling */
   CHECK(choose(&g, ENC_ATTACK));
@@ -704,6 +707,9 @@ static int test_defeat(const char *assets) {
   CHECK(g.dialogue == D_ENC_DEFEAT);
   CHECK(g.map == MAP_VILLAGE && g.x == 16 && g.y == 1);
   CHECK(g.player.hp == g.player.max_hp && g.combat.hp == kami.hp);
+  /* Carried home is leaving the forest: he stays behind, at his camp. */
+  CHECK(!g.daigo_follows);
+  CHECK(g.daigo_x == npcs[NPC_DAIGO].x && g.daigo_y == npcs[NPC_DAIGO].y);
   game_action(&g, ACT_CANCEL);
   /* The grove is still guarded: losing decides nothing. */
   stand(&g, MAP_FOREST, 24, 12, 0, -1);
@@ -1432,13 +1438,13 @@ int main(int argc, char **argv) {
       test_fight(argv[1]) || test_outcome_keeps_threads(argv[1]) ||
       test_defeat(argv[1]) || test_boundary(argv[1]) || test_mend(argv[1]) ||
       test_compromise(argv[1]) || test_daigo_stays(argv[1]) || test_phases(argv[1]) ||
-      test_woodpile(argv[1]) ||
-      test_consequences(argv[1]) || test_night_offer(argv[1]) || test_signs(argv[1]) ||
-      test_note_notice(argv[1]) || test_futon_explains(argv[1]) || test_futon(argv[1]) ||
-      test_change_precedence(argv[1]) || test_visitor_before_teaser(argv[1]) ||
-      test_den_with_kits(argv[1]) || test_fox_after_fight(argv[1]) ||
-      test_daigo_reactions(argv[1]) || test_no_late_deal(argv[1]) ||
-      test_morning_keeps_threads(argv[1]) || test_grey_trace(argv[1]) || test_combat())
+      test_woodpile(argv[1]) || test_consequences(argv[1]) || test_night_offer(argv[1]) ||
+      test_signs(argv[1]) || test_note_notice(argv[1]) || test_futon_explains(argv[1]) ||
+      test_futon(argv[1]) || test_change_precedence(argv[1]) ||
+      test_visitor_before_teaser(argv[1]) || test_den_with_kits(argv[1]) ||
+      test_fox_after_fight(argv[1]) || test_daigo_reactions(argv[1]) ||
+      test_no_late_deal(argv[1]) || test_morning_keeps_threads(argv[1]) ||
+      test_grey_trace(argv[1]) || test_combat())
     return 1;
   puts("World, examining, encounter, outcomes, consequences, morning, trace pass.");
   return 0;

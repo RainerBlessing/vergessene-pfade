@@ -1,9 +1,9 @@
 /* What the player actually reads: the panel layout, checked on the host with
  * screen RAM pointed at plain arrays. */
-#include <c64.h>
 #include "../src/render.h"
 #include "../src/screen.h"
 #include <assert.h>
+#include <c64.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -14,8 +14,8 @@ struct host_vic VIC;
 static void row_text(uint8_t y, char *out) {
   for (uint8_t x = 0; x < SCREEN_COLS; x++) {
     uint8_t c = test_screen[y * SCREEN_COLS + x];
-    out[x] = c == 0            ? '@'
-             : c >= 1 && c <= 26 ? (char)(c + 96)
+    out[x] = c == 0               ? '@'
+             : c >= 1 && c <= 26  ? (char)(c + 96)
              : c >= 65 && c <= 90 ? (char)c
              : c >= 32 && c < 64  ? (char)c
                                   : '#';
@@ -305,6 +305,30 @@ static void player_move_camera_static(void) {
       continue;
     assert(test_screen[i] == before[i]);
   }
+  drawn_map_matches_the_rules(&g);
+}
+
+/* Der Schnellpfad zeichnet nur zwei Felder -- dann muss aber auch alles andere
+ * noch stimmen, was game_tile() sagt. Die verlassene Zelle liegt hier ueber
+ * einer Zeile, die anders aussieht: eine Verwechslung von Bild- und
+ * Kartenzeile faellt damit auf. */
+static void player_move_restores_the_right_tile(void) {
+  Game g;
+  start(&g);
+  g.map = MAP_VILLAGE;
+  g.x = 12;
+  g.y = 1; /* darunter, in Zeile 2, steht bei x=12 eine Sakura */
+  g.dx = 1;
+  g.dy = 0;
+  render(&g);
+  int8_t cx, cy;
+  game_camera(&g, SCREEN_COLS, 17, &cx, &cy);
+  g.x = 13;
+  render(&g);
+  int8_t cx2, cy2;
+  game_camera(&g, SCREEN_COLS, 17, &cx2, &cy2);
+  assert(cx == cx2 && cy == cy2); /* wirklich der Schnellpfad */
+  drawn_map_matches_the_rules(&g);
 }
 
 /* Player move that changes the camera: full redraw. */
@@ -379,6 +403,7 @@ int main(void) {
   the_shelf_shows_the_dried_bowl();
   the_open_bag_is_marked();
   player_move_camera_static();
+  player_move_restores_the_right_tile();
   player_move_camera_moves();
   npc_on_cell_forces_full_redraw();
   the_house_mark_stands_out();

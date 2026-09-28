@@ -1,9 +1,25 @@
 {
+  "_hinweis": [
+    "Erlaubte Abweichungen zwischen PC und C64, je mit Grund.",
+    "Text-Tabellen: Schluessel ist die ID (D_..., N_...).",
+    "Regel-Tabellen: Schluessel ist 'Eintrag|Feld'. Der Eintrag heisst nach",
+    "seiner Dialog-ID (dialogue_rules, examine_points), nach Karte:x:y:Zeichen",
+    "(tile_overrides) oder nach dem Ortsnamen (places); kommt er mehrfach vor,",
+    "haengt ein #2, #3 an."
+  ],
   "dialogues": {
     "D_ENC_OFFER_BOWL": "Die Begegnungstafel auf dem C64 blättert nicht: RETURN führt die Handlung aus. Der Text muss dort auf eine Seite passen."
   },
   "notes": {},
   "npcs": {},
   "items": {},
-  "mood_names": {}
+  "mood_names": {},
+  "dialogue_rules": {
+    "D_SUMI_FOUGHT|opens": "Der C64-Ausschnitt kennt keine Nacht im Gasthaus: statt der Frage nach dem Schlafen (OPEN_NIGHT) folgt dort die Schlusstafel (OPEN_END).",
+    "D_SUMI_BOUNDARY|opens": "Wie D_SUMI_FOUGHT|opens: keine Nacht, sondern die Schlusstafel.",
+    "D_SUMI_MEND|opens": "Wie D_SUMI_FOUGHT|opens: keine Nacht, sondern die Schlusstafel."
+  },
+  "examine_points": {},
+  "tile_overrides": {},
+  "places": {}
 }

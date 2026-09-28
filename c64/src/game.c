@@ -157,6 +157,22 @@ static void enter_place(Game *g) {
   g->place_ticks = PLACE_TICKS;
 }
 
+/* Auf einer Karte ankommen -- durchs Tor gegangen oder heimgetragen, das
+ * macht fuer die Karte keinen Unterschied: Daigo bleibt in seinem Wald, und
+ * der Ort nennt sich neu. */
+static void arrive(Game *g, uint8_t map, int8_t x, int8_t y) {
+  g->map = map;
+  g->x = x;
+  g->y = y;
+  if (g->daigo_follows) { /* he stays in the forest, at his camp */
+    g->daigo_follows = false;
+    g->daigo_x = (int8_t)npcs[NPC_DAIGO].x;
+    g->daigo_y = (int8_t)npcs[NPC_DAIGO].y;
+  }
+  g->place = 0; /* the name belongs to the room actually entered */
+  enter_place(g);
+}
+
 /* --- talking --- */
 static void talk(Game *g, int8_t npc) {
   for (uint8_t i = 0; i < dialogue_rule_count; i++) {
@@ -344,11 +360,12 @@ static void inventory_action(Game *g, Action a) {
   bool healed = item == ITEM_HERB && heal(g);
   msg_clear(g);
   msg_add(g, healed              ? "Das Kraut lindert deine Wunden."
-          : item == ITEM_HERB    ? "Du bist unverletzt."
+             : item == ITEM_HERB ? "Du bist unverletzt."
                                  : "Damit kannst du hier nichts tun.");
 }
 static void notebook_action(Game *g, Action a) {
-  uint8_t last = g->note_count > NOTES_PER_PAGE ? (uint8_t)(g->note_count - NOTES_PER_PAGE) : 0;
+  uint8_t last =
+      g->note_count > NOTES_PER_PAGE ? (uint8_t)(g->note_count - NOTES_PER_PAGE) : 0;
   if (a == ACT_CANCEL || a == ACT_CONFIRM)
     g->state = GAME_EXPLORATION;
   else if (a == ACT_UP && g->scroll > 0)
@@ -465,9 +482,7 @@ static void step_back(Game *g) {
 static void carried_home(Game *g) {
   for (uint8_t i = 0; i < TRANSITION_COUNT; i++)
     if (transitions[i].to_map == MAP_VILLAGE) {
-      g->map = MAP_VILLAGE;
-      g->x = (int8_t)transitions[i].to_x;
-      g->y = (int8_t)transitions[i].to_y;
+      arrive(g, MAP_VILLAGE, (int8_t)transitions[i].to_x, (int8_t)transitions[i].to_y);
       break;
     }
   g->dx = 0;
@@ -504,15 +519,11 @@ static void fight_round(Game *g, bool herb) {
     open_scene(g, "Am Rand des Hains", D_ENC_VICTORY);
     return;
   }
-  int16_t taken = damage(KAMI_ATTACK + (g->mood == MOOD_ANGRY ? 1 : 0), PLAYER_DEFENSE,
-                         roll(g));
+  int16_t taken =
+      damage(KAMI_ATTACK + (g->mood == MOOD_ANGRY ? 1 : 0), PLAYER_DEFENSE, roll(g));
   g->hp -= taken;
   if (g->hp <= 0) {
     g->hp = PLAYER_HP;
-  g->stone_x = STONE_START_X;
-  g->stone_y = STONE_START_Y;
-  g->daigo_x = (int8_t)npcs[NPC_DAIGO].x;
-  g->daigo_y = (int8_t)npcs[NPC_DAIGO].y;
     g->kami_hp = KAMI_HP; /* the spirit recovers as well */
     g->fighting = 0;
     carried_home(g);
@@ -686,19 +697,10 @@ static void move(Game *g, int8_t dx, int8_t dy) {
     const Transition *t = &transitions[i];
     if (g->map == t->map && (uint8_t)g->x == t->x && (uint8_t)g->y == t->y) {
       bool from_forest = g->map == MAP_FOREST;
-      g->map = t->to_map;
-      g->x = (int8_t)t->to_x;
-      g->y = (int8_t)t->to_y;
+      arrive(g, t->to_map, (int8_t)t->to_x, (int8_t)t->to_y);
       /* The lacquer needs rest: it has dried by the time you are back. */
       if (from_forest && g->map == MAP_VILLAGE && game_knows(g, OBS_BOWL_DRYING))
         learn(g, OBS(OBS_BOWL_READY), NOTE_NONE);
-      if (g->daigo_follows) { /* he stays in the forest, at his camp */
-        g->daigo_follows = false;
-        g->daigo_x = (int8_t)npcs[NPC_DAIGO].x;
-        g->daigo_y = (int8_t)npcs[NPC_DAIGO].y;
-      }
-      g->place = 0; /* the name belongs to the room actually entered */
-      enter_place(g);
       return;
     }
   }
@@ -718,7 +720,8 @@ void game_action(Game *g, Action a) {
     notebook_action(g, a);
     return;
   case GAME_DIALOGUE:
-    if (a != ACT_CANCEL && !(a == ACT_CONFIRM && ++g->page >= dialogues[g->dialogue].count))
+    if (a != ACT_CANCEL &&
+        !(a == ACT_CONFIRM && ++g->page >= dialogues[g->dialogue].count))
       return;
     g->state = GAME_EXPLORATION;
     msg_clear(g); /* the scene's echo of the last round ends with it */
@@ -752,7 +755,8 @@ void game_action(Game *g, Action a) {
   }
   if (a == ACT_CANCEL) {
     g->state = GAME_NOTEBOOK;
-    g->scroll = g->note_count > NOTES_PER_PAGE ? (uint8_t)(g->note_count - NOTES_PER_PAGE) : 0;
+    g->scroll =
+        g->note_count > NOTES_PER_PAGE ? (uint8_t)(g->note_count - NOTES_PER_PAGE) : 0;
     return;
   }
   if (a == ACT_INVENTORY) {

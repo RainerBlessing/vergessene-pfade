@@ -206,8 +206,8 @@ static void fight_changes_world(void) {
   assert(g.dialogue == D_ENC_VICTORY);
   while (g.state == GAME_DIALOGUE)
     game_action(&g, ACT_CONFIRM);
-  assert(game_tile(&g, MAP_VILLAGE, 23, 13) == 'W');  /* wood for the winter */
-  assert(game_tile(&g, MAP_FOREST, 20, 6) == 'x');    /* the grove is felled */
+  assert(game_tile(&g, MAP_VILLAGE, 23, 13) == 'W'); /* wood for the winter */
+  assert(game_tile(&g, MAP_FOREST, 20, 6) == 'x');   /* the grove is felled */
   face(&g, MAP_VILLAGE, 5, 5, 0, -1);
   game_action(&g, ACT_CONFIRM);
   assert(g.dialogue == D_SUMI_FOUGHT);
@@ -250,8 +250,8 @@ static void restore_old_boundary(void) {
   assert(g.mood == MOOD_CALM);
   while (g.state == GAME_DIALOGUE)
     game_action(&g, ACT_CONFIRM);
-  assert(game_tile(&g, MAP_FOREST, 16, 11) == 'h');  /* the grove edge is kept */
-  assert(game_tile(&g, MAP_FOREST, 14, 28) == '.');  /* the camp loses ground */
+  assert(game_tile(&g, MAP_FOREST, 16, 11) == 'h'); /* the grove edge is kept */
+  assert(game_tile(&g, MAP_FOREST, 14, 28) == '.'); /* the camp loses ground */
   /* A grove at peace lets the player walk in -- beside the stone, which now
    * fills its hollow again. */
   face(&g, MAP_FOREST, 25, 12, 0, -1);
@@ -586,6 +586,60 @@ static void healing_leaves_the_world_alone(void) {
   assert(g.daigo_x == 20 && g.daigo_y == 20);
 }
 
+/* Eine verlorene Pruegelei kostet den Kampf, nicht die Arbeit davor: der
+ * Grenzstein bleibt liegen, wo der Spieler ihn hingeschoben hat. */
+static void a_lost_fight_leaves_the_stone_alone(void) {
+  Game g;
+  start(&g);
+  see_stone_and_hollow(&g);
+  face(&g, MAP_FOREST, 25, 16, -1, 0);
+  game_action(&g, ACT_LEFT); /* Stein einmal zur Seite geschoben */
+  assert(g.stone_x == 23 && g.stone_y == STONE_START_Y);
+  /* In den Hain, ohne das Spiel neu zu beginnen. */
+  face(&g, MAP_FOREST, 24, 12, 0, -1);
+  game_action(&g, ACT_UP);
+  assert(g.state == GAME_ENCOUNTER);
+  g.hp = 1; /* der naechste Hieb faellt */
+  for (int i = 0; i < 20 && g.state == GAME_ENCOUNTER; i++) {
+    uint8_t options[ENCOUNTER_OPTION_LIMIT];
+    uint8_t count = game_encounter_options(&g, options);
+    for (uint8_t k = 0; k < count; k++)
+      if (encounter_options[options[k]].action == ENC_ATTACK)
+        g.selection = k;
+    game_action(&g, ACT_CONFIRM);
+  }
+  assert(g.outcome == OUT_NONE); /* verloren ist nicht entschieden */
+  assert(g.map == MAP_VILLAGE);  /* heimgetragen */
+  assert(g.hp == PLAYER_HP);
+  assert(g.stone_x == 23 && g.stone_y == STONE_START_Y);
+}
+
+/* Heimgetragen heisst auch: Daigo bleibt in seinem Wald. Sonst folgt er
+ * weiter, und seine Koordinaten wandern auf die Dorfkarte. */
+static void a_lost_fight_leaves_the_foreman_behind(void) {
+  Game g;
+  start(&g);
+  g.daigo_follows = true;
+  g.daigo_x = 24;
+  g.daigo_y = 12;
+  face(&g, MAP_FOREST, 24, 12, 0, -1);
+  game_action(&g, ACT_UP);
+  assert(g.state == GAME_ENCOUNTER);
+  g.hp = 1;
+  for (int i = 0; i < 20 && g.state == GAME_ENCOUNTER; i++) {
+    uint8_t options[ENCOUNTER_OPTION_LIMIT];
+    uint8_t count = game_encounter_options(&g, options);
+    for (uint8_t k = 0; k < count; k++)
+      if (encounter_options[options[k]].action == ENC_ATTACK)
+        g.selection = k;
+    game_action(&g, ACT_CONFIRM);
+  }
+  assert(g.map == MAP_VILLAGE);
+  assert(!g.daigo_follows);
+  assert(g.daigo_x == (int8_t)npcs[NPC_DAIGO].x &&
+         g.daigo_y == (int8_t)npcs[NPC_DAIGO].y);
+}
+
 /* Das Kraut wirkt auch, wenn der Fuchs nicht genau in Blickrichtung liegt. */
 static void an_item_reaches_the_neighbour(void) {
   Game g;
@@ -690,9 +744,10 @@ static void the_slice_says_when_it_ends(void) {
 
 /* Der Holzstapel sagt, was man sieht -- nach jedem Ausgang etwas anderes (#16). */
 static void the_woodpile_knows_the_ending(void) {
-  const uint8_t expected[OUTCOME_COUNT] = {
-      [OUT_NONE] = D_X_WOOD, [OUT_FIGHT] = D_X_WOOD_FIGHT,
-      [OUT_BOUNDARY] = D_X_WOOD_BOUNDARY, [OUT_MEND] = D_X_WOOD_MEND};
+  const uint8_t expected[OUTCOME_COUNT] = {[OUT_NONE] = D_X_WOOD,
+                                           [OUT_FIGHT] = D_X_WOOD_FIGHT,
+                                           [OUT_BOUNDARY] = D_X_WOOD_BOUNDARY,
+                                           [OUT_MEND] = D_X_WOOD_MEND};
   for (uint8_t outcome = 0; outcome < OUTCOME_COUNT; outcome++) {
     Game g;
     start(&g);
@@ -759,9 +814,9 @@ static void the_forest_stays_walkable(void) {
     }
   }
   /* Alles, was der Slice im Wald braucht. */
-  const uint8_t must[][2] = {{5, 21}, {12, 31}, {11, 32}, {38, 21}, {23, 16},
+  const uint8_t must[][2] = {{5, 21},  {12, 31}, {11, 32}, {38, 21}, {23, 16},
                              {24, 13}, {24, 12}, {14, 14}, {22, 15}, {30, 14},
-                             {8, 19}, {34, 13}, {24, 11}};
+                             {8, 19},  {34, 13}, {24, 11}};
   for (uint8_t i = 0; i < sizeof must / sizeof must[0]; i++)
     assert(seen[must[i][1] * w + must[i][0]]);
   /* Sackgassen: Felder mit nur einem Ausgang. Das alte Gitter hatte 44. */
@@ -874,6 +929,8 @@ int main(void) {
   the_facing_tile_wins();
   nothing_around_still_says_so();
   healing_leaves_the_world_alone();
+  a_lost_fight_leaves_the_stone_alone();
+  a_lost_fight_leaves_the_foreman_behind();
   an_item_reaches_the_neighbour();
   a_step_closes_the_bag();
   two_items_still_get_chosen();

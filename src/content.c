@@ -93,10 +93,8 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
     [D_X_WOOD_FIGHT] = {1,
                         {"Der Stapel waechst. Holz aus dem\nHain, genug fuer den "
                          "Winter."}},
-    [D_X_WOOD_BOUNDARY] = {1,
-                           {"So leer wie gestern. Das Lager\nschlaegt nicht mehr."}},
-    [D_X_WOOD_MEND] = {1,
-                       {"Totholz vom Hainrand. Weniger, als\nder Auftrag verlangt."}},
+    [D_X_WOOD_BOUNDARY] = {1, {"So leer wie gestern. Das Lager\nschlaegt nicht mehr."}},
+    [D_X_WOOD_MEND] = {1, {"Totholz vom Hainrand. Weniger, als\nder Auftrag verlangt."}},
     [D_X_HOUSE_MARK] = {1, {"Neben Sumis Tuer ist ein\nHauszeichen eingebrannt."}},
     [D_X_HOUSE_MARK_MATCH] = {1,
                               {"Neben Sumis Tuer ist ein\nHauszeichen eingebrannt. "
@@ -404,8 +402,8 @@ const DialogueRule dialogue_rules[] = {
      ITEM_NONE, OUT_ANY, OPEN_MEND, PHASE_ANY},
     /* Wer beide Zeichen verbunden hat, wird nicht noch einmal losgeschickt --
      * er bekommt die naechste Tuer genannt. Die Geschichte erzaehlt nur Sumi. */
-    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | MARKS, OBS(OBS_BOWL_OWNER), 0,
-     D_ORIHA_MARK_MATCH, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING, PHASE_ANY},
+    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | MARKS, OBS(OBS_BOWL_OWNER), 0, D_ORIHA_MARK_MATCH,
+     NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING, PHASE_ANY},
     /* Nur das Zeichen auf der Scherbe gesehen: was fuer ein Zeichen es ist. */
     {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | OBS(OBS_BOWL_MARK), OBS(OBS_HOUSE_MARK), 0,
      D_ORIHA_MARK, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING, PHASE_ANY},
@@ -738,8 +736,8 @@ const EncounterOffer encounter_offers[] = {
     /* The mended bowl comes first: it is what the player would hold out. */
     {ITEM_BOWL, 0, OBS(OBS_KAMI_CALMED), MOOD_CALM, D_ENC_OFFER_BOWL, N_KAMI_CALM,
      ITEM_BOWL},
-    {ITEM_SHARDS, 0, OBS(OBS_KAMI_ANGERED), MOOD_ANGRY, D_ENC_OFFER_SHARDS,
-     N_KAMI_SHARDS, ITEM_NONE},
+    {ITEM_SHARDS, 0, OBS(OBS_KAMI_ANGERED), MOOD_ANGRY, D_ENC_OFFER_SHARDS, N_KAMI_SHARDS,
+     ITEM_NONE},
 };
 const int encounter_offer_count =
     (int)(sizeof encounter_offers / sizeof encounter_offers[0]);

@@ -1,10 +1,10 @@
-#include <c64.h>
 #include "render.h"
 #include "screen.h"
 #include "world.h"
+#include <c64.h>
 
-#define VIEW_H 17     /* map rows, below the status line */
-#define PANEL_TOP 18  /* the separator; the panel is what follows it */
+#define VIEW_H 17        /* map rows, below the status line */
+#define PANEL_TOP 18     /* the separator; the panel is what follows it */
 #define ENCOUNTER_TOP 13 /* the encounter needs room for text, round and options */
 #define MEND_TOP 15
 
@@ -57,16 +57,14 @@ static void put_symbol(uint8_t x, uint8_t y, char symbol) {
 /* Redrawing the map costs far more than the panel below it, so it happens only
  * when something up there can have changed. */
 static bool map_stale = true; /* something was drawn over the map area */
-static uint8_t prev_map = 0xff, prev_x, prev_y, prev_outcome, prev_stone_x,
-    prev_stone_y, prev_staked;
+static uint8_t prev_map = 0xff, prev_x, prev_y, prev_outcome, prev_stone_x, prev_stone_y,
+               prev_staked;
 static Obs prev_obs;
 static int8_t prev_cx, prev_cy;
 static bool state_changed(const Game *g) {
   return map_stale || prev_map != g->map || prev_obs != g->obs ||
-         prev_outcome != g->outcome ||
-         prev_stone_x != (uint8_t)g->stone_x ||
-         prev_stone_y != (uint8_t)g->stone_y ||
-         prev_staked != g->staked;
+         prev_outcome != g->outcome || prev_stone_x != (uint8_t)g->stone_x ||
+         prev_stone_y != (uint8_t)g->stone_y || prev_staked != g->staked;
 }
 static bool camera_unchanged(const Game *g) {
   int8_t cx, cy;
@@ -77,27 +75,34 @@ static bool camera_unchanged(const Game *g) {
   prev_cy = cy;
   return true;
 }
-/* Restores a cell to what game_tile() resolves, when the player is not there
- * and no NPC stands in it. */
-static void cell_restore(const Game *g, uint8_t x, uint8_t y) {
+/* Restores one cell to what game_tile() resolves -- Kachel, Grenzstein, Pfahl
+ * oder Ueberschreibung, in derselben Reihenfolge wie die Regeln. (mx,my) ist
+ * die Stelle auf der Karte, (vx,vy) dieselbe Stelle im Ausschnitt; die beiden
+ * fallen nur zusammen, wenn die Kamera in der Ecke steht. Der Aufrufer hat
+ * geprueft, dass dort weder der Spieler noch jemand sonst steht.
+ * Von Hand statt ueber game_tile(): der Schnellpfad ist der haeufigste Fall,
+ * und der Aufruf kostet gemessen ein Drittel des Bildaufbaus. */
+static void cell_restore(const Game *g, uint8_t mx, uint8_t my, uint8_t vx, uint8_t vy) {
   const TileDef *t = 0;
-  if (g->map == MAP_FOREST && x == (uint8_t)g->stone_x && y == (uint8_t)g->stone_y)
+  if (g->map == MAP_FOREST && mx == (uint8_t)g->stone_x && my == (uint8_t)g->stone_y)
     t = tile_def('G');
   else if (g->map == MAP_FOREST)
     for (uint8_t i = 0; i < STAKE_COUNT; i++)
-      if ((g->staked & (1u << i)) && stakes[i].x == x && stakes[i].y == y)
+      if ((g->staked & (1u << i)) && stakes[i].x == mx && stakes[i].y == my)
         t = tile_def('p');
+  /* Vorwaerts und beim ersten Treffer Schluss -- genau die Ueberschreibung,
+   * die game_tile() auch nimmt (Regal: fertig schlaegt trocknend). */
   if (!t)
-    for (uint8_t i = tile_override_count; i > 0; i--) {
-      const TileOverride *o = &tile_overrides[i - 1];
-      if (o->map == g->map && o->x == x && o->y == y && game_shows(g, o)) {
+    for (uint8_t i = 0; i < tile_override_count; i++) {
+      const TileOverride *o = &tile_overrides[i];
+      if (o->map == g->map && o->x == mx && o->y == my && game_shows(g, o)) {
         t = tile_def(o->symbol);
         break;
       }
     }
   if (!t)
-    t = tile_def(map_at(g->map, (int8_t)x, (int8_t)y));
-  screen_put(x, y, t ? t->screen : 32, t ? t->color : COLOR_BLACK);
+    t = tile_def(map_at(g->map, (int8_t)mx, (int8_t)my));
+  screen_put(vx, (uint8_t)(vy + 1), t ? t->screen : 32, t ? t->color : COLOR_BLACK);
 }
 static bool npc_at_cell(const Game *g, uint8_t x, uint8_t y) {
   for (uint8_t i = 0; i < NPC_COUNT; i++) {
@@ -115,13 +120,14 @@ static void map_view(const Game *g) {
     map_stale = false;
     return;
   }
-  if (!state_changed(g) && camera_unchanged(g) &&
-      !npc_at_cell(g, prev_x, prev_y) && !npc_at_cell(g, (uint8_t)g->x, (uint8_t)g->y)) {
+  if (!state_changed(g) && camera_unchanged(g) && !npc_at_cell(g, prev_x, prev_y) &&
+      !npc_at_cell(g, (uint8_t)g->x, (uint8_t)g->y)) {
     /* Only the player moved: restore the old cell, draw the new one. */
     uint8_t ovx = (uint8_t)(prev_x - prev_cx), ovy = (uint8_t)(prev_y - prev_cy);
     if (ovx < SCREEN_COLS && ovy < VIEW_H)
-      cell_restore(g, ovx, (uint8_t)(ovy + 1));
-    uint8_t nvx = (uint8_t)((uint8_t)g->x - prev_cx), nvy = (uint8_t)((uint8_t)g->y - prev_cy);
+      cell_restore(g, prev_x, prev_y, ovx, ovy);
+    uint8_t nvx = (uint8_t)((uint8_t)g->x - prev_cx),
+            nvy = (uint8_t)((uint8_t)g->y - prev_cy);
     if (nvx < SCREEN_COLS && nvy < VIEW_H)
       screen_put(nvx, (uint8_t)(nvy + 1), 0 /* '@' */, COLOR_WHITE);
     prev_x = (uint8_t)g->x;

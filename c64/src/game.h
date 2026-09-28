@@ -34,7 +34,7 @@ typedef enum {
 typedef struct {
   uint8_t map, state;
   int8_t x, y, dx, dy;
-  int8_t npc;   /* the speaker: an NPC, SPEAKER_SCENE, or -1 for a tile */
+  int8_t npc;    /* the speaker: an NPC, SPEAKER_SCENE, or -1 for a tile */
   char examined; /* the tile the last text belongs to */
   const char *scene;
   const char *place;
@@ -47,8 +47,8 @@ typedef struct {
   uint8_t mend_placed;     /* pieces of the bowl already set */
   int8_t daigo_x, daigo_y; /* the foreman walks along while staking the boundary */
   bool daigo_follows;
-  uint8_t staked;          /* bit per stake already driven in */
-  uint8_t opens;           /* what the open conversation leads to */
+  uint8_t staked; /* bit per stake already driven in */
+  uint8_t opens;  /* what the open conversation leads to */
   /* Die zuletzt versperrte Richtung: Beim zweiten Versuch in dieselbe Richtung
    * sagt das Spiel, was im Weg steht (#20). */
   int8_t blocked_dx, blocked_dy;
