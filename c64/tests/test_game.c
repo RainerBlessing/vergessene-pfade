@@ -614,6 +614,32 @@ static void a_lost_fight_leaves_the_stone_alone(void) {
   assert(g.stone_x == 23 && g.stone_y == STONE_START_Y);
 }
 
+/* Heimgetragen heisst auch: Daigo bleibt in seinem Wald. Sonst folgt er
+ * weiter, und seine Koordinaten wandern auf die Dorfkarte. */
+static void a_lost_fight_leaves_the_foreman_behind(void) {
+  Game g;
+  start(&g);
+  g.daigo_follows = true;
+  g.daigo_x = 24;
+  g.daigo_y = 12;
+  face(&g, MAP_FOREST, 24, 12, 0, -1);
+  game_action(&g, ACT_UP);
+  assert(g.state == GAME_ENCOUNTER);
+  g.hp = 1;
+  for (int i = 0; i < 20 && g.state == GAME_ENCOUNTER; i++) {
+    uint8_t options[ENCOUNTER_OPTION_LIMIT];
+    uint8_t count = game_encounter_options(&g, options);
+    for (uint8_t k = 0; k < count; k++)
+      if (encounter_options[options[k]].action == ENC_ATTACK)
+        g.selection = k;
+    game_action(&g, ACT_CONFIRM);
+  }
+  assert(g.map == MAP_VILLAGE);
+  assert(!g.daigo_follows);
+  assert(g.daigo_x == (int8_t)npcs[NPC_DAIGO].x &&
+         g.daigo_y == (int8_t)npcs[NPC_DAIGO].y);
+}
+
 /* Das Kraut wirkt auch, wenn der Fuchs nicht genau in Blickrichtung liegt. */
 static void an_item_reaches_the_neighbour(void) {
   Game g;
@@ -904,6 +930,7 @@ int main(void) {
   nothing_around_still_says_so();
   healing_leaves_the_world_alone();
   a_lost_fight_leaves_the_stone_alone();
+  a_lost_fight_leaves_the_foreman_behind();
   an_item_reaches_the_neighbour();
   a_step_closes_the_bag();
   two_items_still_get_chosen();

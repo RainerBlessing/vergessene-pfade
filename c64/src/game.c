@@ -157,6 +157,22 @@ static void enter_place(Game *g) {
   g->place_ticks = PLACE_TICKS;
 }
 
+/* Auf einer Karte ankommen -- durchs Tor gegangen oder heimgetragen, das
+ * macht fuer die Karte keinen Unterschied: Daigo bleibt in seinem Wald, und
+ * der Ort nennt sich neu. */
+static void arrive(Game *g, uint8_t map, int8_t x, int8_t y) {
+  g->map = map;
+  g->x = x;
+  g->y = y;
+  if (g->daigo_follows) { /* he stays in the forest, at his camp */
+    g->daigo_follows = false;
+    g->daigo_x = (int8_t)npcs[NPC_DAIGO].x;
+    g->daigo_y = (int8_t)npcs[NPC_DAIGO].y;
+  }
+  g->place = 0; /* the name belongs to the room actually entered */
+  enter_place(g);
+}
+
 /* --- talking --- */
 static void talk(Game *g, int8_t npc) {
   for (uint8_t i = 0; i < dialogue_rule_count; i++) {
@@ -466,9 +482,7 @@ static void step_back(Game *g) {
 static void carried_home(Game *g) {
   for (uint8_t i = 0; i < TRANSITION_COUNT; i++)
     if (transitions[i].to_map == MAP_VILLAGE) {
-      g->map = MAP_VILLAGE;
-      g->x = (int8_t)transitions[i].to_x;
-      g->y = (int8_t)transitions[i].to_y;
+      arrive(g, MAP_VILLAGE, (int8_t)transitions[i].to_x, (int8_t)transitions[i].to_y);
       break;
     }
   g->dx = 0;
@@ -683,19 +697,10 @@ static void move(Game *g, int8_t dx, int8_t dy) {
     const Transition *t = &transitions[i];
     if (g->map == t->map && (uint8_t)g->x == t->x && (uint8_t)g->y == t->y) {
       bool from_forest = g->map == MAP_FOREST;
-      g->map = t->to_map;
-      g->x = (int8_t)t->to_x;
-      g->y = (int8_t)t->to_y;
+      arrive(g, t->to_map, (int8_t)t->to_x, (int8_t)t->to_y);
       /* The lacquer needs rest: it has dried by the time you are back. */
       if (from_forest && g->map == MAP_VILLAGE && game_knows(g, OBS_BOWL_DRYING))
         learn(g, OBS(OBS_BOWL_READY), NOTE_NONE);
-      if (g->daigo_follows) { /* he stays in the forest, at his camp */
-        g->daigo_follows = false;
-        g->daigo_x = (int8_t)npcs[NPC_DAIGO].x;
-        g->daigo_y = (int8_t)npcs[NPC_DAIGO].y;
-      }
-      g->place = 0; /* the name belongs to the room actually entered */
-      enter_place(g);
       return;
     }
   }

@@ -697,6 +697,9 @@ static int test_defeat(const char *assets) {
   Game g;
   CHECK(game_init(&g, assets));
   stand(&g, MAP_FOREST, 24, 12, 0, -1);
+  g.daigo_follows = true; /* the foreman walked along */
+  g.daigo_x = 24;
+  g.daigo_y = 13;
   game_action(&g, ACT_UP);
   g.player.hp = 3; /* one blow from falling */
   CHECK(choose(&g, ENC_ATTACK));
@@ -704,6 +707,9 @@ static int test_defeat(const char *assets) {
   CHECK(g.dialogue == D_ENC_DEFEAT);
   CHECK(g.map == MAP_VILLAGE && g.x == 16 && g.y == 1);
   CHECK(g.player.hp == g.player.max_hp && g.combat.hp == kami.hp);
+  /* Carried home is leaving the forest: he stays behind, at his camp. */
+  CHECK(!g.daigo_follows);
+  CHECK(g.daigo_x == npcs[NPC_DAIGO].x && g.daigo_y == npcs[NPC_DAIGO].y);
   game_action(&g, ACT_CANCEL);
   /* The grove is still guarded: losing decides nothing. */
   stand(&g, MAP_FOREST, 24, 12, 0, -1);
