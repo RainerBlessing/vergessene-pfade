@@ -12,6 +12,10 @@ Alle Stufen hier sind fertig. Was als Nächstes ansteht, steht in den Issues,
 nicht in diesem Plan: erst einmal durchspielen ([#7](../../../issues/7)) und auf
 echter Hardware prüfen ([#6](../../../issues/6)); Ausbau danach.
 
+Wie viel Speicher der Ausschnitt belegt und was daran schon verdichtet wurde,
+sagt `make size` und der Abschnitt „Speicher“ im [README](README.md) — die
+Grundlage für das Nachladen ([#11](../../../issues/11)).
+
 Die Spiellogik ist dieselbe Tabellenlogik wie in der SDL-Fassung (`../src`),
 nur auf diesen Umfang gekürzt. Texte sind wörtlich übernommen.
 

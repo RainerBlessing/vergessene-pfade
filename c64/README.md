@@ -20,6 +20,8 @@ stammen unverändert aus `../assets/maps`.
 make            # build/vergessene-pfade.prg
 make test       # Host-Tests (Regeln und Bildschirmaufbau)
 make maps       # src/maps.h aus ../assets/maps neu erzeugen
+make size       # was die .prg belegt, siehe „Speicher“
+make bench      # was ein Bildaufbau kostet, siehe „Geschwindigkeit“
 ./run-vice.sh   # bauen und in VICE starten
 ```
 
@@ -106,11 +108,88 @@ Kartenausschnitt (17 Zeilen), darunter die Texttafel. In der Begegnung wächst
 die Tafel nach oben, damit die Handlungen daneben passen. Der Zeichensatz ist
 der Kleinbuchstaben-Satz, damit die Texte lesbar bleiben.
 
+## Speicher
+
+`make size` liest das ELF neben der `.prg` und sagt, was wohin geht:
+
+```
+  Datei (mit Ladeadresse)   25968
+  RAM belegt                26343  (40% von 64K)
+
+  Gruppe                    Bytes
+  Code                      11982
+  Nur-Lese-Daten            13942
+  Daten                        42
+  BSS                         377
+```
+
+Die Nur-Lese-Daten sind zum größten Teil **Text**: rund 10 250 Bytes Dialoge,
+Notizen und Tafeln, gegenüber rund 3 700 Bytes benannter Tabellen. Wer Platz
+sucht, sucht ihn dort — nicht in den Tabellen. `make size` weist beides getrennt
+aus und nennt die größten Symbole; `SIZE_TOP=40 make size` zeigt mehr davon.
+
+Was gemessen und **übernommen** wurde (#25):
+
+| Änderung | PRG |
+|---|---|
+| Ausgangspunkt | 29 801 |
+| Karten lauflängenkodiert (2 688 Zellen → 1 114 Bytes + 128 Bytes Zeilentabelle) | −1 276 |
+| Schadenszahlen und HP-Balken ohne 16-Bit-Division | −173 |
+| `-Oz` statt `-Os` als Vorgabe (kostet 2,2 % Bildaufbau, siehe unten) | −2 384 |
+| **Stand** | **25 968** |
+
+Was gemessen und **nicht** übernommen wurde:
+
+- **Dialoge als ein Textblock je Dialog** (Seiten durch `\f` getrennt, statt drei
+  Seitenzeigern): spart 363 Bytes Tabelle, kostet 364 Bytes Code fürs Suchen der
+  Seite. Auf dem 6502 ist Zeichenkette-durchlaufen teurer als der Zeiger, den es
+  einspart — unterm Strich null.
+- **`first_page + count` mit einer zentralen Seitentabelle** (der Vorschlag aus
+  #25): spart 138 Bytes und bleibt beim direkten Zugriff. Dafür müssten die
+  `first_page`-Werte für 73 Dialoge von Hand stimmen; jeder neue Dialog
+  verschiebt alle folgenden. Für 0,5 % der `.prg` ist das die falsche Art von
+  Handarbeit — richtig wird das erst mit einem Erzeuger, und der gehört zu
+  [#11](../../../issues/11).
+- **Umlaufende Auswahl ohne Modulo**: kostet 7 Bytes, weil `__umodhi3` für den
+  Zufallswurf (`% 3`) sowieso im Programm steht.
+- **LTO** ist bei llvm-mos die Vorgabe und lohnt deutlich: `OPT="-Oz -fno-lto"`
+  ergibt 29 633 Bytes. Sie ist auch der Grund, warum in `make size` fast der
+  ganze Code unter `main` steht — die Funktionen anderer Übersetzungseinheiten
+  landen dort hineingezogen.
+
+Keine dieser Änderungen setzt REU oder Ultimate-Hardware voraus.
+
 ## Geschwindigkeit
 
-Ein ganzes Bild neu zu zeichnen kostet rund **36 000 Takte** (~36 ms bei 1 MHz,
-gemessen mit dem VICE-Monitor über `watch store $07e7` und `stopwatch`). Dafür
-nötig waren drei Dinge, die eine Neufassung nicht verlieren sollte:
+`make bench` baut `tools/bench_render.c` gegen dieselben Quellen wie das Spiel
+(nur ohne Tastatur), zeichnet acht Bilder mit jeweils neuer Spielerposition und
+zählt die Takte dazwischen mit den Timern von CIA#2. `tools/bench.py` startet
+das in x64sc und holt das Ergebnis über den VICE-Monitor aus dem RAM. Der
+Kernal-Interrupt ist während der Messung aus, die Badlines des VIC sind drin.
+Die Zahl ist auf ±50 Takte reproduzierbar; `make bench` braucht eine Anzeige
+(VICE ist mit GTK gebaut) und läuft darum nicht in CI.
+
+Ein ganzes Bild neu zu zeichnen kostet **199 077 Takte**, also rund **200 ms**
+bei 1 MHz. Das passiert einmal pro Tastendruck, nicht pro Bildwiederholung —
+nichts hier hängt am Rasterstrahl. Wo die Takte liegen:
+
+| Stand | Takte je Bild |
+|---|---|
+| vor #25 (unkomprimierte Karten, `-Os`) | 153 178 |
+| mit lauflängenkodierten Karten, `-Os` | 194 824 |
+| dasselbe mit `-Oz` (Vorgabe) | 199 077 |
+
+- Die **Lauflängenkodierung** der Karten kostet **41 646 Takte (+27 %)** für
+  1 276 Bytes: 17 Zeilen auspacken à rund 2 050 Takte (isoliert gemessen:
+  34 866 Takte für 17 Zeilen). Der Preis ist höher als beim Einbau geschätzt.
+  Er fällt, sobald ein Bild nicht mehr ganz neu gezeichnet wird — der Kartenteil
+  ändert sich beim Gehen meist nur um zwei Zellen ([#28](../../../issues/28)).
+- **`-Oz` statt `-Os`** kostet 4 253 Takte (+2,2 %) und spart 2 384 Bytes
+  (8,4 % der `.prg`). Bei einmal pro Tastendruck ist das der bessere Tausch,
+  darum ist `-Oz` die Vorgabe. Zum Nachrechnen: `make clean build size bench
+  OPT=-Os`.
+
+Drei Dinge tragen den Bildaufbau, die eine Neufassung nicht verlieren sollte:
 
 - `tile_def()` schlägt das Symbol in einer 128-Byte-Tabelle nach, statt die
   Kachelliste zu durchsuchen (einmal pro gezeichneter Zelle).
@@ -120,11 +199,18 @@ nötig waren drei Dinge, die eine Neufassung nicht verlieren sollte:
 - Das Kartenfeld wird nur neu gezeichnet, wenn sich dort etwas ändern konnte
   (`map_is_current`). Weiterlesen in einem Dialog ist dadurch sofort da.
 
+`map_row()` behält die letzte ausgepackte Zeile, damit die vielen
+`map_at()`-Fragen auf derselben Zeile nichts kosten. Nachgezählt (mit einem
+Zähler in `map_row()`, der nur zum Messen drin war): 19 Auspackvorgänge je Bild
+für 17 Kartenzeilen — die Fragen nach Überschreibungen und Figuren kosten also
+fast nichts extra.
+
 ## Prüfen
 
 `make test` spielt die Regeln auf dem Host durch (`tests/test_game.c`) und
 prüft den Bildschirmaufbau (`tests/test_screen.c`, mit `tests/c64.h` als
-Ersatz für den SDK-Header). Für Läufe auf der echten Maschine hilft der
+Ersatz für den SDK-Header). `make bench` sagt, was ein Bildaufbau auf der
+emulierten Maschine kostet (oben). Für Läufe auf der echten Maschine hilft der
 VICE-Monitor: `x64sc -remotemonitor -autostart build/vergessene-pfade.prg`,
 dann über `127.0.0.1:6510` mit `m 0400 07e7` den Bildschirmspeicher auslesen
 und mit `keybuf "..."` Tasten schicken. **Achtung:** Eine offene

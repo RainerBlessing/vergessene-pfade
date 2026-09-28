@@ -21,7 +21,9 @@ typedef struct {
 /* Builds the symbol -> tile table; call once before tile_def(). */
 void world_init(void);
 const TileDef *tile_def(char symbol);
-/* The row as it was drawn on the map, without any overrides. */
+/* The row as it was drawn on the map, without any overrides. Die Zeile wird in
+ * einen gemeinsamen Puffer ausgepackt: der Zeiger gilt nur bis zur naechsten
+ * Zeile (auch map_at() holt sich seine Zelle darueber). */
 const char *map_row(uint8_t map, uint8_t y);
 uint8_t map_width(uint8_t map);
 uint8_t map_height(uint8_t map);

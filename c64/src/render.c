@@ -169,8 +169,11 @@ static void encounter_panel(const Game *g) {
   screen_text(12, y, mood_names[g->mood], COLOR_LIGHTRED);
   if (g->fighting) { /* the bar is the player's own state, so it says so */
     screen_text(28, y, "DU", COLOR_WHITE);
+    /* Zehn Felder ohne Division: das i-te ist voll, sobald hp*10 die Schwelle
+     * PLAYER_HP*(i+1) erreicht -- dasselbe wie hp*10/PLAYER_HP > i (#25). */
     for (uint8_t i = 0; i < 10; i++) /* a bar, not a number: no counters */
-      screen_put((uint8_t)(31 + i), y, (uint8_t)(g->hp * 10 / PLAYER_HP > i ? 160 : 45),
+      screen_put((uint8_t)(31 + i), y,
+                 (uint8_t)(g->hp * 10 >= PLAYER_HP * (i + 1) ? 160 : 45),
                  COLOR_LIGHTGREEN);
   }
   y++;
