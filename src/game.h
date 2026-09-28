@@ -93,7 +93,7 @@ bool game_init(Game *g, const char *assets);
 void game_action(Game *g, Action a);
 int game_npc_at(const Game *g, int x, int y);
 void game_npc_pos(const Game *g, int npc, int *x, int *y);
-void game_camera(const Game *g, int *x, int *y);
+void game_camera(const Game *g, int view_w, int view_h, int *x, int *y);
 /* Map tile after applying overrides for what the player has observed. */
 char game_tile(const Game *g, int map, int x, int y);
 bool game_passable(const Game *g, int map, int x, int y);

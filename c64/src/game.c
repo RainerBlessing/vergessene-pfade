@@ -106,14 +106,22 @@ static void open_scene(Game *g, const char *title, uint8_t dialogue) {
   g->page = 0;
   g->state = GAME_DIALOGUE;
 }
-static void open_dialogue(Game *g, int8_t npc, char examined, uint8_t dialogue) {
-  g->opens = OPEN_NOTHING;
+static void open_dialogue(Game *g, int8_t npc, char examined, uint8_t dialogue,
+                          uint8_t opens) {
+  g->opens = opens;
   g->npc = npc;
   g->examined = examined;
   g->dialogue = dialogue;
   g->page = 0;
   msg_clear(g);
   g->state = GAME_DIALOGUE;
+}
+/* Moves the selection highlight up or down within a list of `count` entries. */
+static void select_move(Game *g, Action a, uint8_t count) {
+  if (a == ACT_UP)
+    g->selection = (uint8_t)((g->selection + count - 1) % count);
+  else if (a == ACT_DOWN)
+    g->selection = (uint8_t)((g->selection + 1) % count);
 }
 
 void game_init(Game *g) {
@@ -187,8 +195,7 @@ static void talk(Game *g, int8_t npc) {
     if (r->gives != ITEM_NONE)
       g->bag[r->gives]++;
     learn(g, r->grants, r->note);
-    open_dialogue(g, npc, 0, r->dialogue);
-    g->opens = r->opens; /* after opening: open_dialogue clears it */
+    open_dialogue(g, npc, 0, r->dialogue, r->opens);
     return;
   }
 }
@@ -259,7 +266,7 @@ static void use_point(Game *g, const ExaminePoint *p, char examined) {
   if (p->gives != ITEM_NONE)
     g->bag[p->gives]++;
   learn(g, p->grants, p->note);
-  open_dialogue(g, -1, examined, p->dialogue);
+  open_dialogue(g, -1, examined, p->dialogue, OPEN_NOTHING);
 }
 static void examine_nothing(Game *g, int8_t x, int8_t y) {
   const TileDef *tile = tile_def(game_tile(g, g->map, x, y));
@@ -343,10 +350,7 @@ static void inventory_action(Game *g, Action a) {
   }
   if (count == 0)
     return;
-  if (a == ACT_UP)
-    g->selection = (uint8_t)((g->selection + count - 1) % count);
-  if (a == ACT_DOWN)
-    g->selection = (uint8_t)((g->selection + 1) % count);
+  select_move(g, a, count);
   if (a != ACT_CONFIRM)
     return;
   if (g->selection >= count)
@@ -385,10 +389,7 @@ static void mend_action(Game *g, Action a) {
   }
   if (count == 0)
     return;
-  if (a == ACT_UP)
-    g->selection = (uint8_t)((g->selection + count - 1) % count);
-  if (a == ACT_DOWN)
-    g->selection = (uint8_t)((g->selection + 1) % count);
+  select_move(g, a, count);
   if (a != ACT_CONFIRM)
     return;
   if (g->selection >= count)
@@ -555,10 +556,7 @@ static void encounter_action(Game *g, Action a) {
   uint8_t count = game_encounter_options(g, options);
   if (count == 0)
     return;
-  if (a == ACT_UP)
-    g->selection = (uint8_t)((g->selection + count - 1) % count);
-  if (a == ACT_DOWN)
-    g->selection = (uint8_t)((g->selection + 1) % count);
+  select_move(g, a, count);
   if (a == ACT_CANCEL) /* Escape highlights retreating, it does not do it */
     for (uint8_t i = 0; i < count; i++)
       if (encounter_options[options[i]].action == ENC_RETREAT)
@@ -632,16 +630,22 @@ static bool push_stone(Game *g, int8_t dx, int8_t dy) {
   return true;
 }
 /* Ein versperrter Schritt schweigt beim ersten Mal -- wer sieht, wogegen er
- * laeuft, braucht keinen Text. Erst der zweite Versuch in dieselbe Richtung
- * bekommt eine Antwort (#20). */
-static void blocked(Game *g, int8_t dx, int8_t dy, const char *what) {
+  * laeuft, braucht keinen Text. Erst der zweite Versuch in dieselbe Richtung
+  * bekommt eine Antwort (#20). */
+static void blocked(Game *g, int8_t dx, int8_t dy, const char *what,
+                    const char *tile_name) {
   if (g->blocked_dx != dx || g->blocked_dy != dy) {
     g->blocked_dx = dx;
     g->blocked_dy = dy;
     return;
   }
   msg_clear(g);
-  msg_add(g, what);
+  if (what)
+    msg_add(g, what);
+  if (tile_name) {
+    msg_add(g, tile_name);
+    msg_add(g, " versperrt den Weg.");
+  }
 }
 static void move(Game *g, int8_t dx, int8_t dy) {
   g->dx = dx;
@@ -654,22 +658,15 @@ static void move(Game *g, int8_t dx, int8_t dy) {
       g->blocked_dx = 0;
       g->blocked_dy = 0;
     } else /* er laesst sich bewegen -- nur weiss man noch nicht, warum */
-      blocked(g, dx, dy, "Der Grenzstein ruehrt sich nicht.");
+      blocked(g, dx, dy, "Der Grenzstein ruehrt sich nicht.", 0);
     return;
   }
   if (!can_enter(g, tx, ty)) {
     if (game_npc_at(g, tx, ty) >= 0)
-      blocked(g, dx, dy, "Da steht jemand im Weg.");
+      blocked(g, dx, dy, "Da steht jemand im Weg.", 0);
     else {
       const TileDef *t = tile_def(game_tile(g, g->map, tx, ty));
-      if (g->blocked_dx != dx || g->blocked_dy != dy) {
-        g->blocked_dx = dx;
-        g->blocked_dy = dy;
-      } else {
-        msg_clear(g);
-        msg_add(g, t ? t->name : "Etwas");
-        msg_add(g, " versperrt den Weg.");
-      }
+      blocked(g, dx, dy, 0, t ? t->name : "Etwas");
     }
     return;
   }

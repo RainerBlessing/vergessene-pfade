@@ -721,11 +721,11 @@ const DialogueId encounter_lines[ENC_COUNT][MOOD_COUNT] = {
     [ENC_RETREAT] = {D_ENC_RETREAT, D_ENC_RETREAT, D_ENC_RETREAT},
 };
 const EncounterOption encounter_options[] = {
-    {ENC_WAIT, "STEHEN BLEIBEN", 0, OPT_PEACE},
-    {ENC_OFFER, "DARBRINGEN", 0, OPT_PEACE},
-    {ENC_ATTACK, "ANGREIFEN", 0, OPT_BOTH},
-    {ENC_HEAL, "HEILKRAUT NEHMEN", 0, OPT_FIGHT},
-    {ENC_RETREAT, "ZURUECKWEICHEN", 0, OPT_BOTH},
+    {ENC_WAIT, "STEHEN BLEIBEN", OPT_PEACE},
+    {ENC_OFFER, "DARBRINGEN", OPT_PEACE},
+    {ENC_ATTACK, "ANGREIFEN", OPT_BOTH},
+    {ENC_HEAL, "HEILKRAUT NEHMEN", OPT_FIGHT},
+    {ENC_RETREAT, "ZURUECKWEICHEN", OPT_BOTH},
 };
 const int encounter_option_count =
     (int)(sizeof encounter_options / sizeof encounter_options[0]);
@@ -734,9 +734,9 @@ _Static_assert(sizeof encounter_options / sizeof encounter_options[0] <=
                "raise ENCOUNTER_OPTION_LIMIT");
 const EncounterOffer encounter_offers[] = {
     /* The mended bowl comes first: it is what the player would hold out. */
-    {ITEM_BOWL, 0, OBS(OBS_KAMI_CALMED), MOOD_CALM, D_ENC_OFFER_BOWL, N_KAMI_CALM,
+    {ITEM_BOWL, OBS(OBS_KAMI_CALMED), MOOD_CALM, D_ENC_OFFER_BOWL, N_KAMI_CALM,
      ITEM_BOWL},
-    {ITEM_SHARDS, 0, OBS(OBS_KAMI_ANGERED), MOOD_ANGRY, D_ENC_OFFER_SHARDS, N_KAMI_SHARDS,
+    {ITEM_SHARDS, OBS(OBS_KAMI_ANGERED), MOOD_ANGRY, D_ENC_OFFER_SHARDS, N_KAMI_SHARDS,
      ITEM_NONE},
 };
 const int encounter_offer_count =
