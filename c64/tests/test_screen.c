@@ -267,6 +267,96 @@ static void the_closing_panel_names_the_ending(void) {
   expect_row(24, "RETURN: weiterlaufen");
 }
 
+/* Player-only move (camera static): old cell restored, new cell drawn. */
+static void player_move_camera_static(void) {
+  Game g;
+  start(&g);
+  g.map = MAP_VILLAGE;
+  g.x = 12;
+  g.y = 10;
+  g.dx = 1;
+  g.dy = 0;
+  render(&g);
+  int8_t cx, cy;
+  game_camera(&g, SCREEN_COLS, 17, &cx, &cy);
+  /* Save the full screen buffer after the initial render. */
+  uint8_t before[SCREEN_COLS * SCREEN_ROWS];
+  memcpy(before, test_screen, sizeof(before));
+  /* Move right: (12,10) -> (13,10). Village is 32 wide < 40 viewport,
+   * so the camera stays at (0,2) for all x positions. */
+  g.x = 13;
+  render(&g);
+  int8_t cx2, cy2;
+  game_camera(&g, SCREEN_COLS, 17, &cx2, &cy2);
+  assert(cx == cx2 && cy == cy2); /* camera truly unchanged */
+  /* Old player cell (12,10) must be restored to its base tile. */
+  uint16_t old_at = (uint16_t)((10 - cy + 1) * SCREEN_COLS + (12 - cx));
+  uint8_t old_char = (uint8_t)map_at(MAP_VILLAGE, 12, 10);
+  const TileDef *old_def = tile_def(old_char);
+  assert(test_screen[old_at] == old_def->screen);
+  assert(test_color[old_at] == old_def->color);
+  /* New player cell (13,10) must show '@'. */
+  uint16_t new_at = (uint16_t)((10 - cy + 1) * SCREEN_COLS + (13 - cx));
+  assert(test_screen[new_at] == 0);
+  assert(test_color[new_at] == COLOR_WHITE);
+  /* All other cells must be unchanged. */
+  for (uint16_t i = 0; i < SCREEN_COLS * SCREEN_ROWS; i++) {
+    if (i == old_at || i == new_at)
+      continue;
+    assert(test_screen[i] == before[i]);
+  }
+}
+
+/* Player move that changes the camera: full redraw. */
+static void player_move_camera_moves(void) {
+  Game g;
+  start(&g);
+  g.map = MAP_FOREST;
+  g.x = 24;
+  g.y = 20;
+  g.dx = 1;
+  g.dy = 0;
+  render(&g);
+  int8_t cx1, cy1;
+  game_camera(&g, SCREEN_COLS, 17, &cx1, &cy1);
+  /* Move right: (24,20) -> (25,20). Camera shifts from 4 to 5. */
+  g.x = 25;
+  render(&g);
+  int8_t cx2, cy2;
+  game_camera(&g, SCREEN_COLS, 17, &cx2, &cy2);
+  assert(cx1 != cx2 || cy1 != cy2); /* camera actually moved */
+  /* Player must be visible at the correct position. */
+  uint16_t at = (uint16_t)((20 - cy2 + 1) * SCREEN_COLS + (25 - cx2));
+  assert(test_screen[at] == 0);
+  assert(test_color[at] == COLOR_WHITE);
+}
+
+/* NPC on the new player cell: full redraw (npc_at_cell guard). */
+static void npc_on_cell_forces_full_redraw(void) {
+  Game g;
+  start(&g);
+  g.map = MAP_FOREST;
+  g.x = 5;
+  g.y = 20;
+  g.dx = 1;
+  g.dy = 0;
+  render(&g);
+  /* Sumi stands at (16,20) in the forest. Move player toward her. */
+  g.x = 15;
+  render(&g);
+  int8_t cx, cy;
+  game_camera(&g, SCREEN_COLS, 17, &cx, &cy);
+  /* Move right into Sumi's cell: (15,20) -> (16,20).
+   * npc_at_cell(g, 16, 20) is true -> full redraw path. */
+  g.x = 16;
+  render(&g);
+  /* Player must be on top of the NPC. */
+  game_camera(&g, SCREEN_COLS, 17, &cx, &cy);
+  uint16_t at = (uint16_t)((20 - cy + 1) * SCREEN_COLS + (16 - cx));
+  assert(test_screen[at] == 0); /* '@' on top of NPC */
+  assert(test_color[at] == COLOR_WHITE);
+}
+
 static void the_map_is_drawn(void) {
   Game g;
   start(&g);
@@ -288,6 +378,9 @@ int main(void) {
   the_health_bar_keeps_its_steps();
   the_shelf_shows_the_dried_bowl();
   the_open_bag_is_marked();
+  player_move_camera_static();
+  player_move_camera_moves();
+  npc_on_cell_forces_full_redraw();
   the_house_mark_stands_out();
   the_closing_panel_names_the_ending();
   printf("Bildschirm-Tests bestanden\n");
