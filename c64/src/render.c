@@ -1,6 +1,7 @@
 #include <c64.h>
 #include "render.h"
 #include "screen.h"
+#include "world.h"
 
 #define VIEW_H 17     /* map rows, below the status line */
 #define PANEL_TOP 18  /* the separator; the panel is what follows it */
@@ -56,26 +57,78 @@ static void put_symbol(uint8_t x, uint8_t y, char symbol) {
 /* Redrawing the map costs far more than the panel below it, so it happens only
  * when something up there can have changed. */
 static bool map_stale = true; /* something was drawn over the map area */
-static bool map_is_current(const Game *g) {
-  static uint8_t map = 0xff, x, y, outcome, stone_x, stone_y;
-  static Obs obs;
-  if (!map_stale && map == g->map && x == (uint8_t)g->x && y == (uint8_t)g->y &&
-      obs == g->obs && outcome == g->outcome &&
-      stone_x == (uint8_t)g->stone_x && stone_y == (uint8_t)g->stone_y)
-    return true;
-  map = g->map;
-  x = (uint8_t)g->x;
-  y = (uint8_t)g->y;
-  obs = g->obs;
-  outcome = g->outcome;
-  stone_x = (uint8_t)g->stone_x;
-  stone_y = (uint8_t)g->stone_y;
-  map_stale = false;
+static uint8_t prev_map = 0xff, prev_x, prev_y, prev_outcome, prev_stone_x,
+    prev_stone_y, prev_staked;
+static Obs prev_obs;
+static int8_t prev_cx, prev_cy;
+static bool state_changed(const Game *g) {
+  return map_stale || prev_map != g->map || prev_obs != g->obs ||
+         prev_outcome != g->outcome ||
+         prev_stone_x != (uint8_t)g->stone_x ||
+         prev_stone_y != (uint8_t)g->stone_y ||
+         prev_staked != g->staked;
+}
+static bool camera_unchanged(const Game *g) {
+  int8_t cx, cy;
+  game_camera(g, SCREEN_COLS, VIEW_H, &cx, &cy);
+  if (cx != prev_cx || cy != prev_cy)
+    return false;
+  prev_cx = cx;
+  prev_cy = cy;
+  return true;
+}
+/* Restores a cell to what game_tile() resolves, when the player is not there
+ * and no NPC stands in it. */
+static void cell_restore(const Game *g, uint8_t x, uint8_t y) {
+  const TileDef *t = 0;
+  if (g->map == MAP_FOREST && x == (uint8_t)g->stone_x && y == (uint8_t)g->stone_y)
+    t = tile_def('G');
+  else if (g->map == MAP_FOREST)
+    for (uint8_t i = 0; i < STAKE_COUNT; i++)
+      if ((g->staked & (1u << i)) && stakes[i].x == x && stakes[i].y == y)
+        t = tile_def('p');
+  if (!t)
+    for (uint8_t i = tile_override_count; i > 0; i--) {
+      const TileOverride *o = &tile_overrides[i - 1];
+      if (o->map == g->map && o->x == x && o->y == y && game_shows(g, o)) {
+        t = tile_def(o->symbol);
+        break;
+      }
+    }
+  if (!t)
+    t = tile_def(map_at(g->map, (int8_t)x, (int8_t)y));
+  screen_put(x, y, t ? t->screen : 32, t ? t->color : COLOR_BLACK);
+}
+static bool npc_at_cell(const Game *g, uint8_t x, uint8_t y) {
+  for (uint8_t i = 0; i < NPC_COUNT; i++) {
+    int8_t nx, ny;
+    game_npc_pos(g, i, &nx, &ny);
+    if (npcs[i].map == g->map && nx == (int8_t)x && ny == (int8_t)y)
+      return true;
+  }
   return false;
 }
 static void map_view(const Game *g) {
-  if (map_is_current(g))
+  if (!state_changed(g) && prev_x == (uint8_t)g->x && prev_y == (uint8_t)g->y) {
+    prev_x = (uint8_t)g->x;
+    prev_y = (uint8_t)g->y;
+    map_stale = false;
     return;
+  }
+  if (!state_changed(g) && camera_unchanged(g) &&
+      !npc_at_cell(g, prev_x, prev_y) && !npc_at_cell(g, (uint8_t)g->x, (uint8_t)g->y)) {
+    /* Only the player moved: restore the old cell, draw the new one. */
+    uint8_t ovx = (uint8_t)(prev_x - prev_cx), ovy = (uint8_t)(prev_y - prev_cy);
+    if (ovx < SCREEN_COLS && ovy < VIEW_H)
+      cell_restore(g, ovx, (uint8_t)(ovy + 1));
+    uint8_t nvx = (uint8_t)((uint8_t)g->x - prev_cx), nvy = (uint8_t)((uint8_t)g->y - prev_cy);
+    if (nvx < SCREEN_COLS && nvy < VIEW_H)
+      screen_put(nvx, (uint8_t)(nvy + 1), 0 /* '@' */, COLOR_WHITE);
+    prev_x = (uint8_t)g->x;
+    prev_y = (uint8_t)g->y;
+    map_stale = false;
+    return;
+  }
   int8_t cx, cy;
   game_camera(g, SCREEN_COLS, VIEW_H, &cx, &cy);
   uint8_t width = map_width(g->map), height = map_height(g->map);
@@ -111,6 +164,17 @@ static void map_view(const Game *g) {
       overlay(cx, cy, (uint8_t)nx, (uint8_t)ny, (uint8_t)npcs[i].glyph, COLOR_CYAN);
   }
   overlay(cx, cy, (uint8_t)g->x, (uint8_t)g->y, 0 /* '@' */, COLOR_WHITE);
+  prev_map = g->map;
+  prev_x = (uint8_t)g->x;
+  prev_y = (uint8_t)g->y;
+  prev_obs = g->obs;
+  prev_outcome = g->outcome;
+  prev_stone_x = (uint8_t)g->stone_x;
+  prev_stone_y = (uint8_t)g->stone_y;
+  prev_staked = g->staked;
+  prev_cx = cx;
+  prev_cy = cy;
+  map_stale = false;
 }
 
 /* Who is speaking: a person, a scene, or the thing being looked at. */
