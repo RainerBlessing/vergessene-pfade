@@ -886,7 +886,7 @@ static int test_woodpile(const char *assets) {
     g.outcome = outcome;
     stand(&g, MAP_VILLAGE, 22, 14, 0, -1);
     game_action(&g, ACT_CONFIRM);
-    CHECK(g.dialogue == expected[outcome]);
+    CHECK(g.dialogue == (int)expected[outcome]);
   }
   return 0;
 }
