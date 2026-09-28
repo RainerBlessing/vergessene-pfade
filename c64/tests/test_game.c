@@ -586,6 +586,34 @@ static void healing_leaves_the_world_alone(void) {
   assert(g.daigo_x == 20 && g.daigo_y == 20);
 }
 
+/* Eine verlorene Pruegelei kostet den Kampf, nicht die Arbeit davor: der
+ * Grenzstein bleibt liegen, wo der Spieler ihn hingeschoben hat. */
+static void a_lost_fight_leaves_the_stone_alone(void) {
+  Game g;
+  start(&g);
+  see_stone_and_hollow(&g);
+  face(&g, MAP_FOREST, 25, 16, -1, 0);
+  game_action(&g, ACT_LEFT); /* Stein einmal zur Seite geschoben */
+  assert(g.stone_x == 23 && g.stone_y == STONE_START_Y);
+  /* In den Hain, ohne das Spiel neu zu beginnen. */
+  face(&g, MAP_FOREST, 24, 12, 0, -1);
+  game_action(&g, ACT_UP);
+  assert(g.state == GAME_ENCOUNTER);
+  g.hp = 1; /* der naechste Hieb faellt */
+  for (int i = 0; i < 20 && g.state == GAME_ENCOUNTER; i++) {
+    uint8_t options[ENCOUNTER_OPTION_LIMIT];
+    uint8_t count = game_encounter_options(&g, options);
+    for (uint8_t k = 0; k < count; k++)
+      if (encounter_options[options[k]].action == ENC_ATTACK)
+        g.selection = k;
+    game_action(&g, ACT_CONFIRM);
+  }
+  assert(g.outcome == OUT_NONE); /* verloren ist nicht entschieden */
+  assert(g.map == MAP_VILLAGE);  /* heimgetragen */
+  assert(g.hp == PLAYER_HP);
+  assert(g.stone_x == 23 && g.stone_y == STONE_START_Y);
+}
+
 /* Das Kraut wirkt auch, wenn der Fuchs nicht genau in Blickrichtung liegt. */
 static void an_item_reaches_the_neighbour(void) {
   Game g;
@@ -874,6 +902,7 @@ int main(void) {
   the_facing_tile_wins();
   nothing_around_still_says_so();
   healing_leaves_the_world_alone();
+  a_lost_fight_leaves_the_stone_alone();
   an_item_reaches_the_neighbour();
   a_step_closes_the_bag();
   two_items_still_get_chosen();

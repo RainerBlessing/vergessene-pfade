@@ -509,10 +509,6 @@ static void fight_round(Game *g, bool herb) {
   g->hp -= taken;
   if (g->hp <= 0) {
     g->hp = PLAYER_HP;
-  g->stone_x = STONE_START_X;
-  g->stone_y = STONE_START_Y;
-  g->daigo_x = (int8_t)npcs[NPC_DAIGO].x;
-  g->daigo_y = (int8_t)npcs[NPC_DAIGO].y;
     g->kami_hp = KAMI_HP; /* the spirit recovers as well */
     g->fighting = 0;
     carried_home(g);
