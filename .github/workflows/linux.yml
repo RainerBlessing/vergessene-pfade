@@ -1,0 +1,41 @@
+name: Linux Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    # 26.04 ist die erste Ubuntu-Fassung mit libsdl3-dev in den Paketquellen;
+    # ubuntu-latest zeigt noch auf 24.04, dort gibt es kein SDL3-Paket.
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Quellcode laden
+        uses: actions/checkout@v7
+
+      # Das vendorte SDL braucht es hier nicht: find_package(SDL3) findet das
+      # Paket, und der Lauf bleibt damit bei wenigen Minuten.
+      - name: SDL3 aus den Paketquellen
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes libsdl3-dev
+
+      - name: Konfigurieren
+        run: cmake -S . -B build-linux -DCMAKE_BUILD_TYPE=Release
+
+      - name: Spiel und Tests bauen
+        run: cmake --build build-linux --parallel 3
+
+      # Hier laeuft die ganze Reihe, anders als bei macOS und Windows: der
+      # Klangtest braucht kein Geraet (siehe tests/test_audio.c), und ohne
+      # Linux-Lauf wuerde ihn sonst keine Action pruefen.
+      - name: Spiellogik testen
+        run: ctest --test-dir build-linux --output-on-failure --no-tests=error
