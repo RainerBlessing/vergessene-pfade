@@ -344,11 +344,12 @@ static void inventory_action(Game *g, Action a) {
   bool healed = item == ITEM_HERB && heal(g);
   msg_clear(g);
   msg_add(g, healed              ? "Das Kraut lindert deine Wunden."
-          : item == ITEM_HERB    ? "Du bist unverletzt."
+             : item == ITEM_HERB ? "Du bist unverletzt."
                                  : "Damit kannst du hier nichts tun.");
 }
 static void notebook_action(Game *g, Action a) {
-  uint8_t last = g->note_count > NOTES_PER_PAGE ? (uint8_t)(g->note_count - NOTES_PER_PAGE) : 0;
+  uint8_t last =
+      g->note_count > NOTES_PER_PAGE ? (uint8_t)(g->note_count - NOTES_PER_PAGE) : 0;
   if (a == ACT_CANCEL || a == ACT_CONFIRM)
     g->state = GAME_EXPLORATION;
   else if (a == ACT_UP && g->scroll > 0)
@@ -504,8 +505,8 @@ static void fight_round(Game *g, bool herb) {
     open_scene(g, "Am Rand des Hains", D_ENC_VICTORY);
     return;
   }
-  int16_t taken = damage(KAMI_ATTACK + (g->mood == MOOD_ANGRY ? 1 : 0), PLAYER_DEFENSE,
-                         roll(g));
+  int16_t taken =
+      damage(KAMI_ATTACK + (g->mood == MOOD_ANGRY ? 1 : 0), PLAYER_DEFENSE, roll(g));
   g->hp -= taken;
   if (g->hp <= 0) {
     g->hp = PLAYER_HP;
@@ -714,7 +715,8 @@ void game_action(Game *g, Action a) {
     notebook_action(g, a);
     return;
   case GAME_DIALOGUE:
-    if (a != ACT_CANCEL && !(a == ACT_CONFIRM && ++g->page >= dialogues[g->dialogue].count))
+    if (a != ACT_CANCEL &&
+        !(a == ACT_CONFIRM && ++g->page >= dialogues[g->dialogue].count))
       return;
     g->state = GAME_EXPLORATION;
     msg_clear(g); /* the scene's echo of the last round ends with it */
@@ -748,7 +750,8 @@ void game_action(Game *g, Action a) {
   }
   if (a == ACT_CANCEL) {
     g->state = GAME_NOTEBOOK;
-    g->scroll = g->note_count > NOTES_PER_PAGE ? (uint8_t)(g->note_count - NOTES_PER_PAGE) : 0;
+    g->scroll =
+        g->note_count > NOTES_PER_PAGE ? (uint8_t)(g->note_count - NOTES_PER_PAGE) : 0;
     return;
   }
   if (a == ACT_INVENTORY) {

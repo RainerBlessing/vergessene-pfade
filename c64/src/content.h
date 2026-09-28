@@ -219,7 +219,14 @@ extern const uint8_t tile_override_count;
 /* Encounter: actions change the spirit's mood, not only its health. */
 typedef enum { MOOD_ANGRY, MOOD_WARY, MOOD_CALM, MOOD_COUNT } Mood;
 extern const char *const mood_names[MOOD_COUNT];
-typedef enum { ENC_WAIT, ENC_OFFER, ENC_ATTACK, ENC_HEAL, ENC_RETREAT, ENC_COUNT } EncounterAction;
+typedef enum {
+  ENC_WAIT,
+  ENC_OFFER,
+  ENC_ATTACK,
+  ENC_HEAL,
+  ENC_RETREAT,
+  ENC_COUNT
+} EncounterAction;
 typedef enum { OPT_PEACE, OPT_FIGHT, OPT_BOTH } OptionWhen;
 extern const uint8_t encounter_transitions[ENC_COUNT][MOOD_COUNT];
 typedef struct {

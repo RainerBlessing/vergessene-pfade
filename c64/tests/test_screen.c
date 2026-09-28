@@ -1,9 +1,9 @@
 /* What the player actually reads: the panel layout, checked on the host with
  * screen RAM pointed at plain arrays. */
-#include <c64.h>
 #include "../src/render.h"
 #include "../src/screen.h"
 #include <assert.h>
+#include <c64.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -14,8 +14,8 @@ struct host_vic VIC;
 static void row_text(uint8_t y, char *out) {
   for (uint8_t x = 0; x < SCREEN_COLS; x++) {
     uint8_t c = test_screen[y * SCREEN_COLS + x];
-    out[x] = c == 0            ? '@'
-             : c >= 1 && c <= 26 ? (char)(c + 96)
+    out[x] = c == 0               ? '@'
+             : c >= 1 && c <= 26  ? (char)(c + 96)
              : c >= 65 && c <= 90 ? (char)c
              : c >= 32 && c < 64  ? (char)c
                                   : '#';

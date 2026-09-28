@@ -1,10 +1,10 @@
-#include <c64.h>
 #include "render.h"
 #include "screen.h"
 #include "world.h"
+#include <c64.h>
 
-#define VIEW_H 17     /* map rows, below the status line */
-#define PANEL_TOP 18  /* the separator; the panel is what follows it */
+#define VIEW_H 17        /* map rows, below the status line */
+#define PANEL_TOP 18     /* the separator; the panel is what follows it */
 #define ENCOUNTER_TOP 13 /* the encounter needs room for text, round and options */
 #define MEND_TOP 15
 
@@ -57,16 +57,14 @@ static void put_symbol(uint8_t x, uint8_t y, char symbol) {
 /* Redrawing the map costs far more than the panel below it, so it happens only
  * when something up there can have changed. */
 static bool map_stale = true; /* something was drawn over the map area */
-static uint8_t prev_map = 0xff, prev_x, prev_y, prev_outcome, prev_stone_x,
-    prev_stone_y, prev_staked;
+static uint8_t prev_map = 0xff, prev_x, prev_y, prev_outcome, prev_stone_x, prev_stone_y,
+               prev_staked;
 static Obs prev_obs;
 static int8_t prev_cx, prev_cy;
 static bool state_changed(const Game *g) {
   return map_stale || prev_map != g->map || prev_obs != g->obs ||
-         prev_outcome != g->outcome ||
-         prev_stone_x != (uint8_t)g->stone_x ||
-         prev_stone_y != (uint8_t)g->stone_y ||
-         prev_staked != g->staked;
+         prev_outcome != g->outcome || prev_stone_x != (uint8_t)g->stone_x ||
+         prev_stone_y != (uint8_t)g->stone_y || prev_staked != g->staked;
 }
 static bool camera_unchanged(const Game *g) {
   int8_t cx, cy;
@@ -122,13 +120,14 @@ static void map_view(const Game *g) {
     map_stale = false;
     return;
   }
-  if (!state_changed(g) && camera_unchanged(g) &&
-      !npc_at_cell(g, prev_x, prev_y) && !npc_at_cell(g, (uint8_t)g->x, (uint8_t)g->y)) {
+  if (!state_changed(g) && camera_unchanged(g) && !npc_at_cell(g, prev_x, prev_y) &&
+      !npc_at_cell(g, (uint8_t)g->x, (uint8_t)g->y)) {
     /* Only the player moved: restore the old cell, draw the new one. */
     uint8_t ovx = (uint8_t)(prev_x - prev_cx), ovy = (uint8_t)(prev_y - prev_cy);
     if (ovx < SCREEN_COLS && ovy < VIEW_H)
       cell_restore(g, prev_x, prev_y, ovx, ovy);
-    uint8_t nvx = (uint8_t)((uint8_t)g->x - prev_cx), nvy = (uint8_t)((uint8_t)g->y - prev_cy);
+    uint8_t nvx = (uint8_t)((uint8_t)g->x - prev_cx),
+            nvy = (uint8_t)((uint8_t)g->y - prev_cy);
     if (nvx < SCREEN_COLS && nvy < VIEW_H)
       screen_put(nvx, (uint8_t)(nvy + 1), 0 /* '@' */, COLOR_WHITE);
     prev_x = (uint8_t)g->x;

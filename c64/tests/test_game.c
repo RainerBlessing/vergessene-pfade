@@ -206,8 +206,8 @@ static void fight_changes_world(void) {
   assert(g.dialogue == D_ENC_VICTORY);
   while (g.state == GAME_DIALOGUE)
     game_action(&g, ACT_CONFIRM);
-  assert(game_tile(&g, MAP_VILLAGE, 23, 13) == 'W');  /* wood for the winter */
-  assert(game_tile(&g, MAP_FOREST, 20, 6) == 'x');    /* the grove is felled */
+  assert(game_tile(&g, MAP_VILLAGE, 23, 13) == 'W'); /* wood for the winter */
+  assert(game_tile(&g, MAP_FOREST, 20, 6) == 'x');   /* the grove is felled */
   face(&g, MAP_VILLAGE, 5, 5, 0, -1);
   game_action(&g, ACT_CONFIRM);
   assert(g.dialogue == D_SUMI_FOUGHT);
@@ -250,8 +250,8 @@ static void restore_old_boundary(void) {
   assert(g.mood == MOOD_CALM);
   while (g.state == GAME_DIALOGUE)
     game_action(&g, ACT_CONFIRM);
-  assert(game_tile(&g, MAP_FOREST, 16, 11) == 'h');  /* the grove edge is kept */
-  assert(game_tile(&g, MAP_FOREST, 14, 28) == '.');  /* the camp loses ground */
+  assert(game_tile(&g, MAP_FOREST, 16, 11) == 'h'); /* the grove edge is kept */
+  assert(game_tile(&g, MAP_FOREST, 14, 28) == '.'); /* the camp loses ground */
   /* A grove at peace lets the player walk in -- beside the stone, which now
    * fills its hollow again. */
   face(&g, MAP_FOREST, 25, 12, 0, -1);
@@ -718,9 +718,10 @@ static void the_slice_says_when_it_ends(void) {
 
 /* Der Holzstapel sagt, was man sieht -- nach jedem Ausgang etwas anderes (#16). */
 static void the_woodpile_knows_the_ending(void) {
-  const uint8_t expected[OUTCOME_COUNT] = {
-      [OUT_NONE] = D_X_WOOD, [OUT_FIGHT] = D_X_WOOD_FIGHT,
-      [OUT_BOUNDARY] = D_X_WOOD_BOUNDARY, [OUT_MEND] = D_X_WOOD_MEND};
+  const uint8_t expected[OUTCOME_COUNT] = {[OUT_NONE] = D_X_WOOD,
+                                           [OUT_FIGHT] = D_X_WOOD_FIGHT,
+                                           [OUT_BOUNDARY] = D_X_WOOD_BOUNDARY,
+                                           [OUT_MEND] = D_X_WOOD_MEND};
   for (uint8_t outcome = 0; outcome < OUTCOME_COUNT; outcome++) {
     Game g;
     start(&g);
@@ -787,9 +788,9 @@ static void the_forest_stays_walkable(void) {
     }
   }
   /* Alles, was der Slice im Wald braucht. */
-  const uint8_t must[][2] = {{5, 21}, {12, 31}, {11, 32}, {38, 21}, {23, 16},
+  const uint8_t must[][2] = {{5, 21},  {12, 31}, {11, 32}, {38, 21}, {23, 16},
                              {24, 13}, {24, 12}, {14, 14}, {22, 15}, {30, 14},
-                             {8, 19}, {34, 13}, {24, 11}};
+                             {8, 19},  {34, 13}, {24, 11}};
   for (uint8_t i = 0; i < sizeof must / sizeof must[0]; i++)
     assert(seen[must[i][1] * w + must[i][0]]);
   /* Sackgassen: Felder mit nur einem Ausgang. Das alte Gitter hatte 44. */

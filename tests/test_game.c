@@ -1432,13 +1432,13 @@ int main(int argc, char **argv) {
       test_fight(argv[1]) || test_outcome_keeps_threads(argv[1]) ||
       test_defeat(argv[1]) || test_boundary(argv[1]) || test_mend(argv[1]) ||
       test_compromise(argv[1]) || test_daigo_stays(argv[1]) || test_phases(argv[1]) ||
-      test_woodpile(argv[1]) ||
-      test_consequences(argv[1]) || test_night_offer(argv[1]) || test_signs(argv[1]) ||
-      test_note_notice(argv[1]) || test_futon_explains(argv[1]) || test_futon(argv[1]) ||
-      test_change_precedence(argv[1]) || test_visitor_before_teaser(argv[1]) ||
-      test_den_with_kits(argv[1]) || test_fox_after_fight(argv[1]) ||
-      test_daigo_reactions(argv[1]) || test_no_late_deal(argv[1]) ||
-      test_morning_keeps_threads(argv[1]) || test_grey_trace(argv[1]) || test_combat())
+      test_woodpile(argv[1]) || test_consequences(argv[1]) || test_night_offer(argv[1]) ||
+      test_signs(argv[1]) || test_note_notice(argv[1]) || test_futon_explains(argv[1]) ||
+      test_futon(argv[1]) || test_change_precedence(argv[1]) ||
+      test_visitor_before_teaser(argv[1]) || test_den_with_kits(argv[1]) ||
+      test_fox_after_fight(argv[1]) || test_daigo_reactions(argv[1]) ||
+      test_no_late_deal(argv[1]) || test_morning_keeps_threads(argv[1]) ||
+      test_grey_trace(argv[1]) || test_combat())
     return 1;
   puts("World, examining, encounter, outcomes, consequences, morning, trace pass.");
   return 0;

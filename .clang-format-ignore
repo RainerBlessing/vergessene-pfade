@@ -1,0 +1,3 @@
+# Erzeugt von c64/tools/genmaps.py -- die Datei kommt so, wie das Skript sie
+# schreibt, und wird von der CI gegen die Karten in assets/maps geprueft.
+c64/src/maps.h

@@ -93,8 +93,9 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
     [D_MIO_HERB_AGAIN] = {1,
                           {"Hast du ihm schon geholfen? Nimm\ndas Kraut aus der "
                            "Tasche, wenn\ndu bei ihm bist."}},
-    [D_MIO_THANKS] = {1, {"Du hast ihm geholfen? Danke!\nFuechse merken sich so "
-                          "etwas."}},
+    [D_MIO_THANKS] = {1,
+                      {"Du hast ihm geholfen? Danke!\nFuechse merken sich so "
+                       "etwas."}},
     [D_KENTA] = {2,
                  {"Ich geh da nicht mehr rein! Der\nalte Baum hat mich angeschaut.\n"
                   "Mit ... mit Rinde!",
@@ -134,10 +135,8 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
     [D_X_WOOD_FIGHT] = {1,
                         {"Der Stapel waechst. Holz aus dem\nHain, genug fuer den "
                          "Winter."}},
-    [D_X_WOOD_BOUNDARY] = {1,
-                           {"So leer wie gestern. Das Lager\nschlaegt nicht mehr."}},
-    [D_X_WOOD_MEND] = {1,
-                       {"Totholz vom Hainrand. Weniger, als\nder Auftrag verlangt."}},
+    [D_X_WOOD_BOUNDARY] = {1, {"So leer wie gestern. Das Lager\nschlaegt nicht mehr."}},
+    [D_X_WOOD_MEND] = {1, {"Totholz vom Hainrand. Weniger, als\nder Auftrag verlangt."}},
     [D_X_HOUSE_MARK] = {1, {"Neben Sumis Tuer ist ein\nHauszeichen eingebrannt."}},
     [D_X_HOUSE_MARK_MATCH] = {1,
                               {"Neben Sumis Tuer ist ein\nHauszeichen eingebrannt. "
@@ -186,8 +185,9 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
                        "still.\nDann humpelt er in den Bau.",
                        "Als du dich aufrichtest, faellt\ndir etwas am Boden auf: "
                        "Faehrten.\nUeberall Faehrten."}},
-    [D_I_BOWL_MARK] = {1, {"Auf dem Boden einer Scherbe ist\nein Zeichen "
-                           "eingebrannt."}},
+    [D_I_BOWL_MARK] = {1,
+                       {"Auf dem Boden einer Scherbe ist\nein Zeichen "
+                        "eingebrannt."}},
     [D_I_BOWL_MARK_MATCH] = {1,
                              {"Auf dem Boden einer Scherbe ist\nein Zeichen "
                               "eingebrannt. Dasselbe\nwie an Sumis Tuer?"}},
@@ -280,48 +280,52 @@ const DialogueRule dialogue_rules[] = {
     /* The bowl on her shelf: handed over once the lacquer has dried. */
     {NPC_ORIHA, OBS(OBS_BOWL_READY), 0, 0, D_ORIHA_READY, N_BOWL_READY, ITEM_BOWL,
      OUT_ANY, OPEN_NOTHING},
-    {NPC_ORIHA, OBS(OBS_BOWL_READY), 0, 0, D_ORIHA_AFTER, NOTE_NONE, ITEM_NONE,
-     OUT_ANY, OPEN_NOTHING},
-    {NPC_ORIHA, OBS(OBS_BOWL_DRYING), 0, 0, D_ORIHA_DRYING, NOTE_NONE, ITEM_NONE,
-     OUT_ANY, OPEN_NOTHING},
-    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | OBS(OBS_BOWL_OWNER), 0, 0, D_ORIHA_MEND,
-     NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_MEND},
+    {NPC_ORIHA, OBS(OBS_BOWL_READY), 0, 0, D_ORIHA_AFTER, NOTE_NONE, ITEM_NONE, OUT_ANY,
+     OPEN_NOTHING},
+    {NPC_ORIHA, OBS(OBS_BOWL_DRYING), 0, 0, D_ORIHA_DRYING, NOTE_NONE, ITEM_NONE, OUT_ANY,
+     OPEN_NOTHING},
+    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | OBS(OBS_BOWL_OWNER), 0, 0, D_ORIHA_MEND, NOTE_NONE,
+     ITEM_NONE, OUT_ANY, OPEN_MEND},
     /* Wer beide Zeichen verbunden hat, wird nicht noch einmal losgeschickt --
      * er bekommt die naechste Tuer genannt. Die Geschichte erzaehlt nur Sumi. */
-    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | MARKS, OBS(OBS_BOWL_OWNER), 0,
-     D_ORIHA_MARK_MATCH, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
+    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | MARKS, OBS(OBS_BOWL_OWNER), 0, D_ORIHA_MARK_MATCH,
+     NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
     /* Nur das Zeichen auf der Scherbe gesehen: was fuer ein Zeichen es ist. */
     {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | OBS(OBS_BOWL_MARK), OBS(OBS_HOUSE_MARK), 0,
      D_ORIHA_MARK, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
-    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS), 0, 0, D_ORIHA_SHARDS, NOTE_NONE, ITEM_NONE,
-     OUT_ANY, OPEN_NOTHING},
+    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS), 0, 0, D_ORIHA_SHARDS, NOTE_NONE, ITEM_NONE, OUT_ANY,
+     OPEN_NOTHING},
     {NPC_ORIHA, 0, 0, 0, D_ORIHA, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
-    {NPC_MIO, OBS(OBS_FOX_TENDED), 0, 0, D_MIO_THANKS, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
+    {NPC_MIO, OBS(OBS_FOX_TENDED), 0, 0, D_MIO_THANKS, NOTE_NONE, ITEM_NONE, OUT_ANY,
+     OPEN_NOTHING},
     /* Mio keeps helping while the fox is hurt: the herb can be used up elsewhere. */
     {NPC_MIO, OBS(OBS_FOX_WOUNDED), OBS(OBS_MIO_HERB), OBS(OBS_MIO_HERB), D_MIO_HERB,
      N_HERB, ITEM_HERB, OUT_ANY, OPEN_NOTHING},
-    {NPC_MIO, OBS(OBS_FOX_WOUNDED), 0, 0, D_MIO_HERB_MORE, NOTE_NONE, ITEM_HERB,
-     OUT_ANY, OPEN_NOTHING},
-    {NPC_MIO, OBS(OBS_MIO_HERB), 0, 0, D_MIO_HERB_AGAIN, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
+    {NPC_MIO, OBS(OBS_FOX_WOUNDED), 0, 0, D_MIO_HERB_MORE, NOTE_NONE, ITEM_HERB, OUT_ANY,
+     OPEN_NOTHING},
+    {NPC_MIO, OBS(OBS_MIO_HERB), 0, 0, D_MIO_HERB_AGAIN, NOTE_NONE, ITEM_NONE, OUT_ANY,
+     OPEN_NOTHING},
     {NPC_MIO, 0, 0, 0, D_MIO, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
-    {NPC_KENTA, OBS(OBS_KENTA_STARE), 0, 0, D_KENTA_AGAIN, NOTE_NONE, ITEM_NONE,
-     OUT_ANY, OPEN_NOTHING},
-    {NPC_KENTA, 0, 0, OBS(OBS_KENTA_STARE), D_KENTA, N_KENTA, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
+    {NPC_KENTA, OBS(OBS_KENTA_STARE), 0, 0, D_KENTA_AGAIN, NOTE_NONE, ITEM_NONE, OUT_ANY,
+     OPEN_NOTHING},
+    {NPC_KENTA, 0, 0, OBS(OBS_KENTA_STARE), D_KENTA, N_KENTA, ITEM_NONE, OUT_ANY,
+     OPEN_NOTHING},
     {NPC_DAIGO, 0, 0, 0, D_DAIGO_FOUGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT, OPEN_NOTHING},
-    {NPC_DAIGO, 0, 0, 0, D_DAIGO_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY, OPEN_NOTHING},
+    {NPC_DAIGO, 0, 0, 0, D_DAIGO_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY,
+     OPEN_NOTHING},
     {NPC_DAIGO, 0, 0, 0, D_DAIGO_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND, OPEN_NOTHING},
     /* The compromise: he comes along once the kami sits and the tracks are known. */
     {NPC_DAIGO, OBS(OBS_KAMI_CALMED) | OBS(OBS_TRACKS) | OBS(OBS_LEDGER_DEBT),
-     OBS(OBS_DAIGO_DEAL), OBS(OBS_DAIGO_DEAL), D_DAIGO_OFFER, N_DEAL, ITEM_NONE,
-     OUT_NONE, OPEN_FOLLOW},
+     OBS(OBS_DAIGO_DEAL), OBS(OBS_DAIGO_DEAL), D_DAIGO_OFFER, N_DEAL, ITEM_NONE, OUT_NONE,
+     OPEN_FOLLOW},
     {NPC_DAIGO, OBS(OBS_DAIGO_DEAL), 0, 0, D_DAIGO_WALKING, NOTE_NONE, ITEM_NONE,
      OUT_NONE, OPEN_FOLLOW},
     /* Der Kami sitzt, aber Daigo fehlt noch etwas: Er sagt, was er braucht,
      * ohne zu sagen, wo es steht. */
     {NPC_DAIGO, OBS(OBS_KAMI_CALMED), OBS(OBS_DAIGO_DEAL), 0, D_DAIGO_CALM, NOTE_NONE,
      ITEM_NONE, OUT_NONE, OPEN_NOTHING},
-    {NPC_DAIGO, OBS(OBS_LEDGER_DEBT), 0, 0, D_DAIGO_LEDGER, NOTE_NONE, ITEM_NONE,
-     OUT_ANY, OPEN_NOTHING},
+    {NPC_DAIGO, OBS(OBS_LEDGER_DEBT), 0, 0, D_DAIGO_LEDGER, NOTE_NONE, ITEM_NONE, OUT_ANY,
+     OPEN_NOTHING},
     {NPC_DAIGO, 0, 0, 0, D_DAIGO, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING},
 };
 const uint8_t dialogue_rule_count =
@@ -329,8 +333,8 @@ const uint8_t dialogue_rule_count =
 
 const ExaminePoint examine_points[] = {
     /* Village */
-    {POINT_AT, MAP_VILLAGE, 4, 6, 0, ITEM_NONE, ITEM_NONE, ITEM_NONE,
-     OBS(OBS_BOWL_MARK), OBS(OBS_HOUSE_MARK), D_X_HOUSE_MARK_MATCH, N_MARKS_MATCH, OUT_NONE},
+    {POINT_AT, MAP_VILLAGE, 4, 6, 0, ITEM_NONE, ITEM_NONE, ITEM_NONE, OBS(OBS_BOWL_MARK),
+     OBS(OBS_HOUSE_MARK), D_X_HOUSE_MARK_MATCH, N_MARKS_MATCH, OUT_NONE},
     {POINT_AT, MAP_VILLAGE, 4, 6, 0, ITEM_NONE, ITEM_NONE, ITEM_NONE, 0,
      OBS(OBS_HOUSE_MARK), D_X_HOUSE_MARK, N_HOUSE_MARK, OUT_NONE},
     /* Der Stapel sagt, was man sieht: nach jedem Ausgang etwas anderes. */
@@ -372,8 +376,8 @@ const ExaminePoint examine_points[] = {
      OBS(OBS_BOWL_SHARDS), D_X_SHARDS, N_SHARDS, OUT_NONE},
     {POINT_SYMBOL, MAP_FOREST, 0, 0, 'k', ITEM_NONE, ITEM_NONE, ITEM_NONE, 0,
      OBS(OBS_LEDGER_DEBT), D_X_LEDGER, N_LEDGER, OUT_NONE},
-    {POINT_SYMBOL, MAP_FOREST, 0, 0, 'A', ITEM_NONE, ITEM_NONE, ITEM_NONE, 0, 0,
-     D_X_TENT, NOTE_NONE, OUT_NONE},
+    {POINT_SYMBOL, MAP_FOREST, 0, 0, 'A', ITEM_NONE, ITEM_NONE, ITEM_NONE, 0, 0, D_X_TENT,
+     NOTE_NONE, OUT_NONE},
     {POINT_SYMBOL, MAP_FOREST, 0, 0, 'F', ITEM_NONE, ITEM_NONE, ITEM_NONE, 0,
      OBS(OBS_FOX_WOUNDED), D_X_FOX, N_FOX, OUT_NONE},
     {POINT_SYMBOL, MAP_FOREST, 0, 0, 'f', ITEM_NONE, ITEM_NONE, ITEM_NONE, 0, 0,
@@ -453,10 +457,8 @@ const uint8_t encounter_lines[ENC_COUNT][MOOD_COUNT] = {
     [ENC_RETREAT] = {D_ENC_RETREAT, D_ENC_RETREAT, D_ENC_RETREAT},
 };
 const EncounterOption encounter_options[] = {
-    {ENC_WAIT, "STEHEN BLEIBEN", OPT_PEACE},
-    {ENC_OFFER, "DARBRINGEN", OPT_PEACE},
-    {ENC_ATTACK, "ANGREIFEN", OPT_BOTH},
-    {ENC_HEAL, "HEILKRAUT NEHMEN", OPT_FIGHT},
+    {ENC_WAIT, "STEHEN BLEIBEN", OPT_PEACE},   {ENC_OFFER, "DARBRINGEN", OPT_PEACE},
+    {ENC_ATTACK, "ANGREIFEN", OPT_BOTH},       {ENC_HEAL, "HEILKRAUT NEHMEN", OPT_FIGHT},
     {ENC_RETREAT, "ZURUECKWEICHEN", OPT_BOTH},
 };
 const uint8_t encounter_option_count =
