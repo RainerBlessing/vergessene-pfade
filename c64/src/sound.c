@@ -34,23 +34,25 @@ static const Step step_b[] = {{HZ(260), NOISE, 2}, END};
 static const Step write_[] = {{HZ(900), TRIANGLE, 2}, {HZ(1200), TRIANGLE, 3}, END};
 static const Step scrape[] = {{HZ(140), NOISE, 4}, {HZ(110), NOISE, 4}, END};
 static const Step settle[] = {{HZ(100), NOISE, 3}, {HZ(70), TRIANGLE, 5}, END};
-static const Step fox[] = {{HZ(700), TRIANGLE, 3}, {HZ(1000), TRIANGLE, 3}, {HZ(800), TRIANGLE, 4}, END};
+static const Step fox[] = {
+    {HZ(700), TRIANGLE, 3}, {HZ(1000), TRIANGLE, 3}, {HZ(800), TRIANGLE, 4}, END};
 static const Step ceramic[] = {{HZ(2400), PULSE, 2}, {HZ(3100), PULSE, 4}, END};
 static const Step stake[] = {{HZ(110), PULSE, 3}, {0, 0, 3}, {HZ(110), PULSE, 4}, END};
 static const Step creak[] = {{HZ(90), SAW, 4}, {HZ(80), SAW, 4}, {HZ(65), SAW, 5}, END};
 static const Step hit[] = {{HZ(250), NOISE, 4}, END};
-static const Step break_[] = {{HZ(300), NOISE, 4}, {HZ(200), NOISE, 4}, {HZ(120), NOISE, 6}, END};
+static const Step break_[] = {
+    {HZ(300), NOISE, 4}, {HZ(200), NOISE, 4}, {HZ(120), NOISE, 6}, END};
 
 static const Step *const effects[SFX_COUNT] = {
-    [SFX_CLICK] = click,   [SFX_STEP_A] = step_a, [SFX_STEP_B] = step_b,
-    [SFX_WRITE] = write_,  [SFX_SCRAPE] = scrape, [SFX_SETTLE] = settle,
-    [SFX_FOX] = fox,       [SFX_CERAMIC] = ceramic, [SFX_STAKE] = stake,
-    [SFX_CREAK] = creak,   [SFX_HIT] = hit,       [SFX_BREAK] = break_,
+    [SFX_CLICK] = click,  [SFX_STEP_A] = step_a,   [SFX_STEP_B] = step_b,
+    [SFX_WRITE] = write_, [SFX_SCRAPE] = scrape,   [SFX_SETTLE] = settle,
+    [SFX_FOX] = fox,      [SFX_CERAMIC] = ceramic, [SFX_STAKE] = stake,
+    [SFX_CREAK] = creak,  [SFX_HIT] = hit,         [SFX_BREAK] = break_,
 };
 
 void sound_init(void) {
   SID[SID_VOLUME] = VOLUME;
-  SID[SID_VOICE1_PULSE + 1] = 0x08; /* a narrow-ish pulse: dry, like wood */
+  SID[SID_VOICE1_PULSE + 1] = 0x08;    /* a narrow-ish pulse: dry, like wood */
   SID[SID_VOICE1_ATTACK_DECAY] = 0x08; /* instant attack, 204 ms decay */
   SID[SID_VOICE1_SUSTAIN_RELEASE] = 0x00;
 }

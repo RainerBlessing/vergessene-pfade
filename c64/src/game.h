@@ -72,7 +72,7 @@ typedef struct {
   /* Die zuletzt versperrte Richtung: Beim zweiten Versuch in dieselbe Richtung
    * sagt das Spiel, was im Weg steht (#20). */
   int8_t blocked_dx, blocked_dy;
-  bool ended; /* die Schlusstafel kommt einmal */
+  bool ended;  /* die Schlusstafel kommt einmal */
   uint8_t sfx; /* the cue of the last action (SfxId); the caller plays it */
   uint8_t bag[ITEM_COUNT];
   int16_t hp, kami_hp;

@@ -695,7 +695,7 @@ static void move(Game *g, int8_t dx, int8_t dy) {
   g->x += dx;
   g->y += dy;
   cue(g, (g->x + g->y) & 1 ? SFX_STEP_A : SFX_STEP_B); /* every step flips it */
-  if (g->daigo_follows) { /* he walks in your footsteps */
+  if (g->daigo_follows) {                              /* he walks in your footsteps */
     g->daigo_x = from_x;
     g->daigo_y = from_y;
   }
