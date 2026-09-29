@@ -171,8 +171,9 @@ const TileDef *tile_def(char s) {
   return NULL;
 }
 char map_at(const Map *m, int x, int y) {
-  return x < 0 || y < 0 || x >= m->width || y >= m->height ? '^'
-                                                           : m->cells[y * m->width + x];
+  if (x < 0 || y < 0 || x >= m->width || y >= m->height)
+    return '^';
+  return m->cells[y * m->width + x];
 }
 bool map_passable(const Map *m, int x, int y) {
   const TileDef *t = tile_def(map_at(m, x, y));

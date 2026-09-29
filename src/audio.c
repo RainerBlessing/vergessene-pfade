@@ -159,6 +159,7 @@ void audio_open(Audio *a) {
 void audio_close(Audio *a) {
   if (a->stream)
     SDL_DestroyAudioStream(a->stream);
+  SDL_QuitSubSystem(SDL_INIT_AUDIO); /* pairs with the init in audio_open */
   for (int i = 0; i < SFX_COUNT; i++)
     free(a->samples[i]);
   SDL_memset(a, 0, sizeof *a);
