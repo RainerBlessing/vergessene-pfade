@@ -1,15 +1,11 @@
 #include "audio.h"
 #include "journey.h"
+#include "options.h"
 #include "renderer.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <stdio.h>
 #include <string.h>
-typedef struct {
-  bool smoke, verify, fullscreen;
-  int scale;
-  const char *log_path;
-} Options;
 static Action key(SDL_Keycode k) {
   switch (k) {
   case SDLK_UP:
@@ -113,38 +109,6 @@ static void drain_events(Game *g, FILE *log, Uint64 ms, Audio *audio) {
   }
   fflush(log);
 }
-/* The picture is 320x200; the window is a whole multiple of it, so pixels stay
- * square. Two is the smallest that is still comfortable to read. */
-#define SCALE_MIN 2
-#define SCALE_MAX 5
-/* The command line stands alone, so it can be checked before anything runs. */
-bool parse_args(int argc, char **argv, Options *o, const char **error) {
-  o->smoke = o->verify = o->fullscreen = false;
-  o->scale = 4;
-  o->log_path = NULL;
-  for (int i = 1; i < argc; i++) {
-    if (strcmp(argv[i], "--smoke") == 0)
-      o->smoke = true;
-    else if (strcmp(argv[i], "--verify") == 0)
-      o->verify = true;
-    else if (strcmp(argv[i], "--log") == 0 && i + 1 < argc)
-      o->log_path = argv[++i];
-    else if (strcmp(argv[i], "--fullscreen") == 0)
-      o->fullscreen = true;
-    else if (strcmp(argv[i], "--scale") == 0 && i + 1 < argc) {
-      o->scale = SDL_atoi(argv[++i]);
-      if (o->scale < SCALE_MIN || o->scale > SCALE_MAX) {
-        *error = "Skalierung muss zwischen "
-                 "2 und 5 liegen";
-        return false;
-      }
-    } else {
-      *error = "Unbekanntes Argument";
-      return false;
-    }
-  }
-  return true;
-}
 static int usage(void) {
   fprintf(stderr, "Aufruf: vergessene_pfade [--smoke | --verify] [--log DATEI]"
                   " [--scale 2..5] [--fullscreen]\n");
@@ -171,7 +135,8 @@ static void capture(Game *g, const char *label, void *context) {
   SDL_PumpEvents();
 }
 /* One run per journey; each starts from a fresh game. */
-bool run_verify(Renderer *r, FILE *log, const char *assets, Game *g, bool *all_ok) {
+static bool run_verify(Renderer *r, FILE *log, const char *assets, Game *g, char *reason,
+                       size_t reason_size) {
   Capture c = {r, log, true};
   static const struct {
     const char *name;
@@ -180,19 +145,30 @@ bool run_verify(Renderer *r, FILE *log, const char *assets, Game *g, bool *all_o
               {"fight", journey_fight},
               {"boundary", journey_boundary},
               {"mend", journey_mend}};
-  bool ok = true;
-  for (size_t i = 0; ok && i < sizeof runs / sizeof runs[0]; i++) {
+  for (size_t i = 0; i < sizeof runs / sizeof runs[0]; i++) {
     if (log)
       fprintf(log, "# run\t%s\n", runs[i].name);
-    ok = game_init(g, assets) && runs[i].run(g, capture, &c);
+    bool loaded = game_init(g, assets);
+    bool passed = loaded && runs[i].run(g, capture, &c);
     drain_events(g, log, SDL_GetTicks(), NULL); /* before game_init clears them */
+    if (!loaded)
+      snprintf(reason, reason_size, "Spieldaten fuer Abnahme \"%s\" nicht ladbar",
+               runs[i].name);
+    else if (!c.ok)
+      snprintf(reason, reason_size, "Bildaufnahme in Abnahme \"%s\" fehlgeschlagen",
+               runs[i].name);
+    else if (!passed)
+      snprintf(reason, reason_size, "Abnahme \"%s\" ist fehlgeschlagen", runs[i].name);
+    else
+      continue;
+    return false;
   }
-  *all_ok = ok && c.ok;
   return true;
 }
 /* The interactive game: one event per frame, the picture paced to 60 fps. */
-bool run_loop(Renderer *r, SDL_Renderer *sdl, SDL_Window *w, const char *assets, Game *g,
-              Audio *audio, FILE *log, const Options *o) {
+static bool run_loop(Renderer *r, SDL_Renderer *sdl, SDL_Window *w, const char *assets,
+                     Game *g, Audio *audio, FILE *log, const Options *o,
+                     const char **reason) {
   audio_open(audio);
   bool run = true;
   int scale = o->scale, frames = 0, fps = 60, fps_frames = 0;
@@ -220,8 +196,10 @@ bool run_loop(Renderer *r, SDL_Renderer *sdl, SDL_Window *w, const char *assets,
         } else if (g->state == GAME_NOTEBOOK && e.key.key == SDLK_Q)
           run = false;
         else if (g->state == GAME_NOTEBOOK && e.key.key == SDLK_R) {
-          if (!game_init(g, assets))
-            return false; /* die Spieldaten sind weg: das ist ein Fehlschlag */
+          if (!game_init(g, assets)) {
+            *reason = "Spieldaten konnten beim Neustart nicht geladen werden";
+            return false;
+          }
         } else {
           unsigned before = g->steps;
           bool answering =
@@ -267,7 +245,8 @@ bool run_loop(Renderer *r, SDL_Renderer *sdl, SDL_Window *w, const char *assets,
     if (o->smoke && ++frames == 10) {
       Capture c = {r, log, true};
       capture(g, "smoke", &c);
-      run = false;
+      if (!c.ok)
+        *reason = "Bildaufnahme fehlgeschlagen";
       return c.ok;
     } else
       SDL_RenderPresent(sdl);
@@ -295,12 +274,12 @@ int main(int argc, char **argv) {
   Renderer r = {0};
   Audio audio = {0};
   const char *base = NULL;
-  char assets[1024];
+  char assets[1024], verify_reason[96];
   Game g;
   if (o.log_path) {
     log = fopen(o.log_path, "w");
     if (!log) {
-      reason = "Protokoll kann nicht geschrieben werden";
+      reason = "Protokolldatei kann nicht geschrieben werden";
       goto cleanup;
     }
     fprintf(log, "# time_ms\tmap\tx,y\tevent\tdetails\n");
@@ -342,18 +321,12 @@ int main(int argc, char **argv) {
     goto cleanup;
   }
   if (o.verify) {
-    bool all_ok = false;
-    run_verify(&r, log, assets, &g, &all_ok);
-    result = all_ok ? 0 : 1;
-    reason = "Eine Abnahme ist fehlgeschlagen";
+    result = run_verify(&r, log, assets, &g, verify_reason, sizeof verify_reason) ? 0 : 1;
+    if (result)
+      reason = verify_reason;
     goto cleanup;
   }
-  if (!run_loop(&r, sdl, w, assets, &g, &audio, log, &o)) {
-    result = 1;
-    reason = "Der Durchlauf ist fehlgeschlagen";
-    goto cleanup;
-  }
-  result = 0;
+  result = run_loop(&r, sdl, w, assets, &g, &audio, log, &o, &reason) ? 0 : 1;
 cleanup:
   if (result)
     fprintf(stderr, "Die vergessenen Pfade fehlgeschlagen: %s\n", reason);
