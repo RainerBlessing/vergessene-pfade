@@ -1,0 +1,60 @@
+name: Analysis
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  sanitizers:
+    # Wie linux.yml: erst 26.04 hat libsdl3-dev in den Paketquellen.
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Quellcode laden
+        uses: actions/checkout@v7
+
+      - name: SDL3 aus den Paketquellen
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes libsdl3-dev
+
+      # ASan und UBSan: ein Speicherfehler oder undefiniertes Verhalten in
+      # den Tests bricht den Lauf ab (-fno-sanitize-recover).
+      - name: Mit Sanitizern bauen
+        run: |
+          cmake -S . -B build-asan -DCMAKE_BUILD_TYPE=Debug -DVP_SANITIZE=ON
+          cmake --build build-asan --parallel 3
+
+      # tests/lsan.supp nimmt ein Leck in libasound aus (siehe dort).
+      - name: Spiellogik testen
+        env:
+          LSAN_OPTIONS: suppressions=${{ github.workspace }}/tests/lsan.supp
+        run: ctest --test-dir build-asan --output-on-failure --no-tests=error
+
+  clang-tidy:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Quellcode laden
+        uses: actions/checkout@v7
+
+      - name: Werkzeuge bereitstellen
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes libsdl3-dev clang-tidy
+
+      - name: Konfigurieren
+        run: cmake -S . -B build-tidy -DCMAKE_BUILD_TYPE=Debug
+
+      # Die Auswahl der Checks steht in .clang-tidy. Nur der Desktop-Teil:
+      # der C64-Code braucht die llvm-mos-Header.
+      - name: clang-tidy
+        run: clang-tidy -p build-tidy --warnings-as-errors='*' src/*.c tests/*.c

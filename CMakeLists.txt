@@ -5,6 +5,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(VP_BUILD_GAME "Build the SDL3 frontend" ON)
+option(VP_SANITIZE "Build with AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
 option(VP_VENDORED_SDL "Build SDL3 from vendor/ instead of using the system package" OFF)
 set(VP_SDL_VENDOR_DIR ${CMAKE_SOURCE_DIR}/vendor/SDL3-3.2.28)
 
@@ -62,6 +63,12 @@ foreach(target game_core options test_options test_game test_journey test_audio 
     if(TARGET ${target})
         if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
             target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+            if(VP_SANITIZE)
+                target_compile_options(${target} PRIVATE
+                    -fsanitize=address,undefined -fno-sanitize-recover=undefined
+                    -fno-omit-frame-pointer)
+                target_link_options(${target} PRIVATE -fsanitize=address,undefined)
+            endif()
         elseif(MSVC)
             target_compile_options(${target} PRIVATE /W4)
         endif()

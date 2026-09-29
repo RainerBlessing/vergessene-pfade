@@ -254,8 +254,9 @@ static void notebook_panel(Renderer *r, const Game *g) {
   color(r, 2);
   if (g->note_count == 0)
     text(r, 16, 51, "Noch keine Notizen.");
-  for (int i = 0; i < NOTES_PER_PAGE && g->scroll + i < g->note_count; i++)
-    text(r, 16, 49 + i * 28, notes[g->notes[g->scroll + i]]);
+  int first = g->scroll < 0 ? 0 : g->scroll;
+  for (int i = 0; i < NOTES_PER_PAGE && first + i < g->note_count; i++)
+    text(r, 16, 49 + i * 28, notes[g->notes[first + i]]);
   color(r, 3);
   if (g->scroll > 0)
     formatted(r, 292, 31, "^");

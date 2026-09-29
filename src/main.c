@@ -230,7 +230,7 @@ static bool run_loop(Renderer *r, SDL_Renderer *sdl, SDL_Window *w, const char *
       }
     }
     if (frame_start - fps_time >= 1000) {
-      fps = (int)(fps_frames * 1000 / (frame_start - fps_time));
+      fps = (int)((Uint64)fps_frames * 1000 / (frame_start - fps_time));
       fps_frames = 0;
       fps_time = frame_start;
     }
