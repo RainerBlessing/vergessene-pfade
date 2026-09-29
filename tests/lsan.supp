@@ -1,0 +1,4 @@
+# SDL3s ALSA-Treiber zaehlt die Klangkarten beim Start mit
+# snd_device_name_hint auf; libasound gibt davon 159 Byte nie frei. Das
+# Leck liegt ausserhalb dieses Projekts, der Rest bleibt scharf.
+leak:snd_device_name_hint

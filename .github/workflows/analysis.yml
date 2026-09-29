@@ -32,7 +32,10 @@ jobs:
           cmake -S . -B build-asan -DCMAKE_BUILD_TYPE=Debug -DVP_SANITIZE=ON
           cmake --build build-asan --parallel 3
 
+      # tests/lsan.supp nimmt ein Leck in libasound aus (siehe dort).
       - name: Spiellogik testen
+        env:
+          LSAN_OPTIONS: suppressions=${{ github.workspace }}/tests/lsan.supp
         run: ctest --test-dir build-asan --output-on-failure --no-tests=error
 
   clang-tidy:
