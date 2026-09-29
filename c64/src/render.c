@@ -56,23 +56,22 @@ static void put_symbol(uint8_t x, uint8_t y, char symbol) {
 }
 /* Redrawing the map costs far more than the panel below it, so it happens only
  * when something up there can have changed. */
-/* The cache is the caller's to keep; a fresh one has the map stale, so the
- * first render draws it in full. Only cache_invalidate() may set stale, so a
- * new panel can no longer forget that line and leave a stale map. */
-void cache_invalidate(RenderCache *c) { c->stale = true; }
+/* The cache is the caller's to keep; ein genullter sagt "noch nichts
+ * gezeichnet" und laesst das erste render() die Karte voll zeichnen. Nur
+ * cache_invalidate() nimmt `drawn` zurueck, eine neue Tafel kann die Zeile
+ * also nicht mehr vergessen und einen Rest der Karte stehen lassen. */
+void cache_invalidate(RenderCache *c) { c->drawn = false; }
 static bool state_changed(const Game *g, const RenderCache *c) {
-  return c->stale || c->map != g->map || c->obs != g->obs || c->outcome != g->outcome ||
+  return !c->drawn || c->map != g->map || c->obs != g->obs || c->outcome != g->outcome ||
          c->stone_x != (uint8_t)g->stone_x || c->stone_y != (uint8_t)g->stone_y ||
          c->staked != g->staked;
 }
-static bool camera_unchanged(const Game *g, RenderCache *c) {
+/* Nur eine Frage, keine Antwort: der Ausschnitt wird dort fortgeschrieben, wo
+ * auch gezeichnet wird. */
+static bool camera_unchanged(const Game *g, const RenderCache *c) {
   int8_t cx, cy;
   game_camera(g, SCREEN_COLS, VIEW_H, &cx, &cy);
-  if (cx != c->cx || cy != c->cy)
-    return false;
-  c->cx = cx;
-  c->cy = cy;
-  return true;
+  return cx == c->cx && cy == c->cy;
 }
 /* Restores one cell to what game_tile() resolves -- Kachel, Grenzstein, Pfahl
  * oder Ueberschreibung, in derselben Reihenfolge wie die Regeln. (mx,my) ist
@@ -114,7 +113,7 @@ static bool npc_at_cell(const Game *g, uint8_t x, uint8_t y) {
 }
 static void map_view(const Game *g, RenderCache *c) {
   if (!state_changed(g, c) && c->x == (uint8_t)g->x && c->y == (uint8_t)g->y) {
-    c->stale = false;
+    c->drawn = true;
     return;
   }
   if (!state_changed(g, c) && camera_unchanged(g, c) && !npc_at_cell(g, c->x, c->y) &&
@@ -129,7 +128,7 @@ static void map_view(const Game *g, RenderCache *c) {
       screen_put(nvx, (uint8_t)(nvy + 1), 0 /* '@' */, COLOR_WHITE);
     c->x = (uint8_t)g->x;
     c->y = (uint8_t)g->y;
-    c->stale = false;
+    c->drawn = true;
     return;
   }
   int8_t cx, cy;
@@ -177,7 +176,7 @@ static void map_view(const Game *g, RenderCache *c) {
   c->staked = g->staked;
   c->cx = cx;
   c->cy = cy;
-  c->stale = false;
+  c->drawn = true;
 }
 
 /* Who is speaking: a person, a scene, or the thing being looked at. */

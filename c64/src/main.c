@@ -46,7 +46,7 @@ static Action action_for(uint8_t key) {
 
 int main(void) {
   static Game game;
-  static RenderCache cache = {.stale = true};
+  static RenderCache cache = {0};
   screen_init();
   game_init(&game);
   render(&game, &cache);

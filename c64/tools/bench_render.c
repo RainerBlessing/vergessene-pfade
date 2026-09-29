@@ -54,7 +54,7 @@ static uint32_t timer_read(void) {
 
 int main(void) {
   static Game game;
-  static RenderCache cache = { .stale = true };
+  static RenderCache cache = {0};
   screen_init();
   game_init(&game);
   /* Titel und Ankunftsszene wegbestaetigen, bis die Karte steht. */

@@ -43,7 +43,7 @@ static void start(Game *g) {
 /* A dialogue page has to appear line by line, whole. */
 static void dialogue_pages_are_complete(void) {
   Game g;
-  RenderCache c = {.stale = true};
+  RenderCache c = {0};
   start(&g);
   g.map = MAP_VILLAGE;
   g.x = 5;
@@ -68,7 +68,7 @@ static void dialogue_pages_are_complete(void) {
 /* N opens the notebook from the map, and from an open text in two presses. */
 static void notebook_opens(void) {
   Game g;
-  RenderCache c = {.stale = true};
+  RenderCache c = {0};
   start(&g);
   game_action(&g, ACT_CANCEL);
   assert(g.state == GAME_NOTEBOOK);
@@ -85,7 +85,7 @@ static void notebook_opens(void) {
 
 static void notebook_shows_what_was_written(void) {
   Game g;
-  RenderCache c = {.stale = true};
+  RenderCache c = {0};
   start(&g);
   g.map = MAP_FOREST; /* the wounded fox, seen from below its den */
   g.x = 5;
@@ -104,7 +104,7 @@ static void notebook_shows_what_was_written(void) {
 /* The repair view: the gap names what is missing, the pieces lie beside it. */
 static void mend_view_shows_gap_and_pieces(void) {
   Game g;
-  RenderCache c = {.stale = true};
+  RenderCache c = {0};
   start(&g);
   g.state = GAME_MEND;
   g.map = MAP_VILLAGE;
@@ -128,7 +128,7 @@ static void mend_view_shows_gap_and_pieces(void) {
 /* In der Begegnung steht neben dem Text auch, was die Runde gebracht hat. */
 static void encounter_shows_the_round(void) {
   Game g;
-  RenderCache c = {.stale = true};
+  RenderCache c = {0};
   start(&g);
   g.map = MAP_FOREST;
   g.x = 25;
@@ -161,7 +161,7 @@ static void encounter_shows_the_round(void) {
  * die auf dem Bild liegen (bis Spalte 39). Volles Feld ist 160. */
 #define BAR_FROM 31
 static uint8_t bar_filled(const Game *g) {
-  RenderCache cache = {.stale = true};
+  RenderCache cache = {0};
   render(g, &cache);
   uint8_t n = 0;
   for (uint8_t x = BAR_FROM; x < SCREEN_COLS; x++)
@@ -214,7 +214,7 @@ static void drawn_map_matches_the_rules(const Game *g) {
 
 static void the_shelf_shows_the_dried_bowl(void) {
   Game g;
-  RenderCache c = {.stale = true};
+  RenderCache c = {0};
   start(&g);
   g.map = MAP_VILLAGE;
   g.x = 24;
@@ -232,7 +232,7 @@ static void the_shelf_shows_the_dried_bowl(void) {
 /* Die offene Tasche hebt sich ab und laesst sich mit einem Schritt verlassen. */
 static void the_open_bag_is_marked(void) {
   Game g;
-  RenderCache c = {.stale = true};
+  RenderCache c = {0};
   start(&g);
   g.bag[ITEM_HERB] = 1;
   game_action(&g, ACT_INVENTORY);
@@ -250,7 +250,7 @@ static void the_house_mark_stands_out(void) {
   assert(wall && mark);
   assert(mark->screen != wall->screen || mark->color != wall->color);
   Game g;
-  RenderCache c = {.stale = true};
+  RenderCache c = {0};
   start(&g);
   g.map = MAP_VILLAGE;
   g.x = 4;
@@ -266,7 +266,7 @@ static void the_house_mark_stands_out(void) {
 /* Die Schlusstafel nennt den Ausgang und sagt, dass hier Schluss ist (#22). */
 static void the_closing_panel_names_the_ending(void) {
   Game g;
-  RenderCache c = {.stale = true};
+  RenderCache c = {0};
   start(&g);
   g.state = GAME_END;
   g.outcome = OUT_MEND;
@@ -277,10 +277,41 @@ static void the_closing_panel_names_the_ending(void) {
   expect_row(24, "RETURN: weiterlaufen");
 }
 
+/* Ein genullter Cache heisst "noch nichts gezeichnet": das erste Bild muss die
+ * Karte voll zeichnen, ohne dass jemand ein Feld von Hand setzen musste. Sonst
+ * bliebe der Kartenteil leer, wo der Nullwert zufaellig zum Spielstand passt. */
+static void a_zeroed_cache_draws_the_whole_map(void) {
+  Game g;
+  start(&g);
+  /* Der Spielstand deckt sich in jedem Feld mit dem Nullwert des Caches --
+   * kuenstlich, aber genau das ist der Fall, in dem nur noch `drawn` den
+   * Vollaufbau ausloest. Ohne die Wache bliebe der Kartenteil leer. */
+  g.map = MAP_VILLAGE;
+  g.x = 0;
+  g.y = 0;
+  g.obs = 0;
+  g.outcome = OUT_NONE;
+  g.staked = 0;
+  g.stone_x = 0;
+  g.stone_y = 0;
+  screen_clear();
+  RenderCache c = {0};
+  render(&g, &c);
+  drawn_map_matches_the_rules(&g);
+  /* Und wirklich gezeichnet, nicht nur "nicht falsch": der Kartenteil ist
+   * nicht durchgehend leer. */
+  uint16_t leer = 0;
+  for (uint16_t i = SCREEN_COLS; i < 18 * SCREEN_COLS; i++)
+    if (test_screen[i] == 32)
+      leer++;
+  assert(leer < 17 * SCREEN_COLS);
+  assert(c.drawn);
+}
+
 /* Player-only move (camera static): old cell restored, new cell drawn. */
 static void player_move_camera_static(void) {
   Game g;
-  RenderCache c = {.stale = true};
+  RenderCache c = {0};
   start(&g);
   g.map = MAP_VILLAGE;
   g.x = 12;
@@ -325,7 +356,7 @@ static void player_move_camera_static(void) {
  * Kartenzeile faellt damit auf. */
 static void player_move_restores_the_right_tile(void) {
   Game g;
-  RenderCache c = {.stale = true};
+  RenderCache c = {0};
   start(&g);
   g.map = MAP_VILLAGE;
   g.x = 12;
@@ -346,7 +377,7 @@ static void player_move_restores_the_right_tile(void) {
 /* Player move that changes the camera: full redraw. */
 static void player_move_camera_moves(void) {
   Game g;
-  RenderCache c = {.stale = true};
+  RenderCache c = {0};
   start(&g);
   g.map = MAP_FOREST;
   g.x = 24;
@@ -371,7 +402,7 @@ static void player_move_camera_moves(void) {
 /* NPC on the new player cell: full redraw (npc_at_cell guard). */
 static void npc_on_cell_forces_full_redraw(void) {
   Game g;
-  RenderCache c = {.stale = true};
+  RenderCache c = {0};
   start(&g);
   g.map = MAP_FOREST;
   g.x = 5;
@@ -397,7 +428,7 @@ static void npc_on_cell_forces_full_redraw(void) {
 
 static void the_map_is_drawn(void) {
   Game g;
-  RenderCache c = {.stale = true};
+  RenderCache c = {0};
   start(&g);
   render(&g, &c);
   char seen[SCREEN_COLS + 1];
@@ -417,6 +448,7 @@ int main(void) {
   the_health_bar_keeps_its_steps();
   the_shelf_shows_the_dried_bowl();
   the_open_bag_is_marked();
+  a_zeroed_cache_draws_the_whole_map();
   player_move_camera_static();
   player_move_restores_the_right_tile();
   player_move_camera_moves();
