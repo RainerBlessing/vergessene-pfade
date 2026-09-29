@@ -85,6 +85,10 @@ uint8_t game_owned_items(const Game *g, uint8_t *out) {
   return n;
 }
 
+static void cue(Game *g, SfxId id) {
+  if (id > g->sfx)
+    g->sfx = (uint8_t)id;
+}
 static void learn(Game *g, Obs grants, uint8_t note) {
   g->obs |= grants;
   if (note == NOTE_NONE)
@@ -95,6 +99,7 @@ static void learn(Game *g, Obs grants, uint8_t note) {
   if (g->note_count < NOTE_LIMIT) {
     g->notes[g->note_count++] = note;
     g->note_ticks = NOTE_TICKS; /* only a new entry announces itself */
+    cue(g, SFX_WRITE);
   }
 }
 /* Keeps g->message: a scene page left empty shows it (the closing round). */
@@ -358,6 +363,8 @@ static void inventory_action(Game *g, Action a) {
   uint8_t item = owned[g->selection];
   const ExaminePoint *p = point_for_item(g, item);
   if (p) {
+    if (item == ITEM_HERB && p->dialogue != D_NONE)
+      cue(g, SFX_FOX);
     use_point(g, p, p->symbol);
     return;
   }
@@ -395,8 +402,10 @@ static void mend_action(Game *g, Action a) {
   if (g->selection >= count)
     g->selection = 0;
   bool fits = pieces[g->selection] == g->mend_placed;
-  if (fits)
+  if (fits) {
     g->mend_placed++;
+    cue(g, SFX_CERAMIC);
+  }
   g->selection = 0;
   if (!fits) { /* a piece that does not fit costs nothing */
     msg_clear(g);
@@ -424,6 +433,7 @@ static bool stake_here(Game *g) {
         (g->staked & (1u << i)))
       continue;
     g->staked |= (uint8_t)(1u << i);
+    cue(g, SFX_STAKE);
     uint8_t count = 0;
     for (uint8_t k = 0; k < STAKE_COUNT; k++)
       count = (uint8_t)(count + ((g->staked >> k) & 1u));
@@ -507,6 +517,7 @@ static void fight_round(Game *g, bool herb) {
   } else {
     hit = damage(PLAYER_ATTACK, KAMI_DEFENSE, roll(g));
     g->kami_hp -= hit;
+    cue(g, SFX_HIT);
   }
   if (g->kami_hp <= 0) {
     g->kami_hp = 0;
@@ -516,6 +527,7 @@ static void fight_round(Game *g, bool herb) {
     msg_num(g, hit);
     msg_add(g, " Schaden.\nDer Kami sinkt in sich zusammen.");
     learn(g, 0, N_FOUGHT);
+    cue(g, SFX_BREAK);
     g->outcome = OUT_FIGHT;
     open_scene(g, "Am Rand des Hains", D_ENC_VICTORY);
     return;
@@ -546,6 +558,7 @@ static void fight_round(Game *g, bool herb) {
 static void begin_encounter(Game *g) {
   g->state = GAME_ENCOUNTER;
   g->selection = 0;
+  cue(g, SFX_CREAK);
   learn(g, OBS(OBS_KAMI_SEEN), N_KAMI);
   g->dialogue = D_ENC_APPEAR;
   g->page = 0;
@@ -617,6 +630,7 @@ static bool push_stone(Game *g, int8_t dx, int8_t dy) {
   g->stone_x = tx;
   g->stone_y = ty;
   bool settled = tx == STONE_HOLLOW_X && ty == STONE_HOLLOW_Y;
+  cue(g, settled ? SFX_SETTLE : SFX_SCRAPE);
   if (settled)
     g->obs &= ~OBS(OBS_STONE_MOVED);
   else
@@ -680,7 +694,8 @@ static void move(Game *g, int8_t dx, int8_t dy) {
   int8_t from_x = g->x, from_y = g->y;
   g->x += dx;
   g->y += dy;
-  if (g->daigo_follows) { /* he walks in your footsteps */
+  cue(g, (g->x + g->y) & 1 ? SFX_STEP_A : SFX_STEP_B); /* every step flips it */
+  if (g->daigo_follows) {                              /* he walks in your footsteps */
     g->daigo_x = from_x;
     g->daigo_y = from_y;
   }
@@ -704,6 +719,9 @@ static void move(Game *g, int8_t dx, int8_t dy) {
 }
 
 void game_action(Game *g, Action a) {
+  g->sfx = SFX_NONE;
+  if (g->state != GAME_EXPLORATION && (a == ACT_CONFIRM || a == ACT_CANCEL))
+    cue(g, SFX_CLICK);
   if (g->place_ticks)
     g->place_ticks--;
   if (g->note_ticks)

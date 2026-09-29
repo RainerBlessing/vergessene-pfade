@@ -6,7 +6,7 @@ llvm-mos. Aufbau, Toolchain und VICE-Start sind von
 
 **Umfang:** Erkundung von Dorf und Wald, die Begegnung am Hainrand und **alle
 drei Ausgänge**: „bekämpfen“, „alte Grenze wiederherstellen“ und „Kintsugi und
-Kompromiss“. Nicht enthalten: Nacht im Gasthaus, Morgen-Phase, Klang. Stand und
+Kompromiss“. Nicht enthalten: Nacht im Gasthaus, Morgen-Phase. Klang: kurze SID-Effekte, ohne eigenen Interrupt in der Hauptschleife (`src/sound.c`). Stand und
 Stufen:
 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
 

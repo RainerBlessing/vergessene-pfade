@@ -1,7 +1,7 @@
 LLVM_MOS_BIN := $(HOME)/.local/share/llvm-mos-sdk/bin
 LLVM_MOS_CLANG := $(LLVM_MOS_BIN)/clang
 PRG := build/vergessene-pfade.prg
-SOURCES := src/main.c src/render.c src/screen.c src/game.c src/content.c src/world.c
+SOURCES := src/main.c src/render.c src/screen.c src/sound.c src/game.c src/content.c src/world.c
 CORE := src/game.c src/content.c src/world.c
 VIEW := src/render.c src/screen.c
 HOST_CC := cc -std=c11 -Wall -Wextra -Werror
