@@ -339,6 +339,15 @@ def rule_arrays(table, side):
     return RULE_ARRAYS.get(table, {}).get(side, (table,))
 
 
+def _defines_array(source, name):
+    """Steht das Array hier wirklich, oder wird es nur benutzt?
+
+    `sizeof places / sizeof places[0]` erwaehnt places, definiert es aber
+    nicht -- wer darauf hereinfaellt, laesst _extract_array() auflaufen."""
+    return re.search(r"\b" + re.escape(name) + r"\s*\[[^\]]*\]\s*=\s*\{",
+                     source) is not None
+
+
 def parse_rule_table(source, header, table, side="pc"):
     """Liste von (Schluessel, Feld -> Text) fuer eine Regeltabelle.
 
@@ -348,7 +357,7 @@ def parse_rule_table(source, header, table, side="pc"):
     macros = _macro_defs(source)
     groups = []
     for name in rule_arrays(table, side):
-        if not re.search(r"\b" + re.escape(name) + r"\s*\[", source):
+        if not _defines_array(source, name):
             continue
         body = expand_macros(_extract_array(source, name), macros)
         groups.extend(g for _, g in _brace_groups(_strip_comments(body)))
@@ -406,9 +415,8 @@ def parse_texts(pc_content_text, pc_items_text, c64_content_text,
         data[side]["rules"] = {}
         data[side]["values"] = enum_values(header) if header else {}
         for table in RULE_TABLES:
-            if not header or not any(
-                    re.search(r"\b" + re.escape(name) + r"\s*\[", source)
-                    for name in rule_arrays(table, side)):
+            if not header or not any(_defines_array(source, name)
+                                     for name in rule_arrays(table, side)):
                 continue
             data[side]["rules"][table] = parse_rule_table(
                 source, header, table, side)
@@ -534,6 +542,7 @@ def _compare_rules(data, allowlist, summary):
     ausgelassenes Feld ist null und gleicht jedem Namen, der null bedeutet."""
     findings = []
     for table in RULE_TABLES:
+        summary.setdefault(table, 0)  # der Bericht nennt jede Tabelle
         pc_rules = data["pc"].get("rules", {})
         c64_rules = data["c64"].get("rules", {})
         if table not in pc_rules and table not in c64_rules:

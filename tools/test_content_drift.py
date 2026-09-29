@@ -5,6 +5,7 @@ oder:          python3 tools/test_content_drift.py
 """
 import json
 import os
+import re
 import sys
 import unittest
 
@@ -13,6 +14,7 @@ import unittest
 # verzeichnis im Suchpfad stehen.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import tools.content_drift as cd  # noqa: E402
 from tools.content_drift import load_data, compare, vergleiche  # noqa: E402
 
 
@@ -337,6 +339,32 @@ class TestRegelTabellen(unittest.TestCase):
                         {}, PC_HEADER, C64_HEADER)
         self.assertEqual([(b[0], b[1], b[3]) for b in bf],
                          [("OhneRegel", "D_ZWEI", "C64")])
+
+    def test_fehlende_tabelle_bricht_nicht_ab(self):
+        """20. Fehlt eine Regeltabelle in beiden Fassungen, muss der Bericht
+        das sagen koennen statt mit einem Traceback zu enden."""
+        repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        weg = re.compile(r"const Place places\[\][^;]*;", re.S)
+        def ohne_orte(pfad):
+            with open(os.path.join(repo, *pfad), encoding="utf-8") as f:
+                return weg.sub("", f.read())
+        h_pc = "\n".join(open(f, encoding="utf-8").read() for f in cd.PC_HEADERS)
+        h_c64 = "\n".join(open(f, encoding="utf-8").read() for f in cd.C64_HEADERS)
+        with open(os.path.join(repo, "src", "inventory.c"), encoding="utf-8") as f:
+            items = f.read()
+        data = cd.parse_texts(ohne_orte(("src", "content.c")), items,
+                              ohne_orte(("c64", "src", "content.c")), h_pc, h_c64)
+        befunde, zusammenfassung = cd.compare(data, cd.load_allowlist())
+        self.assertEqual(zusammenfassung["places"], 0)
+        self.assertEqual(cd._print_results(befunde, zusammenfassung), 0)
+
+    def test_erwaehnung_ist_keine_definition(self):
+        """21. `sizeof places[0]` erwaehnt die Tabelle, definiert sie nicht."""
+        self.assertFalse(cd._defines_array(
+            "const int place_count = (int)(sizeof places / sizeof places[0]);",
+            "places"))
+        self.assertTrue(cd._defines_array(
+            "const Place places[] = {{0, 0, 0, 1, 1, \"X\", 0}};", "places"))
 
     def test_echte_regeln_kein_befund(self):
         """19. Die echten Dateien des Repos, mit der Erlaubnisliste."""
