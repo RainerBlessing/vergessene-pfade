@@ -9,7 +9,9 @@ typedef struct {
   bool passable, transition;
   const char *name;
   bool guarded; /* stepping on it provokes the forest spirit */
+  int art;      /* index of the tile's sprite in assets/tiles/atlas.bmp */
 } TileDef;
+#define ATLAS_TILES 57
 typedef struct {
   uint8_t width, height;
   char cells[MAP_LIMIT * MAP_LIMIT];

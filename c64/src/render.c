@@ -56,24 +56,22 @@ static void put_symbol(uint8_t x, uint8_t y, char symbol) {
 }
 /* Redrawing the map costs far more than the panel below it, so it happens only
  * when something up there can have changed. */
-static bool map_stale = true; /* something was drawn over the map area */
-static uint8_t prev_map = 0xff, prev_x, prev_y, prev_outcome, prev_stone_x, prev_stone_y,
-               prev_staked;
-static Obs prev_obs;
-static int8_t prev_cx, prev_cy;
-static bool state_changed(const Game *g) {
-  return map_stale || prev_map != g->map || prev_obs != g->obs ||
-         prev_outcome != g->outcome || prev_stone_x != (uint8_t)g->stone_x ||
-         prev_stone_y != (uint8_t)g->stone_y || prev_staked != g->staked;
+/* The cache is the caller's to keep; ein genullter sagt "noch nichts
+ * gezeichnet" und laesst das erste render() die Karte voll zeichnen. Nur
+ * cache_invalidate() nimmt `drawn` zurueck, eine neue Tafel kann die Zeile
+ * also nicht mehr vergessen und einen Rest der Karte stehen lassen. */
+void cache_invalidate(RenderCache *c) { c->drawn = false; }
+static bool state_changed(const Game *g, const RenderCache *c) {
+  return !c->drawn || c->map != g->map || c->obs != g->obs || c->outcome != g->outcome ||
+         c->stone_x != (uint8_t)g->stone_x || c->stone_y != (uint8_t)g->stone_y ||
+         c->staked != g->staked;
 }
-static bool camera_unchanged(const Game *g) {
+/* Nur eine Frage, keine Antwort: der Ausschnitt wird dort fortgeschrieben, wo
+ * auch gezeichnet wird. */
+static bool camera_unchanged(const Game *g, const RenderCache *c) {
   int8_t cx, cy;
   game_camera(g, SCREEN_COLS, VIEW_H, &cx, &cy);
-  if (cx != prev_cx || cy != prev_cy)
-    return false;
-  prev_cx = cx;
-  prev_cy = cy;
-  return true;
+  return cx == c->cx && cy == c->cy;
 }
 /* Restores one cell to what game_tile() resolves -- Kachel, Grenzstein, Pfahl
  * oder Ueberschreibung, in derselben Reihenfolge wie die Regeln. (mx,my) ist
@@ -113,26 +111,24 @@ static bool npc_at_cell(const Game *g, uint8_t x, uint8_t y) {
   }
   return false;
 }
-static void map_view(const Game *g) {
-  if (!state_changed(g) && prev_x == (uint8_t)g->x && prev_y == (uint8_t)g->y) {
-    prev_x = (uint8_t)g->x;
-    prev_y = (uint8_t)g->y;
-    map_stale = false;
+static void map_view(const Game *g, RenderCache *c) {
+  if (!state_changed(g, c) && c->x == (uint8_t)g->x && c->y == (uint8_t)g->y) {
+    c->drawn = true;
     return;
   }
-  if (!state_changed(g) && camera_unchanged(g) && !npc_at_cell(g, prev_x, prev_y) &&
+  if (!state_changed(g, c) && camera_unchanged(g, c) && !npc_at_cell(g, c->x, c->y) &&
       !npc_at_cell(g, (uint8_t)g->x, (uint8_t)g->y)) {
     /* Only the player moved: restore the old cell, draw the new one. */
-    uint8_t ovx = (uint8_t)(prev_x - prev_cx), ovy = (uint8_t)(prev_y - prev_cy);
+    uint8_t ovx = (uint8_t)(c->x - c->cx), ovy = (uint8_t)(c->y - c->cy);
     if (ovx < SCREEN_COLS && ovy < VIEW_H)
-      cell_restore(g, prev_x, prev_y, ovx, ovy);
-    uint8_t nvx = (uint8_t)((uint8_t)g->x - prev_cx),
-            nvy = (uint8_t)((uint8_t)g->y - prev_cy);
+      cell_restore(g, c->x, c->y, ovx, ovy);
+    uint8_t nvx = (uint8_t)((uint8_t)g->x - c->cx),
+            nvy = (uint8_t)((uint8_t)g->y - c->cy);
     if (nvx < SCREEN_COLS && nvy < VIEW_H)
       screen_put(nvx, (uint8_t)(nvy + 1), 0 /* '@' */, COLOR_WHITE);
-    prev_x = (uint8_t)g->x;
-    prev_y = (uint8_t)g->y;
-    map_stale = false;
+    c->x = (uint8_t)g->x;
+    c->y = (uint8_t)g->y;
+    c->drawn = true;
     return;
   }
   int8_t cx, cy;
@@ -170,17 +166,17 @@ static void map_view(const Game *g) {
       overlay(cx, cy, (uint8_t)nx, (uint8_t)ny, (uint8_t)npcs[i].glyph, COLOR_CYAN);
   }
   overlay(cx, cy, (uint8_t)g->x, (uint8_t)g->y, 0 /* '@' */, COLOR_WHITE);
-  prev_map = g->map;
-  prev_x = (uint8_t)g->x;
-  prev_y = (uint8_t)g->y;
-  prev_obs = g->obs;
-  prev_outcome = g->outcome;
-  prev_stone_x = (uint8_t)g->stone_x;
-  prev_stone_y = (uint8_t)g->stone_y;
-  prev_staked = g->staked;
-  prev_cx = cx;
-  prev_cy = cy;
-  map_stale = false;
+  c->map = g->map;
+  c->x = (uint8_t)g->x;
+  c->y = (uint8_t)g->y;
+  c->obs = g->obs;
+  c->outcome = g->outcome;
+  c->stone_x = (uint8_t)g->stone_x;
+  c->stone_y = (uint8_t)g->stone_y;
+  c->staked = g->staked;
+  c->cx = cx;
+  c->cy = cy;
+  c->drawn = true;
 }
 
 /* Who is speaking: a person, a scene, or the thing being looked at. */
@@ -229,8 +225,8 @@ static void inventory_panel(const Game *g, uint8_t top) {
   hint("RETURN benutzen   I schliessen");
 }
 
-static void encounter_panel(const Game *g) {
-  map_stale = true; /* the panel covers the lower rows of the map */
+static void encounter_panel(const Game *g, RenderCache *c) {
+  cache_invalidate(c); /* the panel covers the lower rows of the map */
   uint8_t options[ENCOUNTER_OPTION_LIMIT];
   uint8_t count = game_encounter_options(g, options), y = ENCOUNTER_TOP + 1;
   separator(ENCOUNTER_TOP);
@@ -264,10 +260,10 @@ static void encounter_panel(const Game *g) {
 
 /* The repair: the gap says what is missing, the pieces lie beside the bowl.
  * Nothing counts anything down -- the gaps do that by being there. */
-static void mend_panel(const Game *g) {
+static void mend_panel(const Game *g, RenderCache *c) {
   uint8_t pieces[MEND_PIECES];
   uint8_t count = game_mend_pieces(g, pieces), y = MEND_TOP + 1;
-  map_stale = true; /* the panel covers the lower rows of the map */
+  cache_invalidate(c); /* the panel covers the lower rows of the map */
   separator(MEND_TOP);
   screen_row(y, COLOR_YELLOW);
   screen_text(0, y++, "Die Schale", COLOR_YELLOW);
@@ -286,8 +282,8 @@ static void mend_panel(const Game *g) {
   hint("W/S waehlen   RETURN setzen");
 }
 
-static void notebook(const Game *g) {
-  map_stale = true;
+static void notebook(const Game *g, RenderCache *c) {
+  cache_invalidate(c);
   screen_clear();
   screen_text(0, 0, "NOTIZBUCH", COLOR_YELLOW);
   separator(1);
@@ -305,8 +301,8 @@ static void notebook(const Game *g) {
 }
 
 /* Die Schlusstafel: was entschieden wurde, und was der Ausschnitt offen laesst. */
-static void closing(const Game *g) {
-  map_stale = true;
+static void closing(const Game *g, RenderCache *c) {
+  cache_invalidate(c);
   screen_clear();
   screen_text(3, 2, closing_page[0], COLOR_YELLOW);
   screen_text(3, 4, closing_line[g->outcome], COLOR_LIGHTGREEN);
@@ -315,34 +311,34 @@ static void closing(const Game *g) {
   hint(closing_page[CLOSING_LINES - 1]); /* wie ueberall unten am Rand */
 }
 
-static void title(void) {
-  map_stale = true;
+static void title(RenderCache *c) {
+  cache_invalidate(c);
   screen_clear();
   for (uint8_t i = 0; i < TITLE_LINES; i++)
     screen_text(3, (uint8_t)(3 + i), title_page[i], i < 2 ? COLOR_YELLOW : COLOR_WHITE);
 }
 
-void render(const Game *g) {
+void render(const Game *g, RenderCache *cache) {
   if (g->state == GAME_TITLE) {
-    title();
+    title(cache);
     return;
   }
   if (g->state == GAME_NOTEBOOK) {
-    notebook(g);
+    notebook(g, cache);
     return;
   }
   if (g->state == GAME_END) {
-    closing(g);
+    closing(g, cache);
     return;
   }
   status_line(g);
-  map_view(g);
+  map_view(g, cache);
   if (g->state == GAME_ENCOUNTER) {
-    encounter_panel(g);
+    encounter_panel(g, cache);
     return;
   }
   if (g->state == GAME_MEND) {
-    mend_panel(g);
+    mend_panel(g, cache);
     return;
   }
   separator(PANEL_TOP);

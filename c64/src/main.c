@@ -46,9 +46,10 @@ static Action action_for(uint8_t key) {
 
 int main(void) {
   static Game game;
+  static RenderCache cache = {0};
   screen_init();
   game_init(&game);
-  render(&game);
+  render(&game, &cache);
   for (;;) {
     uint8_t key = cbm_k_getin();
     if (!key)
@@ -57,6 +58,6 @@ int main(void) {
     if (a == ACT_NONE)
       continue;
     game_action(&game, a);
-    render(&game);
+    render(&game, &cache);
   }
 }

@@ -54,12 +54,13 @@ static uint32_t timer_read(void) {
 
 int main(void) {
   static Game game;
+  static RenderCache cache = {0};
   screen_init();
   game_init(&game);
   /* Titel und Ankunftsszene wegbestaetigen, bis die Karte steht. */
   for (uint8_t guard = 20; guard && game.state != GAME_EXPLORATION; guard--)
     game_action(&game, ACT_CONFIRM);
-  render(&game); /* einmal warmlaufen, damit nur noch gezeichnet wird */
+  render(&game, &cache); /* einmal warmlaufen, damit nur noch gezeichnet wird */
 
   CIA1_ICR = 0x7f; /* Kernal-Interrupt aus */
   /* Dorf: 32 breit < 40 Viewport, die Kamera steht immer bei (0,2).
@@ -73,7 +74,7 @@ int main(void) {
   timer_start();
   for (uint8_t i = 0; i < ROUNDS; i++) {
     game.x ^= 1; /* 12 <-> 13: Kamera bleibt, nur der Spieler wandert */
-    render(&game);
+    render(&game, &cache);
   }
   uint32_t total = timer_read();
   CIA1_ICR = 0x81; /* Kernal-Interrupt wieder an */

@@ -5,6 +5,11 @@
 #include <SDL3/SDL_main.h>
 #include <stdio.h>
 #include <string.h>
+typedef struct {
+  bool smoke, verify, fullscreen;
+  int scale;
+  const char *log_path;
+} Options;
 static Action key(SDL_Keycode k) {
   switch (k) {
   case SDLK_UP:
@@ -108,6 +113,43 @@ static void drain_events(Game *g, FILE *log, Uint64 ms, Audio *audio) {
   }
   fflush(log);
 }
+/* The picture is 320x200; the window is a whole multiple of it, so pixels stay
+ * square. Two is the smallest that is still comfortable to read. */
+#define SCALE_MIN 2
+#define SCALE_MAX 5
+/* The command line stands alone, so it can be checked before anything runs. */
+bool parse_args(int argc, char **argv, Options *o, const char **error) {
+  o->smoke = o->verify = o->fullscreen = false;
+  o->scale = 4;
+  o->log_path = NULL;
+  for (int i = 1; i < argc; i++) {
+    if (strcmp(argv[i], "--smoke") == 0)
+      o->smoke = true;
+    else if (strcmp(argv[i], "--verify") == 0)
+      o->verify = true;
+    else if (strcmp(argv[i], "--log") == 0 && i + 1 < argc)
+      o->log_path = argv[++i];
+    else if (strcmp(argv[i], "--fullscreen") == 0)
+      o->fullscreen = true;
+    else if (strcmp(argv[i], "--scale") == 0 && i + 1 < argc) {
+      o->scale = SDL_atoi(argv[++i]);
+      if (o->scale < SCALE_MIN || o->scale > SCALE_MAX) {
+        *error = "Skalierung muss zwischen "
+                 "2 und 5 liegen";
+        return false;
+      }
+    } else {
+      *error = "Unbekanntes Argument";
+      return false;
+    }
+  }
+  return true;
+}
+static int usage(void) {
+  fprintf(stderr, "Aufruf: vergessene_pfade [--smoke | --verify] [--log DATEI]"
+                  " [--scale 2..5] [--fullscreen]\n");
+  return 2;
+}
 typedef struct {
   Renderer *renderer;
   FILE *log;
@@ -128,109 +170,35 @@ static void capture(Game *g, const char *label, void *context) {
   SDL_RenderPresent(c->renderer->sdl);
   SDL_PumpEvents();
 }
-/* One confirmation sounds once: the specific sounds come from the events. */
-static void act(Game *g, Action a, FILE *log, Audio *audio) {
-  bool answering = g->state != GAME_EXPLORATION && (a == ACT_CONFIRM || a == ACT_CANCEL);
-  game_action(g, a);
-  if (audio && answering)
-    audio_play(audio, SFX_CLICK);
-  drain_events(g, log, SDL_GetTicks(), audio);
-}
-/* The picture is 320x200; the window is a whole multiple of it, so pixels stay
- * square. Two is the smallest that is still comfortable to read. */
-#define SCALE_MIN 2
-#define SCALE_MAX 5
-static int usage(void) {
-  fprintf(stderr, "Aufruf: vergessene_pfade [--smoke | --verify] [--log DATEI]"
-                  " [--scale 2..5] [--fullscreen]\n");
-  return 2;
-}
-int main(int argc, char **argv) {
-  bool smoke = false, verify = false, fullscreen = false;
-  int scale = 4;
-  const char *log_path = NULL;
-  for (int i = 1; i < argc; i++) {
-    if (strcmp(argv[i], "--smoke") == 0)
-      smoke = true;
-    else if (strcmp(argv[i], "--verify") == 0)
-      verify = true;
-    else if (strcmp(argv[i], "--log") == 0 && i + 1 < argc)
-      log_path = argv[++i];
-    else if (strcmp(argv[i], "--fullscreen") == 0)
-      fullscreen = true;
-    else if (strcmp(argv[i], "--scale") == 0 && i + 1 < argc) {
-      scale = SDL_atoi(argv[++i]);
-      if (scale < SCALE_MIN || scale > SCALE_MAX)
-        return usage();
-    } else
-      return usage();
-  }
-  FILE *log = NULL;
-  if (log_path) {
-    log = fopen(log_path, "w");
-    if (!log) {
-      fprintf(stderr, "Protokoll %s kann nicht geschrieben werden.\n", log_path);
-      return 1;
-    }
-    fprintf(log, "# time_ms\tmap\tx,y\tevent\tdetails\n");
-  }
-  if (!SDL_Init(SDL_INIT_VIDEO)) {
-    fprintf(stderr, "%s\n", SDL_GetError());
+/* One run per journey; each starts from a fresh game. */
+bool run_verify(Renderer *r, FILE *log, const char *assets, Game *g, bool *all_ok) {
+  Capture c = {r, log, true};
+  static const struct {
+    const char *name;
+    bool (*run)(Game *, JourneyObserver, void *);
+  } runs[] = {{"exploration", journey},
+              {"fight", journey_fight},
+              {"boundary", journey_boundary},
+              {"mend", journey_mend}};
+  bool ok = true;
+  for (size_t i = 0; ok && i < sizeof runs / sizeof runs[0]; i++) {
     if (log)
-      fclose(log);
-    return 1;
+      fprintf(log, "# run\t%s\n", runs[i].name);
+    ok = game_init(g, assets) && runs[i].run(g, capture, &c);
+    drain_events(g, log, SDL_GetTicks(), NULL); /* before game_init clears them */
   }
-  SDL_Window *w = NULL;
-  SDL_Renderer *sdl = NULL;
-  Renderer r = {0};
-  Audio audio = {0};
-  int result = 1;
-  if (!SDL_CreateWindowAndRenderer("Die vergessenen Pfade | POC Walddorf", 320 * scale,
-                                   200 * scale, SDL_WINDOW_RESIZABLE, &w, &sdl))
-    goto cleanup;
-  if (fullscreen)
-    SDL_SetWindowFullscreen(w, true);
-  SDL_SetWindowMinimumSize(w, 320, 200);
-  if (!SDL_SetRenderLogicalPresentation(sdl, 320, 200,
-                                        SDL_LOGICAL_PRESENTATION_INTEGER_SCALE))
-    goto cleanup;
-  const char *base = SDL_GetBasePath();
-  char assets[1024];
-  Game g;
-  if (!base || snprintf(assets, sizeof assets, "%sassets", base) >= (int)sizeof assets ||
-      !game_init(&g, assets) || !renderer_init(&r, sdl, assets)) {
-    SDL_ShowSimpleMessageBox(
-        SDL_MESSAGEBOX_ERROR, "Die vergessenen Pfade",
-        "Spieldaten fehlen. Der Ordner assets muss neben dem Programm liegen. Bitte das "
-        "Spiel vollstaendig entpacken.",
-        w);
-    goto cleanup;
-  }
-  if (verify) {
-    Capture c = {&r, log, true};
-    /* One run per journey; each starts from a fresh game. */
-    static const struct {
-      const char *name;
-      bool (*run)(Game *, JourneyObserver, void *);
-    } runs[] = {{"exploration", journey},
-                {"fight", journey_fight},
-                {"boundary", journey_boundary},
-                {"mend", journey_mend}};
-    bool ok = true;
-    for (size_t i = 0; ok && i < sizeof runs / sizeof runs[0]; i++) {
-      if (log)
-        fprintf(log, "# run\t%s\n", runs[i].name);
-      ok = game_init(&g, assets) && runs[i].run(&g, capture, &c);
-      drain_events(&g, log, SDL_GetTicks(), NULL); /* before game_init clears them */
-    }
-    result = ok && c.ok ? 0 : 1;
-    goto cleanup;
-  }
-  audio_open(&audio);
+  *all_ok = ok && c.ok;
+  return true;
+}
+/* The interactive game: one event per frame, the picture paced to 60 fps. */
+bool run_loop(Renderer *r, SDL_Renderer *sdl, SDL_Window *w, const char *assets, Game *g,
+              Audio *audio, FILE *log, const Options *o) {
+  audio_open(audio);
   bool run = true;
-  int frames = 0, fps = 60, fps_frames = 0;
+  int scale = o->scale, frames = 0, fps = 60, fps_frames = 0;
+  bool fullscreen = o->fullscreen;
   Uint64 last_move = 0, fps_time = SDL_GetTicks();
-  result = 0;
+  /* One confirmation sounds once: the specific sounds come from the events. */
   while (run) {
     Uint64 frame_start = SDL_GetTicks();
     SDL_Event e;
@@ -239,8 +207,8 @@ int main(int argc, char **argv) {
         run = false;
       if (e.type == SDL_EVENT_KEY_DOWN && !e.key.repeat) {
         if (e.key.key == SDLK_F3) {
-          audio_cycle(&audio);
-          audio_play(&audio, SFX_CLICK);
+          audio_cycle(audio);
+          audio_play(audio, SFX_CLICK);
         } else if (e.key.key == SDLK_F11) {
           fullscreen = !fullscreen;
           SDL_SetWindowFullscreen(w, fullscreen);
@@ -249,30 +217,37 @@ int main(int argc, char **argv) {
           fullscreen = false;
           SDL_SetWindowFullscreen(w, false);
           SDL_SetWindowSize(w, 320 * scale, 200 * scale);
-        } else if (g.state == GAME_NOTEBOOK && e.key.key == SDLK_Q)
+        } else if (g->state == GAME_NOTEBOOK && e.key.key == SDLK_Q)
           run = false;
-        else if (g.state == GAME_NOTEBOOK && e.key.key == SDLK_R) {
-          if (!game_init(&g, assets)) {
-            result = 1;
-            run = false;
-          }
+        else if (g->state == GAME_NOTEBOOK && e.key.key == SDLK_R) {
+          if (!game_init(g, assets))
+            return false; /* die Spieldaten sind weg: das ist ein Fehlschlag */
         } else {
-          unsigned before = g.steps;
-          act(&g, key(e.key.key), log, &audio);
-          if (g.steps != before)
-            audio_footstep(&audio);
+          unsigned before = g->steps;
+          bool answering =
+              g->state != GAME_EXPLORATION &&
+              (key(e.key.key) == ACT_CONFIRM || key(e.key.key) == ACT_CANCEL);
+          Action a = key(e.key.key);
+          game_action(g, a);
+          if (answering)
+            audio_play(audio, SFX_CLICK);
+          drain_events(g, log, SDL_GetTicks(), audio);
+          if (g->steps != before)
+            audio_footstep(audio);
           last_move = frame_start;
         }
       }
     }
-    if (g.state == GAME_EXPLORATION && (SDL_GetWindowFlags(w) & SDL_WINDOW_INPUT_FOCUS) &&
+    if (g->state == GAME_EXPLORATION &&
+        (SDL_GetWindowFlags(w) & SDL_WINDOW_INPUT_FOCUS) &&
         frame_start - last_move >= 140) {
       Action a = held();
       if (a != ACT_NONE) {
-        unsigned before = g.steps;
-        act(&g, a, log, &audio);
-        if (g.steps != before)
-          audio_footstep(&audio);
+        unsigned before = g->steps;
+        game_action(g, a);
+        drain_events(g, log, SDL_GetTicks(), audio);
+        if (g->steps != before)
+          audio_footstep(audio);
         last_move = frame_start;
       }
     }
@@ -282,28 +257,107 @@ int main(int argc, char **argv) {
       fps_time = frame_start;
     }
     fps_frames++;
-    audio_update(&audio);
-    r.audio = audio_label(&audio);
+    audio_update(audio);
+    r->audio = audio_label(audio);
     char display[48];
     snprintf(display, sizeof display, "F4 FENSTER %dx  F11 %s", scale,
              fullscreen ? "FENSTERMODUS" : "VOLLBILD");
-    r.display = display;
-    render_game(&r, &g, fps);
-    if (smoke && ++frames == 10) {
-      Capture c = {&r, log, true};
-      capture(&g, "smoke", &c);
-      result = c.ok ? 0 : 1;
+    r->display = display;
+    render_game(r, g, fps);
+    if (o->smoke && ++frames == 10) {
+      Capture c = {r, log, true};
+      capture(g, "smoke", &c);
       run = false;
+      return c.ok;
     } else
       SDL_RenderPresent(sdl);
     Uint64 elapsed = SDL_GetTicks() - frame_start;
     if (elapsed < 16)
       SDL_Delay((Uint32)(16 - elapsed));
   }
+  return true;
+}
+int main(int argc, char **argv) {
+  Options o;
+  const char *error = NULL;
+  if (!parse_args(argc, argv, &o, &error)) {
+    fprintf(stderr, "Die vergessenen Pfade fehlgeschlagen: %s\n", error);
+    return usage();
+  }
+  int result = 1;
+  const char *reason = "Aufbau fehlgeschlagen";
+  FILE *log = NULL;
+  /* Alles, was cleanup: anfasst, steht vor dem ersten goto: ein Sprung ueber
+   * eine Initialisierung hinweg laesst die Variable unbestimmt, und cleanup
+   * gibt sie frei. */
+  SDL_Window *w = NULL;
+  SDL_Renderer *sdl = NULL;
+  Renderer r = {0};
+  Audio audio = {0};
+  const char *base = NULL;
+  char assets[1024];
+  Game g;
+  if (o.log_path) {
+    log = fopen(o.log_path, "w");
+    if (!log) {
+      reason = "Protokoll kann nicht geschrieben werden";
+      goto cleanup;
+    }
+    fprintf(log, "# time_ms\tmap\tx,y\tevent\tdetails\n");
+  }
+  if (!SDL_Init(SDL_INIT_VIDEO)) {
+    reason = SDL_GetError();
+    goto cleanup;
+  }
+  if (!SDL_CreateWindowAndRenderer("Die vergessenen Pfade | POC Walddorf", 320 * o.scale,
+                                   200 * o.scale, SDL_WINDOW_RESIZABLE, &w, &sdl)) {
+    reason = SDL_GetError();
+    goto cleanup;
+  }
+  if (o.fullscreen)
+    SDL_SetWindowFullscreen(w, true);
+  SDL_SetWindowMinimumSize(w, 320, 200);
+  if (!SDL_SetRenderLogicalPresentation(sdl, 320, 200,
+                                        SDL_LOGICAL_PRESENTATION_INTEGER_SCALE)) {
+    reason = SDL_GetError();
+    goto cleanup;
+  }
+  base = SDL_GetBasePath();
+  if (!base || snprintf(assets, sizeof assets, "%sassets", base) >= (int)sizeof assets) {
+    reason = "Basispfad fehlt";
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Die vergessenen Pfade",
+                             "Spieldaten fehlen. Der Ordner assets muss neben dem "
+                             "Programm liegen. Bitte das Spiel vollstaendig "
+                             "entpacken.",
+                             w);
+    goto cleanup;
+  }
+  if (!game_init(&g, assets) || !renderer_init(&r, sdl, assets)) {
+    reason = "Spieldaten fehlen. Der Ordner assets muss neben dem Programm liegen.";
+    SDL_ShowSimpleMessageBox(
+        SDL_MESSAGEBOX_ERROR, "Die vergessenen Pfade",
+        "Spieldaten fehlen. Der Ordner assets muss neben dem Programm liegen. Bitte "
+        "das Spiel vollstaendig entpacken.",
+        w);
+    goto cleanup;
+  }
+  if (o.verify) {
+    bool all_ok = false;
+    run_verify(&r, log, assets, &g, &all_ok);
+    result = all_ok ? 0 : 1;
+    reason = "Eine Abnahme ist fehlgeschlagen";
+    goto cleanup;
+  }
+  if (!run_loop(&r, sdl, w, assets, &g, &audio, log, &o)) {
+    result = 1;
+    reason = "Der Durchlauf ist fehlgeschlagen";
+    goto cleanup;
+  }
+  result = 0;
 cleanup:
-  audio_close(&audio);
   if (result)
-    fprintf(stderr, "Die vergessenen Pfade fehlgeschlagen: %s\n", SDL_GetError());
+    fprintf(stderr, "Die vergessenen Pfade fehlgeschlagen: %s\n", reason);
+  audio_close(&audio);
   if (log)
     fclose(log);
   renderer_destroy(&r);

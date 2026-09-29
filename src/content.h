@@ -282,7 +282,6 @@ extern const Mood encounter_transitions[ENC_COUNT][MOOD_COUNT];
 typedef struct {
   EncounterAction action;
   const char *label;
-  Obs needs;
   OptionWhen when;
 } EncounterOption;
 #define ENCOUNTER_OPTION_LIMIT 8 /* buffer size for game_encounter_options */
@@ -290,7 +289,7 @@ extern const EncounterOption encounter_options[];
 extern const int encounter_option_count;
 typedef struct {
   ItemId item;
-  Obs needs, grants;
+  Obs grants;
   Mood result;
   DialogueId dialogue;
   NoteId note;

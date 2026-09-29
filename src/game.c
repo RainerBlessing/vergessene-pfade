@@ -116,8 +116,9 @@ static void open_scene(Game *g, const char *title, DialogueId dialogue) {
   g->page = 0;
   g->state = GAME_DIALOGUE;
 }
-static void open_dialogue(Game *g, int npc, char examined, DialogueId dialogue) {
-  g->opens = OPEN_NOTHING;
+static void open_dialogue(Game *g, int npc, char examined, DialogueId dialogue,
+                          DialogueOpens opens) {
+  g->opens = opens;
   g->npc = npc;
   g->examined = examined;
   g->dialogue = dialogue;
@@ -146,8 +147,7 @@ static void talk(Game *g, int npc) {
       inventory_add(&g->player.inventory, r->gives, 1);
     learn(g, r->grants, r->note);
     emit(g, EV_NPC_TALK, npc, r->dialogue);
-    open_dialogue(g, npc, 0, r->dialogue);
-    g->opens = r->opens; /* after opening: open_dialogue clears it */
+    open_dialogue(g, npc, 0, r->dialogue, r->opens);
     return;
   }
 }
@@ -205,11 +205,10 @@ static void use_point(Game *g, const ExaminePoint *p, char examined) {
     inventory_add(&g->player.inventory, p->gives, 1);
   learn(g, p->grants, p->note);
   emit(g, EV_EXAMINE, examined, p->dialogue);
-  open_dialogue(g, -1, examined, p->dialogue);
-  if (closes) {
+  DialogueOpens opens = closes ? OPEN_TEASER : OPEN_NOTHING;
+  open_dialogue(g, -1, examined, p->dialogue, opens);
+  if (closes)
     learn(g, OBS(OBS_TEASED), NOTE_NONE);
-    g->opens = OPEN_TEASER;
-  }
 }
 /* Repeated presses at the same target are counted, not logged again. */
 static void examine_nothing(Game *g, int x, int y) {
@@ -227,6 +226,13 @@ static void examine_nothing(Game *g, int x, int y) {
   *last = (NothingTarget){true, g->map, x, y, g->dx, g->dy, 0};
 }
 static bool stake_here(Game *g);
+/* Moves the selection highlight up or down within a list of `count` entries. */
+static void select_move(Game *g, Action a, int count) {
+  if (a == ACT_UP)
+    g->selection = (g->selection + count - 1) % count;
+  else if (a == ACT_DOWN)
+    g->selection = (g->selection + 1) % count;
+}
 /* Facing tile first, then the tile underfoot (passable points cannot be faced). */
 static void examine(Game *g) {
   if (stake_here(g))
@@ -253,10 +259,7 @@ static void inventory_action(Game *g, Action a) {
   }
   if (count == 0)
     return;
-  if (a == ACT_UP)
-    g->selection = (g->selection + count - 1) % count;
-  if (a == ACT_DOWN)
-    g->selection = (g->selection + 1) % count;
+  select_move(g, a, count);
   if (a != ACT_CONFIRM)
     return;
   if (g->selection >= count)
@@ -302,16 +305,12 @@ static void step_back(Game *g) {
   }
 }
 static bool option_now(const Game *g, const EncounterOption *o) {
-  if (!matches(g, o->needs, 0))
-    return false;
-  if (o->when != OPT_BOTH && (o->when == OPT_FIGHT) != g->fighting)
-    return false;
-  return true;
+  return o->when == OPT_BOTH || (o->when == OPT_FIGHT) == g->fighting;
 }
 static const EncounterOffer *offer_at_hand(const Game *g) {
   for (int i = 0; i < encounter_offer_count; i++) {
     const EncounterOffer *o = &encounter_offers[i];
-    if (g->player.inventory.quantities[o->item] && matches(g, o->needs, 0))
+    if (g->player.inventory.quantities[o->item])
       return o;
   }
   return NULL;
@@ -411,7 +410,7 @@ static void prompt_action(Game *g, Action a) {
   if (g->selection != 0)
     return;
   if (!spend_the_night(g)) /* the forest is still unsettled */
-    open_dialogue(g, -1, 'u', D_X_FUTON_AWAKE);
+    open_dialogue(g, -1, 'u', D_X_FUTON_AWAKE, OPEN_NOTHING);
 }
 /* One exchange of blows. The fight continues until someone falls or the player
  * steps back; the spirit keeps its wounds until it wins. */
@@ -462,10 +461,7 @@ static void mend_action(Game *g, Action a) {
   }
   if (count == 0)
     return;
-  if (a == ACT_UP)
-    g->selection = (g->selection + count - 1) % count;
-  if (a == ACT_DOWN)
-    g->selection = (g->selection + 1) % count;
+  select_move(g, a, count);
   if (a != ACT_CONFIRM)
     return;
   if (g->selection >= count)
@@ -518,10 +514,7 @@ static bool stake_here(Game *g) {
 static void encounter_action(Game *g, Action a) {
   int options[ENCOUNTER_OPTION_LIMIT];
   int count = game_encounter_options(g, options);
-  if (a == ACT_UP)
-    g->selection = (g->selection + count - 1) % count;
-  if (a == ACT_DOWN)
-    g->selection = (g->selection + 1) % count;
+  select_move(g, a, count);
   if (a == ACT_CANCEL) /* Escape highlights retreating, it does not do it */
     for (int i = 0; i < count; i++)
       if (encounter_options[options[i]].action == ENC_RETREAT)
@@ -719,10 +712,10 @@ void game_action(Game *g, Action a) {
   else if (a == ACT_RIGHT)
     move(g, 1, 0);
 }
-void game_camera(const Game *g, int *x, int *y) {
-  *x = g->x - 10;
-  *y = g->y - 5;
-  int mx = g->maps[g->map].width - 20, my = g->maps[g->map].height - 10;
+void game_camera(const Game *g, int view_w, int view_h, int *x, int *y) {
+  *x = g->x - view_w / 2;
+  *y = g->y - view_h / 2;
+  int mx = g->maps[g->map].width - view_w, my = g->maps[g->map].height - view_h;
   if (*x > mx)
     *x = mx;
   if (*y > my)

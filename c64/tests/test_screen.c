@@ -43,6 +43,7 @@ static void start(Game *g) {
 /* A dialogue page has to appear line by line, whole. */
 static void dialogue_pages_are_complete(void) {
   Game g;
+  RenderCache c = {0};
   start(&g);
   g.map = MAP_VILLAGE;
   g.x = 5;
@@ -51,14 +52,14 @@ static void dialogue_pages_are_complete(void) {
   g.dy = -1;
   game_action(&g, ACT_CONFIRM);
   assert(g.dialogue == D_SUMI_TASK);
-  render(&g);
+  render(&g, &c);
   expect_row(19, "Sumi / Dorfaelteste");
   expect_row(20, "Du bist zurueck. Gut. Wir brauchen");
   expect_row(21, "jede Hand. Im Wald greift ein");
   expect_row(22, "Geist unsere Holzfaeller an.");
   expect_row(24, "RETURN weiter");
   game_action(&g, ACT_CONFIRM);
-  render(&g);
+  render(&g, &c);
   expect_row(20, "Ohne Holz frieren wir im Winter.");
   expect_row(21, "Geh in den Wald und vertreibe");
   expect_row(22, "den Geist. Bitte.");
@@ -67,15 +68,16 @@ static void dialogue_pages_are_complete(void) {
 /* N opens the notebook from the map, and from an open text in two presses. */
 static void notebook_opens(void) {
   Game g;
+  RenderCache c = {0};
   start(&g);
   game_action(&g, ACT_CANCEL);
   assert(g.state == GAME_NOTEBOOK);
-  render(&g);
+  render(&g, &c);
   expect_row(0, "NOTIZBUCH");
   game_action(&g, ACT_CANCEL);
   assert(g.state == GAME_EXPLORATION);
   /* The map has to come back, not stay blank behind the closed notebook. */
-  render(&g);
+  render(&g, &c);
   char seen[SCREEN_COLS + 1];
   row_text(9, seen);
   assert(strlen(seen) > 0);
@@ -83,6 +85,7 @@ static void notebook_opens(void) {
 
 static void notebook_shows_what_was_written(void) {
   Game g;
+  RenderCache c = {0};
   start(&g);
   g.map = MAP_FOREST; /* the wounded fox, seen from below its den */
   g.x = 5;
@@ -93,7 +96,7 @@ static void notebook_shows_what_was_written(void) {
   while (g.state == GAME_DIALOGUE)
     game_action(&g, ACT_CONFIRM);
   game_action(&g, ACT_CANCEL);
-  render(&g);
+  render(&g, &c);
   expect_row(3, "  Ein verletzter Fuchs am Bau. An");
   expect_row(4, "  der Pfote dunkler Lehm.");
 }
@@ -101,13 +104,14 @@ static void notebook_shows_what_was_written(void) {
 /* The repair view: the gap names what is missing, the pieces lie beside it. */
 static void mend_view_shows_gap_and_pieces(void) {
   Game g;
+  RenderCache c = {0};
   start(&g);
   g.state = GAME_MEND;
   g.map = MAP_VILLAGE;
   g.x = 24;
   g.y = 5;
   g.selection = 0;
-  render(&g);
+  render(&g, &c);
   expect_row(16, "Die Schale");
   expect_row(17, "Der Boden fehlt.");
   expect_row(18, "> Randstueck");
@@ -116,7 +120,7 @@ static void mend_view_shows_gap_and_pieces(void) {
   /* A piece that does not fit says so and changes nothing. */
   game_action(&g, ACT_CONFIRM);
   assert(g.mend_placed == 0);
-  render(&g);
+  render(&g, &c);
   expect_row(18, "Das passt nicht an diese");
   expect_row(19, "Bruchkante.");
 }
@@ -124,6 +128,7 @@ static void mend_view_shows_gap_and_pieces(void) {
 /* In der Begegnung steht neben dem Text auch, was die Runde gebracht hat. */
 static void encounter_shows_the_round(void) {
   Game g;
+  RenderCache c = {0};
   start(&g);
   g.map = MAP_FOREST;
   g.x = 25;
@@ -132,7 +137,7 @@ static void encounter_shows_the_round(void) {
   g.dy = -1;
   game_action(&g, ACT_UP);
   assert(g.state == GAME_ENCOUNTER);
-  render(&g);
+  render(&g, &c);
   expect_row(14, "Waldkami    ZORNIG");
   expect_row(15, "Zwischen den Staemmen richtet sich");
   /* Angreifen: der Text bleibt, die Zahlen der Runde kommen darunter. */
@@ -142,7 +147,7 @@ static void encounter_shows_the_round(void) {
     if (encounter_options[options[i]].action == ENC_ATTACK)
       g.selection = i;
   game_action(&g, ACT_CONFIRM);
-  render(&g);
+  render(&g, &c);
   expect_row(15, "Du machst einen Schritt nach vorn.");
   char seen[SCREEN_COLS + 1];
   row_text(17, seen);
@@ -156,7 +161,8 @@ static void encounter_shows_the_round(void) {
  * die auf dem Bild liegen (bis Spalte 39). Volles Feld ist 160. */
 #define BAR_FROM 31
 static uint8_t bar_filled(const Game *g) {
-  render(g);
+  RenderCache cache = {0};
+  render(g, &cache);
   uint8_t n = 0;
   for (uint8_t x = BAR_FROM; x < SCREEN_COLS; x++)
     if (test_screen[14 * SCREEN_COLS + x] == 160)
@@ -208,16 +214,17 @@ static void drawn_map_matches_the_rules(const Game *g) {
 
 static void the_shelf_shows_the_dried_bowl(void) {
   Game g;
+  RenderCache c = {0};
   start(&g);
   g.map = MAP_VILLAGE;
   g.x = 24;
   g.y = 6;
   g.obs |= OBS(OBS_BOWL_DRYING);
-  render(&g);
+  render(&g, &c);
   assert(game_tile(&g, MAP_VILLAGE, 22, 4) == 'b');
   drawn_map_matches_the_rules(&g);
   g.obs |= OBS(OBS_BOWL_READY); /* beides gesetzt: fertig gewinnt */
-  render(&g);
+  render(&g, &c);
   assert(game_tile(&g, MAP_VILLAGE, 22, 4) == 'q');
   drawn_map_matches_the_rules(&g);
 }
@@ -225,10 +232,11 @@ static void the_shelf_shows_the_dried_bowl(void) {
 /* Die offene Tasche hebt sich ab und laesst sich mit einem Schritt verlassen. */
 static void the_open_bag_is_marked(void) {
   Game g;
+  RenderCache c = {0};
   start(&g);
   g.bag[ITEM_HERB] = 1;
   game_action(&g, ACT_INVENTORY);
-  render(&g);
+  render(&g, &c);
   expect_row(20, "> Heilkraut");
   for (uint8_t x = 0; x < 6; x++)
     assert(test_screen[19 * SCREEN_COLS + x] >= 128); /* TASCHE steht invers */
@@ -242,11 +250,12 @@ static void the_house_mark_stands_out(void) {
   assert(wall && mark);
   assert(mark->screen != wall->screen || mark->color != wall->color);
   Game g;
+  RenderCache c = {0};
   start(&g);
   g.map = MAP_VILLAGE;
   g.x = 4;
   g.y = 7;
-  render(&g);
+  render(&g, &c);
   int8_t cx, cy;
   game_camera(&g, SCREEN_COLS, 17, &cx, &cy);
   uint16_t at = (uint16_t)((6 - cy + 1) * SCREEN_COLS + (4 - cx));
@@ -257,26 +266,59 @@ static void the_house_mark_stands_out(void) {
 /* Die Schlusstafel nennt den Ausgang und sagt, dass hier Schluss ist (#22). */
 static void the_closing_panel_names_the_ending(void) {
   Game g;
+  RenderCache c = {0};
   start(&g);
   g.state = GAME_END;
   g.outcome = OUT_MEND;
-  render(&g);
+  render(&g, &c);
   expect_row(2, "   HIER ENDET DER AUSSCHNITT");
   expect_row(4, "   Drei Pfaehle und eine Schale im Moos.");
   expect_row(6, "   In der vollen Fassung folgt eine");
   expect_row(24, "RETURN: weiterlaufen");
 }
 
+/* Ein genullter Cache heisst "noch nichts gezeichnet": das erste Bild muss die
+ * Karte voll zeichnen, ohne dass jemand ein Feld von Hand setzen musste. Sonst
+ * bliebe der Kartenteil leer, wo der Nullwert zufaellig zum Spielstand passt. */
+static void a_zeroed_cache_draws_the_whole_map(void) {
+  Game g;
+  start(&g);
+  /* Der Spielstand deckt sich in jedem Feld mit dem Nullwert des Caches --
+   * kuenstlich, aber genau das ist der Fall, in dem nur noch `drawn` den
+   * Vollaufbau ausloest. Ohne die Wache bliebe der Kartenteil leer. */
+  g.map = MAP_VILLAGE;
+  g.x = 0;
+  g.y = 0;
+  g.obs = 0;
+  g.outcome = OUT_NONE;
+  g.staked = 0;
+  g.stone_x = 0;
+  g.stone_y = 0;
+  screen_clear();
+  RenderCache c = {0};
+  render(&g, &c);
+  drawn_map_matches_the_rules(&g);
+  /* Und wirklich gezeichnet, nicht nur "nicht falsch": der Kartenteil ist
+   * nicht durchgehend leer. */
+  uint16_t leer = 0;
+  for (uint16_t i = SCREEN_COLS; i < 18 * SCREEN_COLS; i++)
+    if (test_screen[i] == 32)
+      leer++;
+  assert(leer < 17 * SCREEN_COLS);
+  assert(c.drawn);
+}
+
 /* Player-only move (camera static): old cell restored, new cell drawn. */
 static void player_move_camera_static(void) {
   Game g;
+  RenderCache c = {0};
   start(&g);
   g.map = MAP_VILLAGE;
   g.x = 12;
   g.y = 10;
   g.dx = 1;
   g.dy = 0;
-  render(&g);
+  render(&g, &c);
   int8_t cx, cy;
   game_camera(&g, SCREEN_COLS, 17, &cx, &cy);
   /* Save the full screen buffer after the initial render. */
@@ -285,7 +327,7 @@ static void player_move_camera_static(void) {
   /* Move right: (12,10) -> (13,10). Village is 32 wide < 40 viewport,
    * so the camera stays at (0,2) for all x positions. */
   g.x = 13;
-  render(&g);
+  render(&g, &c);
   int8_t cx2, cy2;
   game_camera(&g, SCREEN_COLS, 17, &cx2, &cy2);
   assert(cx == cx2 && cy == cy2); /* camera truly unchanged */
@@ -314,17 +356,18 @@ static void player_move_camera_static(void) {
  * Kartenzeile faellt damit auf. */
 static void player_move_restores_the_right_tile(void) {
   Game g;
+  RenderCache c = {0};
   start(&g);
   g.map = MAP_VILLAGE;
   g.x = 12;
   g.y = 1; /* darunter, in Zeile 2, steht bei x=12 eine Sakura */
   g.dx = 1;
   g.dy = 0;
-  render(&g);
+  render(&g, &c);
   int8_t cx, cy;
   game_camera(&g, SCREEN_COLS, 17, &cx, &cy);
   g.x = 13;
-  render(&g);
+  render(&g, &c);
   int8_t cx2, cy2;
   game_camera(&g, SCREEN_COLS, 17, &cx2, &cy2);
   assert(cx == cx2 && cy == cy2); /* wirklich der Schnellpfad */
@@ -334,18 +377,19 @@ static void player_move_restores_the_right_tile(void) {
 /* Player move that changes the camera: full redraw. */
 static void player_move_camera_moves(void) {
   Game g;
+  RenderCache c = {0};
   start(&g);
   g.map = MAP_FOREST;
   g.x = 24;
   g.y = 20;
   g.dx = 1;
   g.dy = 0;
-  render(&g);
+  render(&g, &c);
   int8_t cx1, cy1;
   game_camera(&g, SCREEN_COLS, 17, &cx1, &cy1);
   /* Move right: (24,20) -> (25,20). Camera shifts from 4 to 5. */
   g.x = 25;
-  render(&g);
+  render(&g, &c);
   int8_t cx2, cy2;
   game_camera(&g, SCREEN_COLS, 17, &cx2, &cy2);
   assert(cx1 != cx2 || cy1 != cy2); /* camera actually moved */
@@ -358,22 +402,23 @@ static void player_move_camera_moves(void) {
 /* NPC on the new player cell: full redraw (npc_at_cell guard). */
 static void npc_on_cell_forces_full_redraw(void) {
   Game g;
+  RenderCache c = {0};
   start(&g);
   g.map = MAP_FOREST;
   g.x = 5;
   g.y = 20;
   g.dx = 1;
   g.dy = 0;
-  render(&g);
+  render(&g, &c);
   /* Sumi stands at (16,20) in the forest. Move player toward her. */
   g.x = 15;
-  render(&g);
+  render(&g, &c);
   int8_t cx, cy;
   game_camera(&g, SCREEN_COLS, 17, &cx, &cy);
   /* Move right into Sumi's cell: (15,20) -> (16,20).
    * npc_at_cell(g, 16, 20) is true -> full redraw path. */
   g.x = 16;
-  render(&g);
+  render(&g, &c);
   /* Player must be on top of the NPC. */
   game_camera(&g, SCREEN_COLS, 17, &cx, &cy);
   uint16_t at = (uint16_t)((20 - cy + 1) * SCREEN_COLS + (16 - cx));
@@ -383,8 +428,9 @@ static void npc_on_cell_forces_full_redraw(void) {
 
 static void the_map_is_drawn(void) {
   Game g;
+  RenderCache c = {0};
   start(&g);
-  render(&g);
+  render(&g, &c);
   char seen[SCREEN_COLS + 1];
   row_text(0, seen);
   assert(strcmp(seen, "Der Wald") == 0);
@@ -402,6 +448,7 @@ int main(void) {
   the_health_bar_keeps_its_steps();
   the_shelf_shows_the_dried_bowl();
   the_open_bag_is_marked();
+  a_zeroed_cache_draws_the_whole_map();
   player_move_camera_static();
   player_move_restores_the_right_tile();
   player_move_camera_moves();

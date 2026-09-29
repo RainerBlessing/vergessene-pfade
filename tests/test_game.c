@@ -153,10 +153,10 @@ static int test_world(const char *assets) {
   CHECK(g.x == 24 && g.y == 20);
   int x, y;
   stand(&g, MAP_VILLAGE, 1, 1, 0, 1);
-  game_camera(&g, &x, &y);
+  game_camera(&g, 20, 10, &x, &y);
   CHECK(x == 0 && y == 0);
   stand(&g, MAP_FOREST, 46, 38, 0, 1);
-  game_camera(&g, &x, &y);
+  game_camera(&g, 20, 10, &x, &y);
   CHECK(x == 28 && y == 30);
   /* Transitions both ways land on non-transition tiles. */
   stand(&g, MAP_VILLAGE, 16, 1, 0, -1);
@@ -1427,6 +1427,14 @@ static int test_combat(void) {
   CHECK(c.lost && p.hp == 0);
   return 0;
 }
+/* Every tile's sprite must live inside the atlas, so the renderer can never
+ * fall back to a wrong sprite for a new or mistyped tile. */
+static int test_tile_art(void) {
+  for (int i = 0; i < tile_count; i++)
+    CHECK(tiles[i].art >= 0 && tiles[i].art < ATLAS_TILES);
+  puts("tile art within atlas bounds");
+  return 0;
+}
 
 int main(int argc, char **argv) {
   if (argc != 2)
@@ -1444,7 +1452,7 @@ int main(int argc, char **argv) {
       test_visitor_before_teaser(argv[1]) || test_den_with_kits(argv[1]) ||
       test_fox_after_fight(argv[1]) || test_daigo_reactions(argv[1]) ||
       test_no_late_deal(argv[1]) || test_morning_keeps_threads(argv[1]) ||
-      test_grey_trace(argv[1]) || test_combat())
+      test_grey_trace(argv[1]) || test_combat() || test_tile_art())
     return 1;
   puts("World, examining, encounter, outcomes, consequences, morning, trace pass.");
   return 0;
