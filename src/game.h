@@ -48,7 +48,8 @@ typedef struct {
   int map, x, y, a, b;
 } GameEvent;
 #define EVENT_LIMIT 32
-#define NOTE_LIMIT 32
+/* Platz fuer jede Notiz: das Buch verliert keine, wie gruendlich man auch sucht. */
+#define NOTE_LIMIT (NOTE_COUNT - 1)
 #define NOTES_PER_PAGE 4
 
 typedef struct {
@@ -78,6 +79,9 @@ typedef struct {
   bool daigo_follows;
   uint8_t staked;      /* bit per stake already driven in */
   DialogueOpens opens; /* what the open conversation leads to */
+  /* Die zuletzt versperrte Richtung: Beim zweiten Versuch in dieselbe Richtung
+   * sagt das Spiel, was im Weg steht (#20). */
+  int blocked_dx, blocked_dy;
   Combat combat;
   bool fighting;
   Outcome outcome;
