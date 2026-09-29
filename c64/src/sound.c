@@ -1,15 +1,9 @@
 /* SID effects: one voice, a few register writes per step, no sustain. The
  * envelope lets every step die away by itself, so nothing needs switching off. */
 #include "sound.h"
+#include <c64.h>
 #include <stdint.h>
 
-#define SID ((volatile uint8_t *)0xD400)
-#define SID_VOICE1_FREQ 0
-#define SID_VOICE1_PULSE 2
-#define SID_VOICE1_CONTROL 4
-#define SID_VOICE1_ATTACK_DECAY 5
-#define SID_VOICE1_SUSTAIN_RELEASE 6
-#define SID_VOLUME 24
 #define JIFFY (*(volatile uint8_t *)0xA2) /* the Kernal counts it in its own IRQ */
 
 #define GATE 0x01
@@ -51,10 +45,10 @@ static const Step *const effects[SFX_COUNT] = {
 };
 
 void sound_init(void) {
-  SID[SID_VOLUME] = VOLUME;
-  SID[SID_VOICE1_PULSE + 1] = 0x08;    /* a narrow-ish pulse: dry, like wood */
-  SID[SID_VOICE1_ATTACK_DECAY] = 0x08; /* instant attack, 204 ms decay */
-  SID[SID_VOICE1_SUSTAIN_RELEASE] = 0x00;
+  SID.amp = VOLUME;
+  SID.v1.pw = 0x0200; /* a narrow pulse: dry, like wood */
+  SID.v1.ad = 0x08;   /* instant attack, 204 ms decay */
+  SID.v1.sr = 0x00;
 }
 
 static void wait_frames(uint8_t n) {
@@ -69,13 +63,12 @@ void sound_play(SfxId id) {
   if (id <= SFX_NONE || id >= SFX_COUNT)
     return;
   for (const Step *s = effects[id]; s->frames; s++) {
-    SID[SID_VOICE1_CONTROL] = 0; /* release, so the next gate retriggers */
+    SID.v1.ctrl = 0; /* release, so the next gate retriggers */
     if (s->wave) {
-      SID[SID_VOICE1_FREQ] = (uint8_t)s->freq;
-      SID[SID_VOICE1_FREQ + 1] = (uint8_t)(s->freq >> 8);
-      SID[SID_VOICE1_CONTROL] = (uint8_t)(s->wave | GATE);
+      SID.v1.freq = s->freq;
+      SID.v1.ctrl = (uint8_t)(s->wave | GATE);
     }
     wait_frames(s->frames);
   }
-  SID[SID_VOICE1_CONTROL] = 0;
+  SID.v1.ctrl = 0;
 }
