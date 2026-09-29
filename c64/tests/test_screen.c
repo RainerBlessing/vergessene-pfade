@@ -157,9 +157,9 @@ static void encounter_shows_the_round(void) {
 }
 
 /* Der Balken rechnet ohne Division (#25) -- hier steht, dass er trotzdem
- * dieselben Stufen zeigt. Er beginnt in Spalte 31; gezaehlt werden die Felder,
- * die auf dem Bild liegen (bis Spalte 39). Volles Feld ist 160. */
-#define BAR_FROM 31
+ * dieselben Stufen zeigt. Er beginnt in Spalte 30 und endet in Spalte 39, dem
+ * letzten Bildschirmfeld (#27): zehn Felder, alle sichtbar. Volles Feld ist 160. */
+#define BAR_FROM 30
 static uint8_t bar_filled(const Game *g) {
   RenderCache cache = {0};
   render(g, &cache);
@@ -180,13 +180,16 @@ static void the_health_bar_keeps_its_steps(void) {
   game_action(&g, ACT_UP);
   g.fighting = true;
   assert(g.hp == PLAYER_HP);
-  assert(bar_filled(&g) == SCREEN_COLS - BAR_FROM); /* voll ist voll */
+  assert(bar_filled(&g) == 10); /* voll ist voll, und zehn sieht man auch */
   g.hp = PLAYER_HP / 2;
   assert(bar_filled(&g) == 5);
   g.hp = 3; /* ein Zehntel von 24 aufwaerts: das erste Feld */
   assert(bar_filled(&g) == 1);
   g.hp = 0;
   assert(bar_filled(&g) == 0);
+  g.hp = PLAYER_HP - 2; /* 22 von 24: neun Felder, klar unter voll */
+  assert(bar_filled(&g) == 9);
+  assert(bar_filled(&g) < 10);
 }
 
 /* Was gezeichnet wird, muss dem entsprechen, was game_tile() sagt -- sonst
