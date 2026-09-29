@@ -78,6 +78,9 @@ typedef struct {
   bool daigo_follows;
   uint8_t staked;      /* bit per stake already driven in */
   DialogueOpens opens; /* what the open conversation leads to */
+  /* Die zuletzt versperrte Richtung: Beim zweiten Versuch in dieselbe Richtung
+   * sagt das Spiel, was im Weg steht (#20). */
+  int blocked_dx, blocked_dy;
   Combat combat;
   bool fighting;
   Outcome outcome;

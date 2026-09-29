@@ -107,6 +107,44 @@ static int test_steps_do_not_flood(const char *assets) {
   CHECK(observed);
   return 0;
 }
+/* Ein versperrter Schritt schweigt beim ersten Mal und antwortet beim zweiten
+ * in dieselbe Richtung (#20, wie auf dem C64). */
+static int test_blocked_steps(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  stand(&g, MAP_VILLAGE, 1, 1, -1, 0);
+  game_action(&g, ACT_LEFT);
+  CHECK(g.message[0] == 0); /* einmal dagegenlaufen sagt nichts */
+  game_action(&g, ACT_LEFT);
+  CHECK(strstr(g.message, "Dorfmauer versperrt den Weg") != NULL);
+  /* Eine neue Richtung beginnt von vorn, auch wenn sie versperrt ist. */
+  stand(&g, MAP_VILLAGE, 1, 1, -1, 0);
+  game_action(&g, ACT_UP);
+  CHECK(g.message[0] == 0);
+  game_action(&g, ACT_UP);
+  CHECK(g.message[0] != 0);
+  /* Ein Schritt, der gelingt, setzt zurueck. */
+  game_action(&g, ACT_DOWN);
+  CHECK(g.y == 2 && g.message[0] == 0);
+  stand(&g, MAP_VILLAGE, 1, 1, -1, 0);
+  game_action(&g, ACT_LEFT);
+  CHECK(g.message[0] == 0);
+  /* Eine Person meldet sich als solche. */
+  stand(&g, MAP_VILLAGE, 5, 5, 0, -1); /* unter Sumi */
+  game_action(&g, ACT_UP);
+  CHECK(g.message[0] == 0);
+  game_action(&g, ACT_UP);
+  CHECK(strstr(g.message, "jemand im Weg") != NULL);
+  /* Der Grenzstein laesst sich grundsaetzlich bewegen: er sagt es anders. */
+  CHECK(game_init(&g, assets)); /* frisch: eben ging es auch nach oben */
+  stand(&g, MAP_FOREST, STONE_START_X, STONE_START_Y + 1, 0, -1);
+  game_action(&g, ACT_UP);
+  CHECK(g.message[0] == 0);
+  game_action(&g, ACT_UP);
+  CHECK(strstr(g.message, "ruehrt sich nicht") != NULL);
+  CHECK(g.stone_y == STONE_START_Y); /* und er liegt weiter, wo er lag */
+  return 0;
+}
 /* The game opens on one page that says how it is played, and waits. */
 static int test_title(const char *assets) {
   Game g;
@@ -1464,7 +1502,8 @@ int main(int argc, char **argv) {
   if (argc != 2)
     return 1;
   if (test_map_header() || test_title(argv[1]) || test_steps_do_not_flood(argv[1]) ||
-      test_world(argv[1]) || test_dialogue_rules(argv[1]) || test_examine(argv[1]) ||
+      test_blocked_steps(argv[1]) || test_world(argv[1]) ||
+      test_dialogue_rules(argv[1]) || test_examine(argv[1]) ||
       test_examine_nothing(argv[1]) || test_inventory_and_notebook(argv[1]) ||
       test_content(argv[1]) || test_fox_and_tracks(argv[1]) || test_encounter(argv[1]) ||
       test_fight(argv[1]) || test_outcome_keeps_threads(argv[1]) ||
