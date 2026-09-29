@@ -630,8 +630,8 @@ static bool push_stone(Game *g, int8_t dx, int8_t dy) {
   return true;
 }
 /* Ein versperrter Schritt schweigt beim ersten Mal -- wer sieht, wogegen er
-  * laeuft, braucht keinen Text. Erst der zweite Versuch in dieselbe Richtung
-  * bekommt eine Antwort (#20). */
+ * laeuft, braucht keinen Text. Erst der zweite Versuch in dieselbe Richtung
+ * bekommt eine Antwort (#20). */
 static void blocked(Game *g, int8_t dx, int8_t dy, const char *what,
                     const char *tile_name) {
   if (g->blocked_dx != dx || g->blocked_dy != dy) {

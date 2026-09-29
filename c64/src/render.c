@@ -61,9 +61,9 @@ static void put_symbol(uint8_t x, uint8_t y, char symbol) {
  * new panel can no longer forget that line and leave a stale map. */
 void cache_invalidate(RenderCache *c) { c->stale = true; }
 static bool state_changed(const Game *g, const RenderCache *c) {
-  return c->stale || c->map != g->map || c->obs != g->obs ||
-         c->outcome != g->outcome || c->stone_x != (uint8_t)g->stone_x ||
-         c->stone_y != (uint8_t)g->stone_y || c->staked != g->staked;
+  return c->stale || c->map != g->map || c->obs != g->obs || c->outcome != g->outcome ||
+         c->stone_x != (uint8_t)g->stone_x || c->stone_y != (uint8_t)g->stone_y ||
+         c->staked != g->staked;
 }
 static bool camera_unchanged(const Game *g, RenderCache *c) {
   int8_t cx, cy;
@@ -117,8 +117,8 @@ static void map_view(const Game *g, RenderCache *c) {
     c->stale = false;
     return;
   }
-  if (!state_changed(g, c) && camera_unchanged(g, c) &&
-      !npc_at_cell(g, c->x, c->y) && !npc_at_cell(g, (uint8_t)g->x, (uint8_t)g->y)) {
+  if (!state_changed(g, c) && camera_unchanged(g, c) && !npc_at_cell(g, c->x, c->y) &&
+      !npc_at_cell(g, (uint8_t)g->x, (uint8_t)g->y)) {
     /* Only the player moved: restore the old cell, draw the new one. */
     uint8_t ovx = (uint8_t)(c->x - c->cx), ovy = (uint8_t)(c->y - c->cy);
     if (ovx < SCREEN_COLS && ovy < VIEW_H)

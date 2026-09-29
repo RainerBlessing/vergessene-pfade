@@ -2,6 +2,7 @@
 #include "world.h"
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 static void color(Renderer *r, int c) {
   static const Uint8 colors[][3] = {{24, 25, 34},    {234, 219, 176}, {247, 238, 210},
                                     {183, 63, 52},   {177, 161, 105}, {55, 85, 56},

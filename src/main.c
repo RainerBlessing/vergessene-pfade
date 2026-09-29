@@ -2,7 +2,9 @@
 #include "journey.h"
 #include "renderer.h"
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
 #include <stdio.h>
+#include <string.h>
 typedef struct {
   bool smoke, verify, fullscreen;
   int scale;
@@ -189,8 +191,8 @@ bool run_verify(Renderer *r, FILE *log, const char *assets, Game *g, bool *all_o
   return true;
 }
 /* The interactive game: one event per frame, the picture paced to 60 fps. */
-bool run_loop(Renderer *r, SDL_Renderer *sdl, SDL_Window *w, const char *assets,
-              Game *g, Audio *audio, FILE *log, const Options *o) {
+bool run_loop(Renderer *r, SDL_Renderer *sdl, SDL_Window *w, const char *assets, Game *g,
+              Audio *audio, FILE *log, const Options *o) {
   audio_open(audio);
   bool run = true;
   int scale = o->scale, frames = 0, fps = 60, fps_frames = 0;
@@ -219,11 +221,12 @@ bool run_loop(Renderer *r, SDL_Renderer *sdl, SDL_Window *w, const char *assets,
           run = false;
         else if (g->state == GAME_NOTEBOOK && e.key.key == SDLK_R) {
           if (!game_init(g, assets))
-            run = false;
+            return false; /* die Spieldaten sind weg: das ist ein Fehlschlag */
         } else {
           unsigned before = g->steps;
-          bool answering = g->state != GAME_EXPLORATION &&
-                           (key(e.key.key) == ACT_CONFIRM || key(e.key.key) == ACT_CANCEL);
+          bool answering =
+              g->state != GAME_EXPLORATION &&
+              (key(e.key.key) == ACT_CONFIRM || key(e.key.key) == ACT_CANCEL);
           Action a = key(e.key.key);
           game_action(g, a);
           if (answering)
@@ -236,7 +239,8 @@ bool run_loop(Renderer *r, SDL_Renderer *sdl, SDL_Window *w, const char *assets,
       }
     }
     if (g->state == GAME_EXPLORATION &&
-        (SDL_GetWindowFlags(w) & SDL_WINDOW_INPUT_FOCUS) && frame_start - last_move >= 140) {
+        (SDL_GetWindowFlags(w) & SDL_WINDOW_INPUT_FOCUS) &&
+        frame_start - last_move >= 140) {
       Action a = held();
       if (a != ACT_NONE) {
         unsigned before = g->steps;
@@ -283,6 +287,16 @@ int main(int argc, char **argv) {
   int result = 1;
   const char *reason = "Aufbau fehlgeschlagen";
   FILE *log = NULL;
+  /* Alles, was cleanup: anfasst, steht vor dem ersten goto: ein Sprung ueber
+   * eine Initialisierung hinweg laesst die Variable unbestimmt, und cleanup
+   * gibt sie frei. */
+  SDL_Window *w = NULL;
+  SDL_Renderer *sdl = NULL;
+  Renderer r = {0};
+  Audio audio = {0};
+  const char *base = NULL;
+  char assets[1024];
+  Game g;
   if (o.log_path) {
     log = fopen(o.log_path, "w");
     if (!log) {
@@ -295,12 +309,6 @@ int main(int argc, char **argv) {
     reason = SDL_GetError();
     goto cleanup;
   }
-  SDL_Window *w = NULL;
-  SDL_Renderer *sdl = NULL;
-  Renderer r = {0};
-  Audio audio = {0};
-  char assets[1024];
-  Game g;
   if (!SDL_CreateWindowAndRenderer("Die vergessenen Pfade | POC Walddorf", 320 * o.scale,
                                    200 * o.scale, SDL_WINDOW_RESIZABLE, &w, &sdl)) {
     reason = SDL_GetError();
@@ -314,7 +322,7 @@ int main(int argc, char **argv) {
     reason = SDL_GetError();
     goto cleanup;
   }
-  const char *base = SDL_GetBasePath();
+  base = SDL_GetBasePath();
   if (!base || snprintf(assets, sizeof assets, "%sassets", base) >= (int)sizeof assets) {
     reason = "Basispfad fehlt";
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Die vergessenen Pfade",

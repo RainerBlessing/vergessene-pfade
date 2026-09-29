@@ -721,10 +721,8 @@ const DialogueId encounter_lines[ENC_COUNT][MOOD_COUNT] = {
     [ENC_RETREAT] = {D_ENC_RETREAT, D_ENC_RETREAT, D_ENC_RETREAT},
 };
 const EncounterOption encounter_options[] = {
-    {ENC_WAIT, "STEHEN BLEIBEN", OPT_PEACE},
-    {ENC_OFFER, "DARBRINGEN", OPT_PEACE},
-    {ENC_ATTACK, "ANGREIFEN", OPT_BOTH},
-    {ENC_HEAL, "HEILKRAUT NEHMEN", OPT_FIGHT},
+    {ENC_WAIT, "STEHEN BLEIBEN", OPT_PEACE},   {ENC_OFFER, "DARBRINGEN", OPT_PEACE},
+    {ENC_ATTACK, "ANGREIFEN", OPT_BOTH},       {ENC_HEAL, "HEILKRAUT NEHMEN", OPT_FIGHT},
     {ENC_RETREAT, "ZURUECKWEICHEN", OPT_BOTH},
 };
 const int encounter_option_count =

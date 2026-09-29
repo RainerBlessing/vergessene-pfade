@@ -43,7 +43,7 @@ static void start(Game *g) {
 /* A dialogue page has to appear line by line, whole. */
 static void dialogue_pages_are_complete(void) {
   Game g;
-  RenderCache c = { .stale = true };
+  RenderCache c = {.stale = true};
   start(&g);
   g.map = MAP_VILLAGE;
   g.x = 5;
@@ -68,7 +68,7 @@ static void dialogue_pages_are_complete(void) {
 /* N opens the notebook from the map, and from an open text in two presses. */
 static void notebook_opens(void) {
   Game g;
-  RenderCache c = { .stale = true };
+  RenderCache c = {.stale = true};
   start(&g);
   game_action(&g, ACT_CANCEL);
   assert(g.state == GAME_NOTEBOOK);
@@ -85,7 +85,7 @@ static void notebook_opens(void) {
 
 static void notebook_shows_what_was_written(void) {
   Game g;
-  RenderCache c = { .stale = true };
+  RenderCache c = {.stale = true};
   start(&g);
   g.map = MAP_FOREST; /* the wounded fox, seen from below its den */
   g.x = 5;
@@ -104,7 +104,7 @@ static void notebook_shows_what_was_written(void) {
 /* The repair view: the gap names what is missing, the pieces lie beside it. */
 static void mend_view_shows_gap_and_pieces(void) {
   Game g;
-  RenderCache c = { .stale = true };
+  RenderCache c = {.stale = true};
   start(&g);
   g.state = GAME_MEND;
   g.map = MAP_VILLAGE;
@@ -128,7 +128,7 @@ static void mend_view_shows_gap_and_pieces(void) {
 /* In der Begegnung steht neben dem Text auch, was die Runde gebracht hat. */
 static void encounter_shows_the_round(void) {
   Game g;
-  RenderCache c = { .stale = true };
+  RenderCache c = {.stale = true};
   start(&g);
   g.map = MAP_FOREST;
   g.x = 25;
@@ -161,7 +161,7 @@ static void encounter_shows_the_round(void) {
  * die auf dem Bild liegen (bis Spalte 39). Volles Feld ist 160. */
 #define BAR_FROM 31
 static uint8_t bar_filled(const Game *g) {
-  RenderCache cache = { .stale = true };
+  RenderCache cache = {.stale = true};
   render(g, &cache);
   uint8_t n = 0;
   for (uint8_t x = BAR_FROM; x < SCREEN_COLS; x++)
@@ -214,7 +214,7 @@ static void drawn_map_matches_the_rules(const Game *g) {
 
 static void the_shelf_shows_the_dried_bowl(void) {
   Game g;
-  RenderCache c = { .stale = true };
+  RenderCache c = {.stale = true};
   start(&g);
   g.map = MAP_VILLAGE;
   g.x = 24;
@@ -232,7 +232,7 @@ static void the_shelf_shows_the_dried_bowl(void) {
 /* Die offene Tasche hebt sich ab und laesst sich mit einem Schritt verlassen. */
 static void the_open_bag_is_marked(void) {
   Game g;
-  RenderCache c = { .stale = true };
+  RenderCache c = {.stale = true};
   start(&g);
   g.bag[ITEM_HERB] = 1;
   game_action(&g, ACT_INVENTORY);
@@ -250,7 +250,7 @@ static void the_house_mark_stands_out(void) {
   assert(wall && mark);
   assert(mark->screen != wall->screen || mark->color != wall->color);
   Game g;
-  RenderCache c = { .stale = true };
+  RenderCache c = {.stale = true};
   start(&g);
   g.map = MAP_VILLAGE;
   g.x = 4;
@@ -266,7 +266,7 @@ static void the_house_mark_stands_out(void) {
 /* Die Schlusstafel nennt den Ausgang und sagt, dass hier Schluss ist (#22). */
 static void the_closing_panel_names_the_ending(void) {
   Game g;
-  RenderCache c = { .stale = true };
+  RenderCache c = {.stale = true};
   start(&g);
   g.state = GAME_END;
   g.outcome = OUT_MEND;
@@ -280,7 +280,7 @@ static void the_closing_panel_names_the_ending(void) {
 /* Player-only move (camera static): old cell restored, new cell drawn. */
 static void player_move_camera_static(void) {
   Game g;
-  RenderCache c = { .stale = true };
+  RenderCache c = {.stale = true};
   start(&g);
   g.map = MAP_VILLAGE;
   g.x = 12;
@@ -325,7 +325,7 @@ static void player_move_camera_static(void) {
  * Kartenzeile faellt damit auf. */
 static void player_move_restores_the_right_tile(void) {
   Game g;
-  RenderCache c = { .stale = true };
+  RenderCache c = {.stale = true};
   start(&g);
   g.map = MAP_VILLAGE;
   g.x = 12;
@@ -346,7 +346,7 @@ static void player_move_restores_the_right_tile(void) {
 /* Player move that changes the camera: full redraw. */
 static void player_move_camera_moves(void) {
   Game g;
-  RenderCache c = { .stale = true };
+  RenderCache c = {.stale = true};
   start(&g);
   g.map = MAP_FOREST;
   g.x = 24;
@@ -371,7 +371,7 @@ static void player_move_camera_moves(void) {
 /* NPC on the new player cell: full redraw (npc_at_cell guard). */
 static void npc_on_cell_forces_full_redraw(void) {
   Game g;
-  RenderCache c = { .stale = true };
+  RenderCache c = {.stale = true};
   start(&g);
   g.map = MAP_FOREST;
   g.x = 5;
@@ -397,7 +397,7 @@ static void npc_on_cell_forces_full_redraw(void) {
 
 static void the_map_is_drawn(void) {
   Game g;
-  RenderCache c = { .stale = true };
+  RenderCache c = {.stale = true};
   start(&g);
   render(&g, &c);
   char seen[SCREEN_COLS + 1];
