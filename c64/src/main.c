@@ -2,10 +2,12 @@
  *
  * Text mode, 40x25: the map scrolls in the upper part, texts stand below it.
  * The Kernal's own interrupt keeps running, so the keyboard buffer works and
- * cbm_k_getin() is all the input this needs. */
+ * cbm_k_getin() is all the input this needs. Sound plays in this loop too:
+ * every effect is short (sound.h), so no interrupt of our own is needed. */
 #include "game.h"
 #include "render.h"
 #include "screen.h"
+#include "sound.h"
 #include <cbm.h>
 
 #define KEY_RETURN 13
@@ -48,6 +50,7 @@ int main(void) {
   static Game game;
   static RenderCache cache = {0};
   screen_init();
+  sound_init();
   game_init(&game);
   render(&game, &cache);
   for (;;) {
@@ -59,5 +62,6 @@ int main(void) {
       continue;
     game_action(&game, a);
     render(&game, &cache);
+    sound_play((SfxId)game.sfx);
   }
 }

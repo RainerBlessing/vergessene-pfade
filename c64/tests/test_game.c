@@ -123,6 +123,7 @@ static void fox_unlocks_tracks(void) {
   face(&g, MAP_FOREST, 5, 21, 0, -1);
   const Action use[] = {ACT_INVENTORY, ACT_CONFIRM};
   play(&g, use, 2);
+  assert(g.sfx == SFX_FOX);
   assert(game_knows(&g, OBS_FOX_TENDED) && g.bag[ITEM_HERB] == 0);
   while (g.state == GAME_DIALOGUE)
     game_action(&g, ACT_CONFIRM);
@@ -243,8 +244,11 @@ static void restore_old_boundary(void) {
   see_stone_and_hollow(&g);
   assert(game_can_push(&g));
   face(&g, MAP_FOREST, 24, 17, 0, -1);
-  for (int i = 0; i < 4; i++)
+  game_action(&g, ACT_UP);
+  assert(g.sfx == SFX_SCRAPE);
+  for (int i = 1; i < 4; i++)
     game_action(&g, ACT_UP);
+  assert(g.sfx == SFX_SETTLE); /* the last push drops it into the hollow */
   assert(g.stone_x == STONE_HOLLOW_X && g.stone_y == STONE_HOLLOW_Y);
   assert(g.outcome == OUT_BOUNDARY && g.dialogue == D_SCENE_BOUNDARY);
   assert(g.mood == MOOD_CALM);
@@ -369,7 +373,10 @@ static void mend_the_bowl(void) {
       g.selection = i;
   game_action(&g, ACT_CONFIRM);
   assert(g.mend_placed == 0 && g.state == GAME_MEND);
-  for (int i = 0; i < MEND_PIECES; i++)
+  assert(g.sfx == SFX_CLICK); /* a piece that does not fit is only answered */
+  set_fitting_piece(&g);
+  assert(g.sfx == SFX_CERAMIC);
+  for (int i = 1; i < MEND_PIECES; i++)
     set_fitting_piece(&g);
   assert(g.mend_placed == MEND_PIECES);
   assert(g.dialogue == D_MEND_DONE && game_knows(&g, OBS_BOWL_DRYING));
@@ -517,6 +524,7 @@ static void stake_out_a_new_boundary(void) {
     assert(g.y == (int8_t)stakes[i].y && g.daigo_y == (int8_t)(stakes[i].y + 1));
     game_action(&g, ACT_CONFIRM);
     assert((g.staked & (1u << i)) != 0);
+    assert(g.sfx == SFX_STAKE);
     read_out(&g);
   }
   assert(g.outcome == OUT_MEND && !g.daigo_follows);
@@ -533,6 +541,56 @@ static void stake_out_a_new_boundary(void) {
 }
 
 /* Untersuchen: der Blick zaehlt zuerst, aber was daneben liegt, wird gefunden. */
+/* Sound (#5): one cue per action, none for silence. */
+static void steps_alternate_and_walls_are_silent(void) {
+  Game g;
+  start(&g);
+  face(&g, MAP_VILLAGE, 5, 8, 0, 1);
+  game_action(&g, ACT_RIGHT);
+  uint8_t first = g.sfx;
+  game_action(&g, ACT_RIGHT);
+  assert((first == SFX_STEP_A || first == SFX_STEP_B) && g.sfx != first &&
+         (g.sfx == SFX_STEP_A || g.sfx == SFX_STEP_B));
+  face(&g, MAP_VILLAGE, 1, 1, -1, 0);
+  game_action(&g, ACT_LEFT);
+  assert(g.sfx == SFX_NONE);
+}
+static void answering_clicks_but_exploring_does_not(void) {
+  Game g;
+  game_init(&g);
+  game_action(&g, ACT_CONFIRM); /* the title page */
+  assert(g.sfx == SFX_CLICK);
+  read_out(&g);
+  game_action(&g, ACT_CANCEL); /* opens the notebook from exploration */
+  assert(g.state == GAME_NOTEBOOK && g.sfx == SFX_NONE);
+  game_action(&g, ACT_CANCEL);
+  assert(g.sfx == SFX_CLICK);
+}
+static void a_new_note_is_written_once(void) {
+  Game g;
+  start(&g);
+  face(&g, MAP_FOREST, 5, 21, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.sfx == SFX_WRITE);
+  read_out(&g);
+  game_action(&g, ACT_CONFIRM); /* the same look again: nothing new */
+  assert(g.sfx == SFX_NONE);
+}
+static void the_grove_creaks_and_the_fight_sounds(void) {
+  Game g;
+  step_into_the_grove(&g);
+  assert(g.sfx == SFX_CREAK);
+  for (int i = 0; i < 20 && g.outcome == OUT_NONE; i++) {
+    uint8_t options[ENCOUNTER_OPTION_LIMIT];
+    uint8_t count = game_encounter_options(&g, options);
+    for (uint8_t k = 0; k < count; k++)
+      if (encounter_options[options[k]].action == ENC_ATTACK)
+        g.selection = k;
+    game_action(&g, ACT_CONFIRM);
+  }
+  assert(g.outcome == OUT_FIGHT && g.sfx == SFX_BREAK); /* the last blow */
+}
+
 static void examine_reaches_all_four_neighbours(void) {
   Game g;
   start(&g);
@@ -651,6 +709,7 @@ static void an_item_reaches_the_neighbour(void) {
   face(&g, MAP_FOREST, 6, 20, 1, 0); /* neben dem Bau, Blick nach Osten */
   const Action use[] = {ACT_INVENTORY, ACT_CONFIRM};
   play(&g, use, 2);
+  assert(g.sfx == SFX_FOX);
   assert(game_knows(&g, OBS_FOX_TENDED) && g.bag[ITEM_HERB] == 0);
 }
 
@@ -925,6 +984,10 @@ int main(void) {
   daigo_answers_the_calmed_spirit();
   the_stake_spots_become_visible();
   stake_out_a_new_boundary();
+  steps_alternate_and_walls_are_silent();
+  answering_clicks_but_exploring_does_not();
+  a_new_note_is_written_once();
+  the_grove_creaks_and_the_fight_sounds();
   examine_reaches_all_four_neighbours();
   the_facing_tile_wins();
   nothing_around_still_says_so();
