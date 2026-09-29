@@ -758,6 +758,67 @@ static void the_woodpile_knows_the_ending(void) {
   }
 }
 
+/* Die drei Steine gehoeren zusammen, und einer fehlt in der Linie (#14). Die
+ * Texte verbinden Stein und Mulde in beiden Richtungen, nennen aber keine
+ * Handlung. */
+static bool page_says(const Game *g, const char *what) {
+  for (int p = 0; p < dialogues[g->dialogue].count; p++)
+    if (strstr(dialogues[g->dialogue].pages[p], what))
+      return true;
+  return false;
+}
+static bool noted(const Game *g, uint8_t note) {
+  for (int i = 0; i < g->note_count; i++)
+    if (g->notes[i] == note)
+      return true;
+  return false;
+}
+static void the_boundary_clues(void) {
+  Game g;
+  start(&g);
+  /* Die alten Steine und der versetzte tragen dasselbe Zeichen. */
+  face(&g, MAP_FOREST, 12, 13, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(page_says(&g, "drei Striche"));
+  read_out(&g);
+  face(&g, MAP_FOREST, STONE_START_X, (int8_t)(STONE_START_Y + 1), 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_X_MOVED_STONE && game_knows(&g, OBS_STONE_DRAGGED));
+  assert(page_says(&g, "drei Striche") && page_says(&g, "keine einzige"));
+  read_out(&g);
+  /* Die Mulde liegt auf der Linie; wer den Stein kennt, sieht, dass sie passt. */
+  face(&g, MAP_FOREST, STONE_HOLLOW_X, (int8_t)(STONE_HOLLOW_Y + 1), 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_X_HOLLOW_MATCH && game_knows(&g, OBS_STONE_HOLLOW));
+  assert(page_says(&g, "Linie") && noted(&g, N_STONE_MATCH));
+  read_out(&g);
+  /* Andersherum: erst die Mulde, dann der Stein. */
+  start(&g);
+  face(&g, MAP_FOREST, STONE_HOLLOW_X, (int8_t)(STONE_HOLLOW_Y + 1), 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_X_HOLLOW && page_says(&g, "Linie"));
+  assert(noted(&g, N_HOLLOW) && !noted(&g, N_STONE_MATCH));
+  read_out(&g);
+  face(&g, MAP_FOREST, STONE_START_X, (int8_t)(STONE_START_Y + 1), 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_X_MOVED_STONE_MATCH && noted(&g, N_STONE_MATCH));
+  read_out(&g);
+  /* Sumi erinnert sich an die alte Grenze aus drei Steinen. */
+  face(&g, MAP_VILLAGE, 5, 5, 0, -1);
+  game_action(&g, ACT_CONFIRM); /* der Auftrag */
+  read_out(&g);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_SUMI_WAITING && page_says(&g, "drei Steine"));
+  assert(noted(&g, N_SUMI_STONES));
+  /* Das Notizbuch zieht keinen Schluss: kein Wort vom Schieben. */
+  for (int n = 1; n < NOTE_COUNT; n++)
+    assert(!strstr(notes[n], "schieb") && !strstr(notes[n], "zurueck"));
+}
+
+/* Jede Notiz hat Platz: wer gruendlich sucht, verliert sonst am Ende still
+ * die letzten Eintraege (#14 brachte zwei dazu). */
+static void every_note_fits_the_book(void) { assert(NOTE_LIMIT >= NOTE_COUNT - 1); }
+
 static void notes_are_unique(void) {
   Game g;
   start(&g);
@@ -908,6 +969,8 @@ int main(void) {
   the_second_try_gets_an_answer();
   a_new_direction_starts_over();
   the_stone_says_it_does_not_budge();
+  the_boundary_clues();
+  every_note_fits_the_book();
   a_person_in_the_way_says_so();
   fox_unlocks_tracks();
   bowl_story_needs_both_marks();

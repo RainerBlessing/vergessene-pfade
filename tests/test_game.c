@@ -145,6 +145,66 @@ static int test_blocked_steps(const char *assets) {
   CHECK(g.stone_y == STONE_START_Y); /* und er liegt weiter, wo er lag */
   return 0;
 }
+/* Die drei Steine gehoeren zusammen, und einer fehlt in der Linie (#14). Die
+ * Texte verbinden Stein und Mulde in beiden Richtungen, nennen aber keine
+ * Handlung. */
+static bool page_says(const Game *g, const char *what) {
+  for (int p = 0; p < dialogues[g->dialogue].count; p++)
+    if (strstr(dialogues[g->dialogue].pages[p], what))
+      return true;
+  return false;
+}
+static bool noted(const Game *g, NoteId note) {
+  for (int i = 0; i < g->note_count; i++)
+    if (g->notes[i] == note)
+      return true;
+  return false;
+}
+static int test_boundary_clues(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  /* Die alten Steine und der versetzte tragen dasselbe Zeichen. */
+  stand(&g, MAP_FOREST, 12, 13, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(page_says(&g, "drei Striche"));
+  dismiss(&g);
+  stand(&g, MAP_FOREST, STONE_START_X, STONE_START_Y + 1, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_MOVED_STONE && game_knows(&g, OBS_STONE_DRAGGED));
+  CHECK(page_says(&g, "drei Striche") && page_says(&g, "keine einzige"));
+  dismiss(&g);
+  /* Die Mulde liegt auf der Linie; wer den Stein kennt, sieht, dass sie passt. */
+  stand(&g, MAP_FOREST, STONE_HOLLOW_X, STONE_HOLLOW_Y + 1, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_HOLLOW_MATCH && game_knows(&g, OBS_STONE_HOLLOW));
+  CHECK(page_says(&g, "Linie") && noted(&g, N_STONE_MATCH));
+  dismiss(&g);
+  /* Andersherum: erst die Mulde, dann der Stein. */
+  CHECK(game_init(&g, assets));
+  stand(&g, MAP_FOREST, STONE_HOLLOW_X, STONE_HOLLOW_Y + 1, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_HOLLOW && page_says(&g, "Linie"));
+  CHECK(noted(&g, N_HOLLOW) && !noted(&g, N_STONE_MATCH));
+  dismiss(&g);
+  stand(&g, MAP_FOREST, STONE_START_X, STONE_START_Y + 1, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_MOVED_STONE_MATCH && game_knows(&g, OBS_STONE_DRAGGED));
+  CHECK(noted(&g, N_STONE_MATCH));
+  dismiss(&g);
+  /* Sumi erinnert sich an die alte Grenze aus drei Steinen. */
+  stand(&g, MAP_VILLAGE, 5, 5, 0, -1);
+  game_action(&g, ACT_CONFIRM); /* der Auftrag */
+  dismiss(&g);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_SUMI_WAITING && page_says(&g, "drei Steine"));
+  CHECK(noted(&g, N_SUMI_STONES));
+  /* Das Notizbuch zieht keinen Schluss: kein Wort vom Schieben. */
+  for (int n = 1; n < NOTE_COUNT; n++)
+    CHECK(!strstr(notes[n], "schieb") && !strstr(notes[n], "zurueck"));
+  /* Jede Notiz hat Platz im Buch, auch mit den neuen. */
+  CHECK(NOTE_LIMIT >= NOTE_COUNT - 1);
+  return 0;
+}
 /* The game opens on one page that says how it is played, and waits. */
 static int test_title(const char *assets) {
   Game g;
@@ -245,7 +305,7 @@ static int test_dialogue_rules(const char *assets) {
   game_action(&g, ACT_CONFIRM);
   CHECK(g.state == GAME_EXPLORATION);
   game_action(&g, ACT_CONFIRM);
-  CHECK(g.dialogue == D_SUMI_WAITING && g.note_count == 1);
+  CHECK(g.dialogue == D_SUMI_WAITING && g.note_count == 2);
   game_action(&g, ACT_CANCEL);
   CHECK(g.state == GAME_EXPLORATION);
   /* Only one of the two marks: no owner story yet. */
@@ -287,12 +347,12 @@ static int test_examine(const char *assets) {
   /* The moved stone is a specific point before the generic stone rule. */
   stand(&g, MAP_FOREST, 24, 17, 0, -1);
   game_action(&g, ACT_CONFIRM);
-  CHECK(g.dialogue == D_X_DRAGGED && game_knows(&g, OBS_STONE_DRAGGED));
+  CHECK(g.dialogue == D_X_MOVED_STONE && game_knows(&g, OBS_STONE_DRAGGED));
   game_action(&g, ACT_CANCEL);
   /* Passable points are examined underfoot. */
   stand(&g, MAP_FOREST, 24, 12, 1, 0);
   game_action(&g, ACT_CONFIRM);
-  CHECK(g.dialogue == D_X_HOLLOW && game_knows(&g, OBS_STONE_HOLLOW));
+  CHECK(g.dialogue == D_X_HOLLOW_MATCH && game_knows(&g, OBS_STONE_HOLLOW));
   game_action(&g, ACT_CANCEL);
   /* The offering stone gives the shards once. */
   stand(&g, MAP_FOREST, 38, 21, 0, -1);
@@ -792,7 +852,7 @@ static int test_boundary(const char *assets) {
   CHECK(g.y == 17 && g.stone_y == STONE_START_Y);
   /* Examining it gives the drag marks; that alone does not unlock pushing. */
   game_action(&g, ACT_CONFIRM);
-  CHECK(g.dialogue == D_X_DRAGGED && game_knows(&g, OBS_STONE_DRAGGED));
+  CHECK(g.dialogue == D_X_MOVED_STONE && game_knows(&g, OBS_STONE_DRAGGED));
   game_action(&g, ACT_CANCEL);
   CHECK(!game_can_push(&g));
   g.obs |= OBS(OBS_STONE_HOLLOW);
@@ -1203,10 +1263,17 @@ static int test_note_notice(const char *assets) {
   for (int i = 0; i < 64 && g.note_ticks > 0; i++)
     game_action(&g, ACT_NONE);
   CHECK(g.note_ticks == 0); /* and fades on its own */
-  /* Asking her again writes nothing, so nothing is announced. */
+  /* Asking her again adds what she remembers of the old boundary (#14)... */
   stand(&g, MAP_VILLAGE, 5, 5, 0, -1);
   game_action(&g, ACT_CONFIRM);
-  CHECK(g.note_count == 1 && g.note_ticks == 0);
+  CHECK(g.note_count == 2);
+  dismiss(&g);
+  for (int i = 0; i < 64 && g.note_ticks > 0; i++)
+    game_action(&g, ACT_NONE);
+  /* ...and after that she writes nothing, so nothing is announced. */
+  stand(&g, MAP_VILLAGE, 5, 5, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.note_count == 2 && g.note_ticks == 0);
   dismiss(&g);
   return 0;
 }
@@ -1502,8 +1569,8 @@ int main(int argc, char **argv) {
   if (argc != 2)
     return 1;
   if (test_map_header() || test_title(argv[1]) || test_steps_do_not_flood(argv[1]) ||
-      test_blocked_steps(argv[1]) || test_world(argv[1]) ||
-      test_dialogue_rules(argv[1]) || test_examine(argv[1]) ||
+      test_blocked_steps(argv[1]) || test_boundary_clues(argv[1]) ||
+      test_world(argv[1]) || test_dialogue_rules(argv[1]) || test_examine(argv[1]) ||
       test_examine_nothing(argv[1]) || test_inventory_and_notebook(argv[1]) ||
       test_content(argv[1]) || test_fox_and_tracks(argv[1]) || test_encounter(argv[1]) ||
       test_fight(argv[1]) || test_outcome_keeps_threads(argv[1]) ||

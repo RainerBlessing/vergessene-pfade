@@ -24,7 +24,8 @@ typedef enum {
   GAME_END /* die Schlusstafel des Ausschnitts */
 } GameState;
 
-#define NOTE_LIMIT 24
+/* Platz fuer jede Notiz: das Buch verliert keine, wie gruendlich man auch sucht. */
+#define NOTE_LIMIT (NOTE_COUNT - 1)
 #define NOTES_PER_PAGE 3
 #define MESSAGE_LIMIT 80
 #define PLAYER_HP 24

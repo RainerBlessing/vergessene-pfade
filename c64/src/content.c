@@ -27,7 +27,10 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
                       "ein\nGeist unsere Holzfaeller an.",
                       "Ohne Holz frieren wir im Winter.\nGeh in den Wald und "
                       "vertreibe\nden Geist. Bitte."}},
-    [D_SUMI_WAITING] = {1, {"Der Wald liegt hinter dem Nordtor.\nSei vorsichtig."}},
+    [D_SUMI_WAITING] = {2,
+                        {"Der Wald liegt hinter dem Nordtor.\nSei vorsichtig.",
+                         "Als Kind bin ich mit Grossmutter\ndie drei Steine am "
+                         "Hainrand\nabgegangen. Die alte Grenze."}},
     [D_SUMI_OWNER] = {2,
                       {"Dieses Zeichen... das ist unseres.\nDie Schale gehoerte "
                        "meiner\nGrossmutter.",
@@ -142,15 +145,37 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
                               {"Neben Sumis Tuer ist ein\nHauszeichen eingebrannt. "
                                "Dasselbe\nwie auf der Schale?"}},
     [D_X_CLAW] = {1,
-                  {"Tiefe Kratzspuren im Stein.\nSie enden hier. Dahinter "
-                   "keine\neinzige."}},
+                  {"Ein alter Grenzstein. Eingehauen:\ndrei Striche. Tiefe "
+                   "Kratzspuren\nenden hier. Dahinter keine."}},
     [D_X_DRAGGED] = {1,
                      {"Die Erde ist aufgewuehlt. Eine\nSchleifspur fuehrt nach "
                       "Norden.\nJemand hat den Stein bewegt."}},
     [D_X_STONE_STUCK] = {1,
                          {"Der Stein steht schief im Weg.\nDu rollst ihn zurueck "
                           "an den\nAnfang der Schleifspur."}},
-    [D_X_HOLLOW] = {1, {"Eine Mulde mit Moosrand. Hier lag\nlange etwas Schweres."}},
+    /* Stein und Mulde verweisen aufeinander, sobald beide bekannt sind (#14). */
+    [D_X_MOVED_STONE] = {2,
+                         {"Dieser Stein traegt drei Striche\nwie die alten "
+                          "Grenzsteine. Aber\nkeine einzige Kratzspur.",
+                          "Die Erde ist aufgewuehlt. Eine\nSchleifspur fuehrt nach "
+                          "Norden.\nJemand hat den Stein bewegt."}},
+    [D_X_MOVED_STONE_MATCH] = {3,
+                               {"Dieser Stein traegt drei Striche\nwie die alten "
+                                "Grenzsteine. Aber\nkeine einzige Kratzspur.",
+                                "Die Erde ist aufgewuehlt. Eine\nSchleifspur fuehrt "
+                                "nach Norden.\nJemand hat den Stein bewegt.",
+                                "Oben, auf der Linie der alten\nSteine, liegt die "
+                                "leere Mulde.\nGenau so gross wie dieser Stein."}},
+    [D_X_HOLLOW] = {2,
+                    {"Eine Mulde mit Moosrand. Hier lag\nlange etwas Schweres.",
+                     "Links und rechts, weit entfernt,\nstehen alte Grenzsteine. "
+                     "Die\nMulde liegt genau auf ihrer Linie."}},
+    [D_X_HOLLOW_MATCH] = {3,
+                          {"Eine Mulde mit Moosrand. Hier lag\nlange etwas Schweres.",
+                           "Links und rechts, weit entfernt,\nstehen alte "
+                           "Grenzsteine. Die\nMulde liegt genau auf ihrer Linie.",
+                           "Form und Groesse passen zu dem\nStein an der "
+                           "Schleifspur."}},
     [D_X_STUMPS] = {1, {"Frisches Harz. Diese Baeume\nfielen vor wenigen Tagen."}},
     [D_X_ROPE] = {1,
                   {"Um den alten Baum hing ein Seil.\nEs ist gerissen, nicht\n"
@@ -235,9 +260,11 @@ const char *const notes[NOTE_COUNT] = {
     [NOTE_NONE] = "",
     [N_ASKED] = "Sumi bat mich, den Geist im Wald\nzu vertreiben.",
     [N_KENTA] = "Kenta sagt, der alte Baum habe\nihn angesehen.",
-    [N_CLAW] = "Die Kratzspuren enden an den\nalten Steinen. Dahinter keine.",
+    [N_CLAW] = "Kratzspuren enden an den alten\nSteinen mit den drei Strichen.",
     [N_DRAGGED] = "Eine Schleifspur. Jemand hat einen\nder Steine bewegt.",
-    [N_HOLLOW] = "Eine Mulde mit Moosrand. Hier lag\nlange etwas Schweres.",
+    [N_HOLLOW] = "Eine Mulde auf der Linie der alten\nSteine. Hier lag etwas Schweres.",
+    [N_STONE_MATCH] = "Die Mulde zwischen den alten Steinen\npasst zum bewegten Stein.",
+    [N_SUMI_STONES] = "Drei Steine am Hainrand waren\neinst die Grenze, sagt Sumi.",
     [N_STUMPS] = "Frisches Harz. Diese Baeume\nfielen vor wenigen Tagen.",
     [N_ROPE] = "Um den alten Baum hing ein Seil.\nGerissen, nicht verrottet.",
     [N_INSCRIPTION] = "Am Schrein eingeritzt: Bis zu den\ndrei Steinen und nicht weiter.",
@@ -275,7 +302,7 @@ const DialogueRule dialogue_rules[] = {
     {NPC_SUMI, 0, 0, 0, D_SUMI_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND, OPEN_END},
     {NPC_SUMI, OBS(OBS_BOWL_OWNER), 0, 0, D_SUMI_OWNER_KNOWN, NOTE_NONE, ITEM_NONE,
      OUT_ANY, OPEN_NOTHING},
-    {NPC_SUMI, OBS(OBS_ASKED_BY_SUMI), 0, 0, D_SUMI_WAITING, NOTE_NONE, ITEM_NONE,
+    {NPC_SUMI, OBS(OBS_ASKED_BY_SUMI), 0, 0, D_SUMI_WAITING, N_SUMI_STONES, ITEM_NONE,
      OUT_ANY, OPEN_NOTHING},
     /* The bowl on her shelf: handed over once the lacquer has dried. */
     {NPC_ORIHA, OBS(OBS_BOWL_READY), 0, 0, D_ORIHA_READY, N_BOWL_READY, ITEM_BOWL,
@@ -356,12 +383,18 @@ const ExaminePoint examine_points[] = {
      * stuck somewhere between both ends is rolled back to the drag marks. */
     {POINT_STONE, MAP_FOREST, 0, 0, 0, ITEM_NONE, ITEM_NONE, ITEM_NONE,
      OBS(OBS_STONE_MOVED), 0, D_X_STONE_STUCK, NOTE_NONE, OUT_NONE},
+    {POINT_STONE, MAP_FOREST, 0, 0, 0, ITEM_NONE, ITEM_NONE, ITEM_NONE,
+     OBS(OBS_STONE_HOLLOW), OBS(OBS_STONE_DRAGGED), D_X_MOVED_STONE_MATCH, N_STONE_MATCH,
+     OUT_NONE},
     {POINT_STONE, MAP_FOREST, 0, 0, 0, ITEM_NONE, ITEM_NONE, ITEM_NONE, 0,
-     OBS(OBS_STONE_DRAGGED), D_X_DRAGGED, N_DRAGGED, OUT_NONE},
+     OBS(OBS_STONE_DRAGGED), D_X_MOVED_STONE, N_DRAGGED, OUT_NONE},
     {POINT_SYMBOL, MAP_FOREST, 0, 0, 'd', ITEM_NONE, ITEM_NONE, ITEM_NONE, 0,
      OBS(OBS_STONE_DRAGGED), D_X_DRAGGED, N_DRAGGED, OUT_NONE},
     {POINT_SYMBOL, MAP_FOREST, 0, 0, 'G', ITEM_NONE, ITEM_NONE, ITEM_NONE, 0,
      OBS(OBS_CLAW_MARKS_EDGE), D_X_CLAW, N_CLAW, OUT_NONE},
+    {POINT_SYMBOL, MAP_FOREST, 0, 0, 'm', ITEM_NONE, ITEM_NONE, ITEM_NONE,
+     OBS(OBS_STONE_DRAGGED), OBS(OBS_STONE_HOLLOW), D_X_HOLLOW_MATCH, N_STONE_MATCH,
+     OUT_NONE},
     {POINT_SYMBOL, MAP_FOREST, 0, 0, 'm', ITEM_NONE, ITEM_NONE, ITEM_NONE, 0,
      OBS(OBS_STONE_HOLLOW), D_X_HOLLOW, N_HOLLOW, OUT_NONE},
     {POINT_SYMBOL, MAP_FOREST, 0, 0, 'x', ITEM_NONE, ITEM_NONE, ITEM_NONE, 0,

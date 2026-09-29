@@ -63,12 +63,14 @@ Nur Beobachtungen, keine Schlussfolgerungen (Designregel 1). U steht für Umgebu
 
 | Beobachtung | Fundort | Q | Notizbuch-Text (Entwurf) |
 |---|---|---|---|
-| `CLAW_MARKS_EDGE` | Kratzspuren an G1/G3 | U | „Die Kratzspuren enden an den alten Steinen. Dahinter keine.“ |
+| `CLAW_MARKS_EDGE` | Kratzspuren an G1/G3 | U | „Kratzspuren enden an den alten Steinen mit den drei Strichen.“ |
 | `FRESH_STUMPS` | Stümpfe am Hainrand | U | „Frisches Harz. Diese Bäume fielen vor wenigen Tagen.“ |
 | `BROKEN_ROPE` | zerrissenes Seil am Hainbaum (vom Rand aus) | U | „Um den großen Baum hing ein Seil. Es ist gerissen, nicht verrottet.“ |
 | `SHRINE_INSCRIPTION` | Schrein | U | „Eingeritzt: ‚Bis zu den drei Steinen und nicht weiter.‘“ |
-| `STONE_DRAGGED` | Schleifspur an G2' | U | „Eine Schleifspur. Jemand hat diesen Stein bewegt.“ |
-| `STONE_HOLLOW` | Mulde m | U | „Eine Mulde mit Moosrand. Hier lag lange etwas Schweres.“ |
+| `STONE_DRAGGED` | Schleifspur an G2' | U | „Eine Schleifspur. Jemand hat einen der Steine bewegt.“ |
+| `STONE_HOLLOW` | Mulde m | U | „Eine Mulde auf der Linie der alten Steine. Hier lag etwas Schweres.“ |
+| (Stein ↔ Mulde) | G2' oder Mulde, sobald das andere bekannt ist | U | „Die Mulde zwischen den alten Steinen passt zum bewegten Stein.“ |
+| – | Sumi, nachdem sie um Hilfe gebeten hat | D | „Drei Steine am Hainrand waren einst die Grenze, sagt Sumi.“ |
 | `BOWL_SHARDS` (+ Gegenstand) | Schrein | U | „Scherben einer Schale. In einer liegen vertrocknete Beeren.“ |
 | `BOWL_MARK` | Boden einer Scherbe | U | „Auf dem Boden ein eingebranntes Zeichen.“ |
 | `HOUSE_MARK` | Sumis Tür | U | „Dasselbe Zeichen wie auf der Schale?“ erst mit `BOWL_MARK`, sonst: „Ein eingebranntes Hauszeichen.“ |
@@ -112,6 +114,13 @@ Den versetzten Stein G2' zurück in die Mulde schieben (Sokoban-artig, 1 Tile pr
 Schub). Die Bedeutung ergibt sich aus der Inschrift. Wer Stein und Mulde
 beobachtet hat, *kann* schieben, muss aber selbst die Verbindung ziehen. Ein
 verklemmter Stein lässt sich zurücksetzen.
+
+Dass die drei Steine *zusammen* die alte Grenze bilden, sagen mehrere Stellen,
+ohne die Handlung zu nennen (#14): Alle drei tragen dieselben drei Striche,
+nur G2' hat keine Kratzspuren; die Mulde liegt auf der Linie von G1 und G3 und
+passt in Form und Größe zu G2'; Sumi ist als Kind mit ihrer Großmutter die drei
+Steine abgegangen. Wer vorher schiebt, hört beim zweiten Versuch: „Der
+Grenzstein rührt sich nicht.“ (#20)
 
 ### Kintsugi & Kompromiss (`OUT_MEND`)
 ```
