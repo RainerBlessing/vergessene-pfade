@@ -6,7 +6,7 @@ Toolchain und VICE-Start ist `~/projekte/c64u/fps-monitor`.
 
 Umfang (mit Rainer abgestimmt): Erkundung beider Karten, die Begegnung am
 Hainrand und alle drei Ausgänge. Nicht im POC: Nacht im Gasthaus, Morgen-Phase
-([#4](../../../issues/4)), Klang ([#5](../../../issues/5)).
+([#4](../../../issues/4)). Klang (#5) ist als kurze SID-Effekte in der Hauptschleife enthalten.
 
 Alle Stufen hier sind fertig. Was als Nächstes ansteht, steht in den Issues,
 nicht in diesem Plan: erst einmal durchspielen ([#7](../../../issues/7)) und auf
