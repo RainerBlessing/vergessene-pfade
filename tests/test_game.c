@@ -130,6 +130,30 @@ static int test_title(const char *assets) {
   CHECK(keys >= 3);
   return 0;
 }
+/* Writes `text` to a scratch file and reports whether map_load accepts it. */
+static bool loads(const char *text) {
+  const char *path = "test_map_load.tmp";
+  FILE *f = fopen(path, "wb");
+  if (!f)
+    return false;
+  fputs(text, f);
+  fclose(f);
+  Map m;
+  bool ok = map_load(&m, path);
+  remove(path);
+  return ok;
+}
+static int test_map_header(void) {
+  CHECK(loads("2 2\n..\n..\n"));
+  CHECK(!loads("abc 2\n..\n..\n"));
+  CHECK(!loads("2 x\n..\n..\n"));
+  CHECK(!loads("2\n..\n..\n"));
+  CHECK(!loads("0 2\n..\n"));
+  CHECK(!loads("-1 2\n..\n"));
+  CHECK(!loads("65 1\n.\n"));
+  CHECK(!loads("99999999999999999999 2\n..\n..\n"));
+  return 0;
+}
 static int test_world(const char *assets) {
   Game g;
   Map m;
@@ -1439,8 +1463,8 @@ static int test_tile_art(void) {
 int main(int argc, char **argv) {
   if (argc != 2)
     return 1;
-  if (test_title(argv[1]) || test_steps_do_not_flood(argv[1]) || test_world(argv[1]) ||
-      test_dialogue_rules(argv[1]) || test_examine(argv[1]) ||
+  if (test_map_header() || test_title(argv[1]) || test_steps_do_not_flood(argv[1]) ||
+      test_world(argv[1]) || test_dialogue_rules(argv[1]) || test_examine(argv[1]) ||
       test_examine_nothing(argv[1]) || test_inventory_and_notebook(argv[1]) ||
       test_content(argv[1]) || test_fox_and_tracks(argv[1]) || test_encounter(argv[1]) ||
       test_fight(argv[1]) || test_outcome_keeps_threads(argv[1]) ||

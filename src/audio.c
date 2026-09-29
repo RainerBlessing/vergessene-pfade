@@ -42,7 +42,7 @@ static void build(Audio *a) {
     for (int i = 0; i < n; i++) {
       low = low * 0.72f + noise() * 0.28f;
       s[i] = (step ? 0.075f : 0.085f) * fade(i, n, 18.0f) *
-             (low * 2.0f + 0.3f * tone((float)i * (step ? 120 : 150) / SFX_RATE));
+             (low * 2.0f + 0.3f * tone((float)i * (step ? 120.0f : 150.0f) / SFX_RATE));
     }
   }
   /* Pen on paper: brushed noise in two strokes. */

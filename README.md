@@ -109,6 +109,18 @@ Alle Modi aus einem beschreibbaren Arbeitsverzeichnis starten:
 | F11 | Vollbild an und aus |
 | R, Q (im Notizbuch) | neu starten / beenden |
 
+## Sanitizer und clang-tidy
+
+```
+cmake -S . -B build-asan -DCMAKE_BUILD_TYPE=Debug -DVP_SANITIZE=ON
+cmake --build build-asan && ctest --test-dir build-asan --output-on-failure
+clang-tidy -p build-asan src/*.c tests/*.c
+```
+
+`VP_SANITIZE` baut mit AddressSanitizer und UndefinedBehaviorSanitizer; die
+Checks von clang-tidy stehen in `.clang-tidy`. Beides läuft in der CI
+(`analysis.yml`).
+
 ## Formatierung
 
 `clang-format -i src/*.[ch] tests/*.[ch]` (Konfiguration in `.clang-format`).

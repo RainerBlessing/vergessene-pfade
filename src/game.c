@@ -228,6 +228,8 @@ static void examine_nothing(Game *g, int x, int y) {
 static bool stake_here(Game *g);
 /* Moves the selection highlight up or down within a list of `count` entries. */
 static void select_move(Game *g, Action a, int count) {
+  if (count <= 0)
+    return;
   if (a == ACT_UP)
     g->selection = (g->selection + count - 1) % count;
   else if (a == ACT_DOWN)
@@ -496,7 +498,7 @@ static bool stake_here(Game *g) {
     g->staked |= (uint8_t)(1u << i);
     int count = 0;
     for (int k = 0; k < STAKE_COUNT; k++)
-      count += (g->staked >> k) & 1u;
+      count += (int)((g->staked >> k) & 1u);
     emit(g, EV_STAKE, count, 0);
     if (count == STAKE_COUNT) {
       g->daigo_follows = false;
@@ -514,6 +516,8 @@ static bool stake_here(Game *g) {
 static void encounter_action(Game *g, Action a) {
   int options[ENCOUNTER_OPTION_LIMIT];
   int count = game_encounter_options(g, options);
+  if (count == 0)
+    return; /* nothing to choose from */
   select_move(g, a, count);
   if (a == ACT_CANCEL) /* Escape highlights retreating, it does not do it */
     for (int i = 0; i < count; i++)

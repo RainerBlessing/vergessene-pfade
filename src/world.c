@@ -1,5 +1,8 @@
 #include "world.h"
+#include <errno.h>
+#include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 const TileDef tiles[] = {
     {.symbol = '.', .passable = true, .transition = false, .name = "Wiese", .art = 0},
@@ -175,6 +178,17 @@ bool map_passable(const Map *m, int x, int y) {
   const TileDef *t = tile_def(map_at(m, x, y));
   return t && t->passable;
 }
+/* Reads one decimal number and moves `*s` past it; false if there is none. */
+static bool read_int(const char **s, int *out) {
+  char *end;
+  errno = 0;
+  long v = strtol(*s, &end, 10);
+  if (end == *s || errno == ERANGE || v < INT_MIN || v > INT_MAX)
+    return false;
+  *s = end;
+  *out = (int)v;
+  return true;
+}
 bool map_load(Map *m, const char *path) {
   FILE *f = fopen(path, "rb");
   if (!f)
@@ -182,8 +196,9 @@ bool map_load(Map *m, const char *path) {
   Map next = {0};
   int w, h;
   char line[128];
-  if (!fgets(line, sizeof line, f) || sscanf(line, "%d %d", &w, &h) != 2 || w < 1 ||
-      h < 1 || w > MAP_LIMIT || h > MAP_LIMIT) {
+  const char *cursor = line;
+  if (!fgets(line, sizeof line, f) || !read_int(&cursor, &w) || !read_int(&cursor, &h) ||
+      w < 1 || h < 1 || w > MAP_LIMIT || h > MAP_LIMIT) {
     fclose(f);
     return false;
   }

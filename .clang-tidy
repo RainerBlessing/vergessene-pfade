@@ -1,0 +1,16 @@
+# Schmale Liste: nur Checks, die echte Fehler finden. Kein readability-*,
+# das waere fuer diesen Code nur Rauschen.
+Checks: >-
+  -*,
+  clang-analyzer-*,
+  bugprone-*,
+  cert-*,
+  misc-*,
+  -bugprone-easily-swappable-parameters,
+  -misc-include-cleaner,
+  -cert-err33-c,
+  -bugprone-assignment-in-if-condition,
+  -clang-analyzer-optin.performance.Padding,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling
+WarningsAsErrors: ''
+HeaderFilterRegex: '^.*/(src|tests)/.*'
