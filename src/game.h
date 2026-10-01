@@ -82,7 +82,7 @@ int game_take_events(Game *g, GameEvent *out, int max);
 int game_mend_pieces(const Game *g, int *out);
 /* Indices into encounter_options offered now, in display order; returns the count.
  * `out` must hold ENCOUNTER_OPTION_LIMIT entries. */
-int game_encounter_options(const Game *g, int *out);
+Count game_encounter_options(const Game *g, Count *out);
 /* What "offering" would hand over right now, or ITEM_NONE. */
 ItemId game_encounter_offer(const Game *g);
 #endif

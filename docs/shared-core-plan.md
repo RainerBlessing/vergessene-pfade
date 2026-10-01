@@ -185,3 +185,18 @@ in den Kern. Kampf: die Rechnung bleibt je Fassung (siehe 3c).
   Neue PC-Tests `test_examine_reaches_neighbours` und
   `test_item_reaches_neighbour` (zuerst rot). C64-Datei **unverändert** 28 266;
   beide Suiten und PC (SDL, ASan/UBSan, clang-tidy) grün.
+- 4f, Begegnung: Complete. `shared/encounter.h` hat `offer_at_hand`,
+  `game_encounter_options`, `step_back`, `begin_encounter` und `encounter_action`;
+  je Fassung bleiben `carries`, `encounter_say` (PC: Text in die Meldung, C64:
+  Zeile der Dialogtabelle), `fight_round` und `plain_tile` (früher `stone_fits`,
+  jetzt auch für den Schritt zurück). `game_encounter_options` hat auf beiden
+  Seiten dieselbe Form (`Count`). Das Ereignis `EV_ENCOUNTER_ACTION` meldet jetzt
+  jede Wahl, nicht nur den Schlag; auf der C64 macht daraus nur `ENC_ATTACK`
+  einen Klang (Test `only_a_blow_is_heard`, mit Mutation geprüft). Die
+  Reihenfolge lernen → Zeile → melden bleibt die des PC, damit das Protokoll
+  gleich bleibt. **C64-Datei sauber gebaut 28 266 → 28 246 (−20).**
+- Makefile der C64: Die Dateien in `shared/` waren keine Abhängigkeit. Eine
+  Änderung nur dort baute nichts neu, und `make test` lief gegen eine alte
+  Binärdatei. Beim Prüfen der Begegnung fiel das auf (ein Mutationstest scheiterte
+  nicht). Behoben (`SHARED` im Makefile). Die Größen je Branch sind sauber
+  neu gebaut: Basis 28 252, Stufe 3 28 314, Stufe 4 (#51) 28 266.

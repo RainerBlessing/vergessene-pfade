@@ -147,6 +147,7 @@ static void talk(Game *g, int npc) {
 }
 static bool stone_at(const Game *g, Coord x, Coord y);
 static void reset_stone(Game *g);
+static bool plain_tile(const TileDef *t);
 static void use_point(Game *g, const ExaminePoint *p, char examined) {
   if (p->kind == POINT_STONE && p->dialogue == D_X_STONE_STUCK)
     reset_stone(g);
@@ -235,41 +236,6 @@ static bool blocking_npc(const Game *g, int x, int y) {
 }
 static bool can_enter(const Game *g, int x, int y) {
   return !blocking_npc(g, x, y) && game_passable(g, g->map, x, y);
-}
-/* Guarded ground pushes the player one step away, onto free, safe ground. */
-static void step_back(Game *g) {
-  int bx = g->x - g->dx, by = g->y - g->dy;
-  const TileDef *back = tile_def(game_tile(g, g->map, bx, by));
-  if (can_enter(g, bx, by) && !back->guarded && !back->transition) {
-    g->x = bx;
-    g->y = by;
-  }
-}
-static bool option_now(const Game *g, const EncounterOption *o) {
-  return o->when == OPT_BOTH || (o->when == OPT_FIGHT) == g->fighting;
-}
-static const EncounterOffer *offer_at_hand(const Game *g) {
-  for (int i = 0; i < encounter_offer_count; i++) {
-    const EncounterOffer *o = &encounter_offers[i];
-    if (g->player.inventory.quantities[o->item])
-      return o;
-  }
-  return NULL;
-}
-ItemId game_encounter_offer(const Game *g) {
-  const EncounterOffer *o = offer_at_hand(g);
-  return o ? o->item : ITEM_NONE;
-}
-int game_encounter_options(const Game *g, int *out) {
-  int n = 0;
-  for (int i = 0; i < encounter_option_count; i++) {
-    const EncounterOption *o = &encounter_options[i];
-    if (!option_now(g, o) || (o->action == ENC_OFFER && !offer_at_hand(g)) ||
-        (o->action == ENC_HEAL && !g->player.inventory.quantities[ITEM_HERB]))
-      continue;
-    out[n++] = i;
-  }
-  return n;
 }
 static void show(Game *g, DialogueId line) {
   const char *text = line > D_NONE ? dialogues[line].pages[0] : NULL;
@@ -383,61 +349,23 @@ static void fight_round(Game *g, bool herb) {
     open_scene(g, "Kiriyama, spaeter", D_ENC_DEFEAT);
   }
 }
-/* The spirit rises from the grove; its mood is remembered between encounters. */
-static void begin_encounter(Game *g) {
-  g->state = GAME_ENCOUNTER;
-  g->selection = 0;
-  learn(g, OBS(OBS_KAMI_SEEN), N_KAMI);
-  show(g, D_ENC_APPEAR);
-  emit(g, EV_ENCOUNTER, g->mood, 0);
-}
 /* Kintsugi: each piece is set into the gap it belongs to. A piece that does not
  * fit costs nothing; the seams stay visible. */
 static void take_item(Game *g, ItemId item) { inventory_remove(&g->player.inventory, item, 1); }
 #include "../shared/mend.h"
 /* Driving in a stake: only where the tracks run, and only with Daigo there. */
 #include "../shared/stake.h"
-static void encounter_action(Game *g, Action a) {
-  int options[ENCOUNTER_OPTION_LIMIT];
-  int count = game_encounter_options(g, options);
-  if (count == 0)
-    return; /* nothing to choose from */
-  select_move(g, a, count);
-  if (a == ACT_CANCEL) /* Escape highlights retreating, it does not do it */
-    for (int i = 0; i < count; i++)
-      if (encounter_options[options[i]].action == ENC_RETREAT)
-        g->selection = i;
-  if (a != ACT_CONFIRM)
-    return;
-  if (g->selection >= count)
-    g->selection = 0;
-  EncounterAction action = encounter_options[options[g->selection]].action;
-  const EncounterOffer *offer = action == ENC_OFFER ? offer_at_hand(g) : NULL;
-  Mood before = g->mood;
-  g->mood = offer ? offer->result : encounter_transitions[action][before];
-  if (offer) {
-    if (offer->takes != ITEM_NONE) /* die Schale bleibt im Moos stehen */
-      inventory_remove(&g->player.inventory, offer->takes, 1);
-    learn(g, offer->grants, offer->note);
-    show(g, offer->dialogue);
-  } else
-    show(g, encounter_lines[action][before]);
-  emit(g, EV_ENCOUNTER_ACTION, action, g->mood);
-  if (action == ENC_ATTACK || action == ENC_HEAL) {
-    fight_round(g, action == ENC_HEAL);
-    g->selection = 0;
-    return;
-  }
-  if (action == ENC_RETREAT) {
-    step_back(g);
-    g->fighting = false;
-    g->state = GAME_EXPLORATION;
-  }
+static bool carries(const Game *g, uint8_t item) { return g->player.inventory.quantities[item] != 0; }
+static void encounter_say(Game *g, Count line) { show(g, (DialogueId)line); }
+#include "../shared/encounter.h"
+ItemId game_encounter_offer(const Game *g) {
+  const EncounterOffer *o = offer_at_hand(g);
+  return o ? o->item : ITEM_NONE;
 }
 /* Pushing the stone one tile. Nothing here knows why it matters: the inscription
  * and the empty hollow say that, and the player draws the line. */
-/* Can the stone be set down on this tile? */
-static bool stone_fits(const TileDef *t) {
+/* An ordinary tile: walkable, neither guarded nor a way to another map. */
+static bool plain_tile(const TileDef *t) {
   return t && t->passable && !t->guarded && !t->transition;
 }
 #include "../shared/stone.h"

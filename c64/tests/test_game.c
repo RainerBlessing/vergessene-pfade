@@ -285,6 +285,24 @@ static void a_stuck_stone_rolls_back(void) {
   assert(g.sfx == SFX_SCRAPE); /* rolling it back is heard like pushing it */
 }
 
+/* Every choice is reported to the sound mapping; only a blow makes the hit sound. */
+static void only_a_blow_is_heard(void) {
+  Game g;
+  step_into_the_grove(&g);
+  game_action(&g, ACT_CONFIRM); /* stand still: wary */
+  assert(g.mood == MOOD_WARY && g.sfx != SFX_HIT);
+  uint8_t options[ENCOUNTER_OPTION_LIMIT];
+  uint8_t count = game_encounter_options(&g, options);
+  for (uint8_t k = 0; k < count; k++)
+    if (encounter_options[options[k]].action == ENC_ATTACK)
+      g.selection = k;
+  game_action(&g, ACT_CONFIRM);
+  assert(g.sfx == SFX_HIT);
+  game_action(&g, ACT_CANCEL); /* highlights retreating */
+  game_action(&g, ACT_CONFIRM);
+  assert(g.state == GAME_EXPLORATION && g.sfx != SFX_HIT);
+}
+
 static void offering_shards_angers_it(void) {
   Game g;
   step_into_the_grove(&g);
@@ -1037,6 +1055,7 @@ int main(void) {
   retreat_ends_encounter();
   waiting_calms_the_spirit();
   fight_changes_world();
+  only_a_blow_is_heard();
   offering_shards_angers_it();
   pushing_needs_both_observations();
   restore_old_boundary();

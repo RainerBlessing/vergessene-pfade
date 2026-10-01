@@ -2,7 +2,7 @@
 #define SHARED_STONE_H
 /* The boundary stone the loggers moved, and pushing it back: the same on both
  * versions. Included by game.c after the helpers it leans on: matches,
- * stone_fits (can the stone be set on this tile), learn, finish, open_scene
+ * plain_tile (an ordinary tile the stone, or a step back, may land on), learn, finish, open_scene
  * and emit. stone_at and reset_stone are declared earlier in game.c, because the
  * examine code above this point asks for them. */
 bool game_can_push(const Game *g) {
@@ -25,7 +25,7 @@ static void reset_stone(Game *g) {
 }
 static bool push_stone(Game *g, Coord dx, Coord dy) {
   Coord tx = (Coord)(g->stone_x + dx), ty = (Coord)(g->stone_y + dy);
-  if (!game_can_push(g) || !stone_fits(tile_def(game_tile(g, MAP_FOREST, tx, ty))) ||
+  if (!game_can_push(g) || !plain_tile(tile_def(game_tile(g, MAP_FOREST, tx, ty))) ||
       game_npc_at(g, tx, ty) >= 0)
     return false;
   g->stone_x = tx;

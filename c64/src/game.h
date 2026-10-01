@@ -68,5 +68,5 @@ uint8_t game_mend_pieces(const Game *g, uint8_t *out);
 /* Items the player owns, in display order; returns the count. */
 uint8_t game_owned_items(const Game *g, uint8_t *out);
 /* Indices into encounter_options offered now; `out` holds ENCOUNTER_OPTION_LIMIT. */
-uint8_t game_encounter_options(const Game *g, uint8_t *out);
+Count game_encounter_options(const Game *g, Count *out);
 #endif
