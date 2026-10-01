@@ -282,6 +282,7 @@ static void a_stuck_stone_rolls_back(void) {
   assert(g.dialogue == D_X_STONE_STUCK);
   assert(g.stone_x == STONE_START_X && g.stone_y == STONE_START_Y);
   assert(!game_knows(&g, OBS_STONE_MOVED));
+  assert(g.sfx == SFX_SCRAPE); /* rolling it back is heard like pushing it */
 }
 
 static void offering_shards_angers_it(void) {

@@ -263,6 +263,7 @@ static void reset_stone(Game *g) {
   g->daigo_x = (int8_t)npcs[NPC_DAIGO].x;
   g->daigo_y = (int8_t)npcs[NPC_DAIGO].y;
   g->obs &= ~OBS(OBS_STONE_MOVED);
+  emit(g, EV_STONE_PUSH, g->stone_x, g->stone_y);
 }
 static void use_point(Game *g, const ExaminePoint *p, char examined) {
   if (p->kind == POINT_STONE && p->dialogue == D_X_STONE_STUCK)
