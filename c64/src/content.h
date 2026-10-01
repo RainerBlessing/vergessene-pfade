@@ -1,5 +1,6 @@
 #ifndef CONTENT_H
 #define CONTENT_H
+#include "../../shared/inn.h"
 #include "world.h"
 
 /* Observations only; the game never stores conclusions (design rule 1).
@@ -29,6 +30,7 @@ typedef enum {
   OBS_KAMI_CALMED,
   OBS_DAIGO_DEAL,
   OBS_STONE_MOVED, /* the stone stands neither where it was dragged to nor home */
+  OBS_MORNING,     /* the night has passed */
   OBS_COUNT
 } ObsId;
 typedef uint32_t Obs;
@@ -149,6 +151,11 @@ typedef enum {
   D_DAIGO_MORNING_FIGHT,
   D_DAIGO_MORNING_BOUNDARY,
   D_DAIGO_MORNING_MEND,
+  D_X_FUTON,
+  D_X_FUTON_AWAKE,
+  D_X_FUTON_MORNING,
+  D_PROMPT_SLEEP,
+  D_SCENE_MORNING,
   DIALOGUE_COUNT
 } DialogueId;
 #define DIALOGUE_PAGES 3
@@ -196,7 +203,7 @@ typedef enum {
 extern const char *const notes[NOTE_COUNT];
 
 /* What a conversation opens once its last page is read. */
-typedef enum { OPEN_NOTHING, OPEN_MEND, OPEN_FOLLOW, OPEN_END } DialogueOpens;
+typedef enum { OPEN_NOTHING, OPEN_MEND, OPEN_FOLLOW, OPEN_NIGHT, OPEN_END } DialogueOpens;
 /* First matching rule wins. */
 typedef struct {
   uint8_t npc;
@@ -238,6 +245,7 @@ extern const uint8_t tile_override_count;
 
 /* Encounter: actions change the spirit's mood, not only its health. */
 typedef enum { MOOD_ANGRY, MOOD_WARY, MOOD_CALM, MOOD_COUNT } Mood;
+extern const char *const night_choices[NIGHT_CHOICES];
 extern const char *const mood_names[MOOD_COUNT];
 typedef enum {
   ENC_WAIT,

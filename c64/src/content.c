@@ -43,6 +43,7 @@ const uint8_t dialogue_rule_count =
 const ExaminePoint examine_points[] = {
 #include "../../shared/examine_points_a.inc"
 #include "../../shared/examine_points_b.inc"
+#include "../../shared/examine_points_futon.inc"
 };
 const uint8_t examine_point_count =
     (uint8_t)(sizeof examine_points / sizeof examine_points[0]);
@@ -90,6 +91,7 @@ const TileOverride tile_overrides[] = {
 const uint8_t tile_override_count =
     (uint8_t)(sizeof tile_overrides / sizeof tile_overrides[0]);
 
+const char *const night_choices[NIGHT_CHOICES] = NIGHT_CHOICE_TEXTS;
 const char *const mood_names[MOOD_COUNT] = {"ZORNIG", "MISSTRAUISCH", "RUHIG"};
 const uint8_t encounter_transitions[ENC_COUNT][MOOD_COUNT] = {
     /* from:        ANGRY       WARY        CALM */

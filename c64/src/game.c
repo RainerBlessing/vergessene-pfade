@@ -493,6 +493,8 @@ static void move(Game *g, int8_t dx, int8_t dy) {
   }
 }
 
+#include "../../shared/night.h"
+
 void game_action(Game *g, Action a) {
   g->sfx = SFX_NONE;
   if (g->state != GAME_EXPLORATION && (a == ACT_CONFIRM || a == ACT_CANCEL))
@@ -509,10 +511,12 @@ void game_action(Game *g, Action a) {
   case GAME_NOTEBOOK:
     notebook_action(g, a);
     return;
-  case GAME_DIALOGUE:
+  case GAME_DIALOGUE: {
     if (a != ACT_CANCEL &&
         !(a == ACT_CONFIRM && ++g->page >= dialogues[g->dialogue].count))
       return;
+    bool read_out = a == ACT_CONFIRM;
+    Count was = g->dialogue;
     g->state = GAME_EXPLORATION;
     msg_clear(g); /* the scene's echo of the last round ends with it */
     /* Escape closes and nothing more; reading to the end can lead on. */
@@ -525,8 +529,11 @@ void game_action(Game *g, Action a) {
       g->ended = true; /* einmal, danach laeuft die Welt weiter */
       g->state = GAME_END;
     }
+    ask_after_dialogue(g, read_out,
+                       was); /* the night, or the futon that explained itself */
     g->opens = OPEN_NOTHING;
     return;
+  }
   case GAME_INVENTORY:
     inventory_action(g, a);
     return;
@@ -535,6 +542,9 @@ void game_action(Game *g, Action a) {
     return;
   case GAME_MEND:
     mend_action(g, a);
+    return;
+  case GAME_PROMPT:
+    prompt_action(g, a);
     return;
   case GAME_END:
     if (a == ACT_CONFIRM || a == ACT_CANCEL)

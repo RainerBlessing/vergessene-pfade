@@ -24,7 +24,8 @@ typedef enum {
   GAME_NOTEBOOK,
   GAME_ENCOUNTER,
   GAME_MEND,
-  GAME_END /* die Schlusstafel des Ausschnitts */
+  GAME_PROMPT, /* the question about the night */
+  GAME_END     /* die Schlusstafel des Ausschnitts */
 } GameState;
 
 /* Platz fuer jede Notiz: das Buch verliert keine, wie gruendlich man auch sucht. */

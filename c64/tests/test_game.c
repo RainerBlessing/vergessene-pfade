@@ -251,6 +251,92 @@ static void morning_reactions_follow_the_outcome(void) {
   }
 }
 
+/* Die Nacht im Gasthaus (#4): der Futon erklaert sich und fragt, ob man bleibt. */
+static void read_to_the_end(Game *g) {
+  while (g->state == GAME_DIALOGUE)
+    game_action(g, ACT_CONFIRM);
+}
+static void the_futon_asks_the_same(void) {
+  Game g;
+  start(&g);
+  g.outcome = OUT_FIGHT; /* der Wald ist entschieden */
+  face(&g, MAP_VILLAGE, 4, 15, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.state == GAME_DIALOGUE && g.dialogue == D_X_FUTON);
+  read_to_the_end(&g);
+  assert(g.state == GAME_PROMPT && g.dialogue == D_PROMPT_SLEEP && g.selection == 0);
+}
+static void a_night_opened_by_a_dialogue_asks(void) {
+  Game g;
+  start(&g);
+  g.outcome = OUT_BOUNDARY;
+  g.state = GAME_DIALOGUE;
+  g.dialogue = D_SUMI_BOUNDARY;
+  g.page = 0;
+  g.opens = OPEN_NIGHT;
+  read_to_the_end(&g);
+  assert(g.state == GAME_PROMPT && g.dialogue == D_PROMPT_SLEEP);
+  /* Escape on the dialogue leads nowhere: reading to the end does. */
+  g.state = GAME_DIALOGUE;
+  g.dialogue = D_SUMI_BOUNDARY;
+  g.page = 0;
+  g.opens = OPEN_NIGHT;
+  game_action(&g, ACT_CANCEL);
+  assert(g.state == GAME_EXPLORATION);
+}
+static void sleeping_brings_the_morning(void) {
+  Game g;
+  start(&g);
+  g.outcome = OUT_MEND;
+  g.state = GAME_PROMPT;
+  g.dialogue = D_PROMPT_SLEEP;
+  g.selection = 0;
+  game_action(&g, ACT_CONFIRM);
+  assert(g.phase == PHASE_MORNING && game_knows(&g, OBS_MORNING));
+  assert(g.map == MAP_VILLAGE && g.x == 4 && g.y == 14);
+  assert(g.state == GAME_DIALOGUE && g.dialogue == D_SCENE_MORNING);
+  assert(g.notes[g.note_count - 1] == N_MORNING);
+  read_to_the_end(&g);
+  /* Der Futon sagt jetzt nur noch, dass man geschlafen hat -- ohne Frage. */
+  face(&g, MAP_VILLAGE, 4, 15, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_X_FUTON_MORNING);
+  read_to_the_end(&g);
+  assert(g.state == GAME_EXPLORATION);
+}
+static void staying_awake_changes_nothing(void) {
+  Game g;
+  start(&g);
+  g.outcome = OUT_FIGHT;
+  g.state = GAME_PROMPT;
+  g.dialogue = D_PROMPT_SLEEP;
+  g.selection = 1; /* NOCH HIERBLEIBEN */
+  game_action(&g, ACT_CONFIRM);
+  assert(g.state == GAME_EXPLORATION && g.phase == PHASE_BEFORE);
+  g.state = GAME_PROMPT; /* Escape is the safe answer, too */
+  g.selection = 0;
+  game_action(&g, ACT_CANCEL);
+  assert(g.state == GAME_EXPLORATION && g.phase == PHASE_BEFORE);
+  /* The selection toggles between the two answers. */
+  g.state = GAME_PROMPT;
+  g.selection = 0;
+  game_action(&g, ACT_DOWN);
+  assert(g.selection == 1);
+  game_action(&g, ACT_UP);
+  assert(g.selection == 0);
+}
+static void an_unsettled_forest_gives_no_sleep(void) {
+  Game g;
+  start(&g);
+  assert(g.outcome == OUT_NONE);
+  g.state = GAME_PROMPT;
+  g.dialogue = D_PROMPT_SLEEP;
+  g.selection = 0;
+  game_action(&g, ACT_CONFIRM);
+  assert(g.phase == PHASE_BEFORE && g.state == GAME_DIALOGUE);
+  assert(g.dialogue == D_X_FUTON_AWAKE);
+}
+
 /* Vor der Nacht bleibt es bei der Reaktion auf den Ausgang. */
 static void before_the_night_nothing_changes(void) {
   Game g;
@@ -1111,6 +1197,11 @@ int main(void) {
   a_stuck_stone_rolls_back();
   morning_reactions_follow_the_outcome();
   before_the_night_nothing_changes();
+  the_futon_asks_the_same();
+  a_night_opened_by_a_dialogue_asks();
+  sleeping_brings_the_morning();
+  staying_awake_changes_nothing();
+  an_unsettled_forest_gives_no_sleep();
   oriha_answers_what_was_seen();
   mend_the_bowl();
   the_bowl_calms_the_spirit();

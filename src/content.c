@@ -40,21 +40,6 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
                            "Naehte\nfangen das Licht.",
                            "Der Kami beugt sich darueber.\nDas Knurren hoert auf. "
                            "Es setzt\nsich neben die Schale."}},
-    [D_X_FUTON] = {1,
-                   {"Ein bereitgelegter Futon fuer\nReisende. Hier kannst du\n"
-                    "uebernachten."}},
-    [D_X_FUTON_AWAKE] = {1,
-                         {"Du liegst wach. Solange der Wald\nunruhig ist, findest du "
-                          "keinen\nSchlaf."}},
-    [D_X_FUTON_MORNING] = {1,
-                           {"Du hast geschlafen. Jetzt ist\nTag, und das Dorf ist "
-                            "wach."}},
-    [D_PROMPT_SLEEP] = {1,
-                        {"Fuer heute ist alles entschieden.\nIm Gasthaus "
-                         "uebernachten?"}},
-    [D_SCENE_MORNING] = {1,
-                         {"Du schlaefst, bis die Schiebetuer\nklappert. Am naechsten "
-                          "Morgen\nist Kiriyama ein anderes Dorf."}},
     [D_X_TRACE] = {1,
                    {"Neben dem Schrein ist der Boden\ngrau. Keine Fussspur. Nichts\n"
                     "Verbranntes. Keine Flechte."}},
@@ -109,13 +94,7 @@ const ExaminePoint examine_points[] = {
      .dialogue = D_X_DEN_EMPTY,
      .note = N_FOX_GONE},
     {.kind = POINT_SYMBOL, .map = MAP_FOREST, .symbol = 'g', .dialogue = D_X_FOX_KITS},
-    /* The night at the inn, once something has been decided. */
-    {.kind = POINT_SYMBOL,
-     .map = MAP_VILLAGE,
-     .symbol = 'u',
-     .needs = OBS(OBS_MORNING),
-     .dialogue = D_X_FUTON_MORNING},
-    {.kind = POINT_SYMBOL, .map = MAP_VILLAGE, .symbol = 'u', .dialogue = D_X_FUTON},
+#include "../shared/examine_points_futon.inc"
     /* The shrine after an outcome: a grey patch, and a line further down. */
     {.kind = POINT_SYMBOL,
      .map = MAP_FOREST,
@@ -258,7 +237,7 @@ const int mend_display[MEND_PIECES] = {2, 0, 3, 1};
 /* The stakes stand on the animal tracks, between the old stones. */
 const StakeSpot stakes[STAKE_COUNT] = {{14, 14}, {22, 15}, {30, 14}};
 
-const char *const night_choices[NIGHT_CHOICES] = {"UEBERNACHTEN", "NOCH HIERBLEIBEN"};
+const char *const night_choices[NIGHT_CHOICES] = NIGHT_CHOICE_TEXTS;
 
 /* Buildings say what they are, whether or not anyone is in. */
 const Place places[] = {

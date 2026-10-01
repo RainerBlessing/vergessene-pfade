@@ -268,3 +268,18 @@
     [D_DAIGO_MORNING_MEND] = {1,
                               {"Totholz und Setzlinge. Weniger,\nals ich brauche. Mehr "
                                "als nichts."}},
+    [D_X_FUTON] = {1,
+                   {"Ein bereitgelegter Futon fuer\nReisende. Hier kannst du\n"
+                    "uebernachten."}},
+    [D_X_FUTON_AWAKE] = {1,
+                         {"Du liegst wach. Solange der Wald\nunruhig ist, findest du "
+                          "keinen\nSchlaf."}},
+    [D_X_FUTON_MORNING] = {1,
+                           {"Du hast geschlafen. Jetzt ist\nTag, und das Dorf ist "
+                            "wach."}},
+    [D_PROMPT_SLEEP] = {1,
+                        {"Fuer heute ist alles entschieden.\nIm Gasthaus "
+                         "uebernachten?"}},
+    [D_SCENE_MORNING] = {1,
+                         {"Du schlaefst, bis die Schiebetuer\nklappert. Am naechsten "
+                          "Morgen\nist Kiriyama ein anderes Dorf."}},

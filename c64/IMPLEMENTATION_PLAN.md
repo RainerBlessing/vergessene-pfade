@@ -104,14 +104,30 @@ aufeinanderfolgende `#include`-Zeilen alphabetisch ordnet und die Reihenfolge de
 Regeln zählt.
 
 ## Stage 8: Die Übernachtungsfrage
-**Ziel**: Nach Sumis Reaktion auf den Ausgang fragt das Spiel „Übernachten?“
-(`GAME_PROMPT`, zwei Antworten); `spend_the_night` setzt den Morgen. Der Futon im
-Gasthaus erklärt sich und fragt dasselbe.
-**Erfolgskriterien**: Ja bringt in den Morgen im Gasthaus (Phase, Szene, Notiz); Nein oder
-Abbrechen lässt es beim Spiel; solange der Wald unentschieden ist, geschieht nichts.
-**Tests**: `the_night_is_offered_after_the_outcome`, `staying_awake_changes_nothing`,
-`the_futon_asks_the_same`.
-**Status**: Not Started
+**Ziel**: Der Futon im Gasthaus erklärt sich und fragt, ob man übernachtet (`GAME_PROMPT`,
+zwei Antworten, eigener Bildschirm); `spend_the_night` setzt den Morgen. Die Logik steht
+einmal in `shared/night.h`, die Zahlen und Texte in `shared/inn.h`.
+**Erfolgskriterien**: Ja bringt in den Morgen im Gasthaus (Phase, Szene, Notiz,
+Position); Nein oder Abbrechen lässt es beim Spiel; solange der Wald unentschieden
+ist, schläft man nicht (`D_X_FUTON_AWAKE`). Ein Dialog mit `OPEN_NIGHT` fragt nach dem
+Lesen bis zum Ende, nicht beim Abbrechen.
+**Nicht Teil dieser Stufe**: Sumis drei Reaktionen führen weiter zur Schlusstafel
+(`OPEN_AFTER_OUTCOME` ist auf der C64 noch `OPEN_END`). Die Frage nach Sumi kommt mit dem
+Ende in Stufe 10; bis dahin erreicht man die Nacht über den Futon, und das Spiel bleibt in
+jedem Zwischenstand stimmig.
+**Tests**: `the_futon_asks_the_same`, `a_night_opened_by_a_dialogue_asks`,
+`sleeping_brings_the_morning`, `staying_awake_changes_nothing`,
+`an_unsettled_forest_gives_no_sleep`, `the_night_prompt_shows_question_and_answers`
+(Bildschirm). Alle zuerst rot (Bau scheiterte an fehlenden Namen).
+**Status**: Complete
+
+Ergebnis: C64-Datei **29 680 → 30 646 Bytes (+966)**, insgesamt seit Beginn **+2 400**
+(28 246 → 30 646), also 40 % der 6-KB-Grenze. Fünf Dialoge und zwei Untersuchungspunkte
+stehen geteilt in `shared/` (`examine_points_futon.inc`). Der PC nutzt dieselben
+Funktionen; sein Verhalten ist unverändert (seine Tests sind grün). **Bewusst nicht
+geteilt:** die Behandlung von `OPEN_MEND` und `OPEN_FOLLOW` beim Schließen eines
+Dialogs. Der PC führt sie auch beim Abbrechen aus, die C64 nur nach dem Lesen bis zum
+Ende. Das ist eine Entscheidung, keine Anpassung (siehe unten, Offene Frage).
 
 ## Stage 9: Der Morgen in Dorf und Wald
 **Ziel**: Morgen-Änderungen der Karte je Ausgang (`outcome_changes` mit Phase), der Fuchs ist
@@ -129,3 +145,10 @@ des Drift-Checks fallen weg.
 durchgespielt; Driftmelder ohne Ausnahme für die drei Sumi-Regeln.
 **Tests**: `the_whole_slice_to_the_end`.
 **Status**: Not Started
+
+## Offene Frage (aus Stufe 8)
+`game_action` schließt einen Dialog auf PC und C64 verschieden: Auf dem PC öffnet
+Abbrechen mit **Escape** trotzdem die Reparaturansicht (`OPEN_MEND`) und lässt Daigo
+folgen (`OPEN_FOLLOW`); auf der C64 geschieht das nur nach dem Lesen bis zum Ende. Beide
+Fassungen kommentieren „Escape closes and nothing more“. Bevor die Dialog-Schlussbehandlung
+(Teaser, Ende) in Stufe 10 geteilt wird, muss entschieden werden, welches gilt.
