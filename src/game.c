@@ -147,37 +147,6 @@ static void talk(Game *g, int npc) {
 }
 static bool stone_at(const Game *g, Coord x, Coord y);
 static void reset_stone(Game *g);
-static const ExaminePoint *point_at(const Game *g, int x, int y) {
-  char symbol = game_tile(g, g->map, x, y);
-  for (int i = 0; i < examine_point_count; i++) {
-    const ExaminePoint *p = &examine_points[i];
-    if (p->kind == POINT_ITEM || !matches(g, p->needs, 0))
-      continue;
-    if (p->only_after != OUT_NONE && p->only_after != g->outcome)
-      continue; /* was der Stapel sagt, haengt am Ausgang */
-    if (p->kind == POINT_STONE) {
-      if (stone_at(g, x, y))
-        return p;
-      continue;
-    }
-    if (p->map != g->map)
-      continue;
-    if (p->kind == POINT_AT ? p->x == x && p->y == y : p->symbol == symbol)
-      return p;
-  }
-  return NULL;
-}
-static const ExaminePoint *point_for_item(const Game *g, ItemId item) {
-  char facing = game_tile(g, g->map, g->x + g->dx, g->y + g->dy);
-  for (int i = 0; i < examine_point_count; i++) {
-    const ExaminePoint *p = &examine_points[i];
-    if (p->kind != POINT_ITEM || p->item != item || !matches(g, p->needs, 0))
-      continue;
-    if (!p->symbol || (p->map == g->map && p->symbol == facing))
-      return p;
-  }
-  return NULL;
-}
 static void use_point(Game *g, const ExaminePoint *p, char examined) {
   if (p->kind == POINT_STONE && p->dialogue == D_X_STONE_STUCK)
     reset_stone(g);
@@ -221,23 +190,7 @@ static void select_move(Game *g, Action a, int count) {
   else if (a == ACT_DOWN)
     g->selection = (g->selection + 1) % count;
 }
-/* Facing tile first, then the tile underfoot (passable points cannot be faced). */
-static void examine(Game *g) {
-  if (stake_here(g))
-    return;
-  int fx = g->x + g->dx, fy = g->y + g->dy;
-  const ExaminePoint *p = point_at(g, fx, fy);
-  if (p) {
-    use_point(g, p, game_tile(g, g->map, fx, fy));
-    return;
-  }
-  p = point_at(g, g->x, g->y);
-  if (p) {
-    use_point(g, p, game_tile(g, g->map, g->x, g->y));
-    return;
-  }
-  examine_nothing(g, fx, fy);
-}
+#include "../shared/examine.h"
 static void inventory_action(Game *g, Action a) {
   ItemId owned[ITEM_COUNT];
   int count = game_owned_items(g, owned);

@@ -177,3 +177,11 @@ in den Kern. Kampf: die Rechnung bleibt je Fassung (siehe 3c).
   nicht zurückgesetzt, das Verhalten des PC gilt. Damit steht `reset_stone`
   in `shared/stone.h`. C64-Datei 28 266 (−10 gegenüber der Fassung mit
   Daigo-Zeilen); beide Suiten und PC (SDL, ASan/UBSan) grün.
+- 4e, Untersuchen: Complete. `shared/examine.h` hat `point_at`, `item_point_at`,
+  `point_for_item`, `examine` und die Tabelle der Nachbarn; jede Fassung
+  behält `use_point` und `examine_nothing` (der PC protokolliert, hat das Morgen-
+  Ende und die Phase). **Entschieden:** Der PC prüft wie die C64 (Issue #17)
+  auch die Nachbarfelder, beim Untersuchen und beim Benutzen eines Gegenstands.
+  Neue PC-Tests `test_examine_reaches_neighbours` und
+  `test_item_reaches_neighbour` (zuerst rot). C64-Datei **unverändert** 28 266;
+  beide Suiten und PC (SDL, ASan/UBSan, clang-tidy) grün.
