@@ -78,8 +78,16 @@ STRING_RE = r'"((?:[^"\\]|\\.)*)"'
 
 
 def _read(path):
+    """Liest eine Quelle; ein `#include "...inc"` wird durch den Inhalt ersetzt
+    (die geteilten Texte in shared/ stehen mitten in den Tabellen)."""
     with open(path, encoding="utf-8") as f:
-        return f.read()
+        text = f.read()
+    base = os.path.dirname(path)
+
+    def include(m):
+        with open(os.path.join(base, m.group(1)), encoding="utf-8") as inc:
+            return inc.read()
+    return re.sub(r'^#include "([^"]+\.inc)"[ \t]*$', include, text, flags=re.M)
 
 
 def _extract_array(text, name):
@@ -282,6 +290,14 @@ def _macro_defs(text):
     return defs
 
 
+def _alias_defs(text):
+    """Namen, die ein Makro fuer einen einzelnen anderen Namen setzt, etwa
+    `#define OPEN_AFTER_OUTCOME OPEN_END`: Gleich geschriebene Eintraege in
+    shared/ meinen auf jeder Seite etwas anderes."""
+    pattern = r"^#define\s+([A-Za-z_][A-Za-z0-9_]*)\s+([A-Za-z_][A-Za-z0-9_]*)\s*$"
+    return dict(re.findall(pattern, text, re.M))
+
+
 def _split_top_level(text, separator=","):
     """Teilt an Kommas ausserhalb von Klammern und Anfuehrungszeichen."""
     parts, depth, current, quote = [], 0, "", None
@@ -360,6 +376,8 @@ def parse_rule_table(source, header, table, side="pc"):
         if not _defines_array(source, name):
             continue
         body = expand_macros(_extract_array(source, name), macros)
+        for alias, target in _alias_defs(source).items():
+            body = re.sub(r"\b" + re.escape(alias) + r"\b", target, body)
         groups.extend(g for _, g in _brace_groups(_strip_comments(body)))
     entries, seen = [], {}
     for group in groups:
