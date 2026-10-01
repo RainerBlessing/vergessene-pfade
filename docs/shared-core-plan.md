@@ -32,7 +32,7 @@ Einträge, die nur eine Seite hat, keine Kopien.
 **Success Criteria**: C64-Größe innerhalb des Budgets; `content_drift.py` meldet
 für Geteiltes nichts mehr.
 **Tests**: `tools/test_content_drift.py`, beide Spielsuiten.
-**Status**: In Progress (Branch `shared-content-source`)
+**Status**: Complete (Branch `shared-content-source`; `TileOverride` bleibt je Seite)
 
 - 2a, Texte: Complete. `shared/dialogues.inc` (74 Dialoge) und `shared/notes.inc`
   (30 Notizen) stehen in beiden `content.c` per `#include` mitten in der Tabelle.
@@ -40,7 +40,7 @@ für Geteiltes nichts mehr.
   Designated Initializer machen die Reihenfolge egal, und beide Enums behalten
   ihre eigene Liste. C64-Größe unverändiert (13 412 / 14 839), alle Tests grün.
   `content_drift.py` setzt die `.inc`-Dateien beim Lesen wieder ein.
-- 2b, Regeltabellen: In Progress.
+- 2b, Regeltabellen: Complete.
   - `Place`: Complete. `shared/places.inc`, beide Tabellen identisch.
   - `DialogueRule`: Complete. 30 Regeln stehen in `shared/dialogue_rules_a.inc`
     (erste Regel) und `_b.inc` (der Rest); die 10 PC-eigenen Morgenregeln liegen
