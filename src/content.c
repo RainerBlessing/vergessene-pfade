@@ -120,7 +120,8 @@ const char *const notes[NOTE_COUNT] = {
     [N_VISITOR] = "Am Schrein steht: Ein Besucher kam,\nbevor der Wald unruhig wurde.",
 };
 
-/* Wohin die Antwort auf einen Ausgang fuehrt: in die Nacht (PC) oder zur Schlusstafel (C64). */
+/* Wohin die Antwort auf einen Ausgang fuehrt: in die Nacht (PC) oder zur Schlusstafel
+ * (C64). */
 #define OPEN_AFTER_OUTCOME OPEN_NIGHT
 #define MARKS (OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK))
 const DialogueRule dialogue_rules[] = {
