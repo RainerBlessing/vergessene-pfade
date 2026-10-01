@@ -37,6 +37,8 @@ typedef uint32_t Obs;
 typedef enum { OUT_NONE, OUT_FIGHT, OUT_BOUNDARY, OUT_MEND, OUTCOME_COUNT } Outcome;
 /* In a rule: applies whatever has been decided. */
 #define OUT_ANY OUTCOME_COUNT
+/* The C64 slice has no phases; a rule's phase is always PHASE_ANY. */
+#define PHASE_ANY 0xFF
 
 typedef enum { ITEM_NONE, ITEM_HERB, ITEM_SHARDS, ITEM_BOWL, ITEM_COUNT } ItemId;
 typedef struct {
@@ -189,6 +191,7 @@ typedef struct {
   Obs needs, forbids, grants;
   uint8_t dialogue, note, gives, outcome; /* outcome OUT_ANY: whatever was decided */
   uint8_t opens;
+  uint8_t phase; /* PHASE_ANY matches any time */
 } DialogueRule;
 extern const DialogueRule dialogue_rules[];
 extern const uint8_t dialogue_rule_count;

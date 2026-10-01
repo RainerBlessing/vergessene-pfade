@@ -1,4 +1,5 @@
 #include "game.h"
+#include "../shared/talk.h"
 #include <stdio.h>
 #include <string.h>
 bool game_init(Game *g, const char *assets) {
@@ -134,22 +135,15 @@ int game_mend_pieces(const Game *g, int *out) {
   return n;
 }
 static void talk(Game *g, int npc) {
-  for (int i = 0; i < dialogue_rule_count; i++) {
-    const DialogueRule *r = &dialogue_rules[i];
-    if ((int)r->npc != npc || !matches(g, r->needs, r->forbids))
-      continue;
-    if (!fits_now(g, 0, r->outcome, r->phase))
-      continue;
-    /* Do not hand over something the player still carries: the next rule speaks. */
-    if (r->gives != ITEM_NONE && g->player.inventory.quantities[r->gives])
-      continue;
-    if (r->gives != ITEM_NONE)
-      inventory_add(&g->player.inventory, r->gives, 1);
-    learn(g, r->grants, r->note);
-    emit(g, EV_NPC_TALK, npc, r->dialogue);
-    open_dialogue(g, npc, 0, r->dialogue, r->opens);
+  const DialogueRule *r =
+      talk_select(npc, g->obs, g->outcome, g->phase, g->player.inventory.quantities);
+  if (!r)
     return;
-  }
+  if (r->gives != ITEM_NONE)
+    inventory_add(&g->player.inventory, r->gives, 1);
+  learn(g, r->grants, r->note);
+  emit(g, EV_NPC_TALK, npc, r->dialogue);
+  open_dialogue(g, npc, 0, r->dialogue, r->opens);
 }
 static bool stone_at(const Game *g, int x, int y) {
   return g->map == MAP_FOREST && x == g->stone_x && y == g->stone_y;
