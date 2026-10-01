@@ -1,9 +1,9 @@
 #ifndef GAME_H
 #define GAME_H
-#include "content.h"
 #include "../../shared/feedback.h"
 #include "../../shared/fight.h"
 #include "../../shared/state.h"
+#include "content.h"
 
 typedef enum {
   ACT_NONE,
@@ -26,7 +26,6 @@ typedef enum {
   GAME_MEND,
   GAME_END /* die Schlusstafel des Ausschnitts */
 } GameState;
-
 
 /* Platz fuer jede Notiz: das Buch verliert keine, wie gruendlich man auch sucht. */
 #define NOTE_LIMIT (NOTE_COUNT - 1)

@@ -1,7 +1,9 @@
 #ifndef SHARED_FEEDBACK_H
 #define SHARED_FEEDBACK_H
-/* What the game reports about itself, and how a sound follows from it. Included
- * after content.h (ITEM_HERB, D_NONE, ENC_ATTACK, OUT_FIGHT, STONE_HOLLOW_*).
+#include "content.h"
+/* What the game reports about itself, and how a sound follows from it. It takes
+ * ITEM_HERB, D_NONE, ENC_ATTACK, OUT_FIGHT and STONE_HOLLOW_* from content.h,
+ * which is found through the include path of the version that builds it.
  *
  * The PC keeps every event for the session log and the sound; the C64 keeps no
  * event, only the cue that follows from it (sfx_for_event). */

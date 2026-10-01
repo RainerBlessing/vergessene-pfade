@@ -1,10 +1,10 @@
 #ifndef GAME_H
 #define GAME_H
+#include "../shared/feedback.h"
 #include "combat.h"
 #include "content.h"
 #include "inventory.h"
 #include "world.h"
-#include "../shared/feedback.h"
 typedef enum {
   ACT_NONE,
   ACT_UP,

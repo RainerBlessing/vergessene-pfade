@@ -16,7 +16,10 @@ bool game_init(Game *g, const char *assets) {
   g->scene = "Unterwegs";
   g->dialogue = D_SCENE_ARRIVAL;
   g->state = GAME_TITLE; /* the arrival scene waits behind the title page */
-  g->player = (Player){.hp = PLAYER_HP, .max_hp = PLAYER_HP, .attack = PLAYER_ATTACK, .defense = PLAYER_DEFENSE};
+  g->player = (Player){.hp = PLAYER_HP,
+                       .max_hp = PLAYER_HP,
+                       .attack = PLAYER_ATTACK,
+                       .defense = PLAYER_DEFENSE};
   char path[1024];
   snprintf(path, sizeof path, "%s/maps/village.map", assets);
   if (!map_load(&g->maps[MAP_VILLAGE], path))
@@ -351,11 +354,15 @@ static void fight_round(Game *g, bool herb) {
 }
 /* Kintsugi: each piece is set into the gap it belongs to. A piece that does not
  * fit costs nothing; the seams stay visible. */
-static void take_item(Game *g, ItemId item) { inventory_remove(&g->player.inventory, item, 1); }
+static void take_item(Game *g, ItemId item) {
+  inventory_remove(&g->player.inventory, item, 1);
+}
 #include "../shared/mend.h"
 /* Driving in a stake: only where the tracks run, and only with Daigo there. */
 #include "../shared/stake.h"
-static bool carries(const Game *g, uint8_t item) { return g->player.inventory.quantities[item] != 0; }
+static bool carries(const Game *g, uint8_t item) {
+  return g->player.inventory.quantities[item] != 0;
+}
 static void encounter_say(Game *g, Count line) { show(g, (DialogueId)line); }
 #include "../shared/encounter.h"
 ItemId game_encounter_offer(const Game *g) {

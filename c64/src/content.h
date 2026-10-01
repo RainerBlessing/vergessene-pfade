@@ -298,6 +298,5 @@ extern const char *const closing_line[OUTCOME_COUNT];
 #define CLOSING_LINES 9
 extern const char *const closing_page[CLOSING_LINES];
 
-
 #define SPEAKER_SCENE (-2)
 #endif

@@ -39,6 +39,6 @@ void combat_turn(Combat *c, Player *p, int rage, bool herb, char *message, int s
   if (herb)
     snprintf(message, (size_t)size, FIGHT_HERB_TEXT "%d" FIGHT_END_TEXT, damage);
   else
-    snprintf(message, (size_t)size, FIGHT_HIT_TEXT "%d" FIGHT_THEN_TEXT "%d" FIGHT_END_TEXT,
-             hit, damage);
+    snprintf(message, (size_t)size,
+             FIGHT_HIT_TEXT "%d" FIGHT_THEN_TEXT "%d" FIGHT_END_TEXT, hit, damage);
 }

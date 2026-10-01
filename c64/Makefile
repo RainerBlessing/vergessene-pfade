@@ -4,9 +4,10 @@ PRG := build/vergessene-pfade.prg
 SOURCES := src/main.c src/render.c src/screen.c src/sound.c src/game.c src/content.c src/world.c
 CORE := src/game.c src/content.c src/world.c
 VIEW := src/render.c src/screen.c
-# Was beide Fassungen teilen: eine Aenderung dort baut alles neu.
-SHARED := $(wildcard ../shared/*.h ../shared/*.inc)
-HOST_CC := cc -std=c11 -Wall -Wextra -Werror
+# Header und was beide Fassungen teilen: eine Aenderung dort baut alles neu.
+# -Isrc: die geteilten Header holen content.h aus dem Ordner dieser Fassung.
+SHARED := $(wildcard ../shared/*.h ../shared/*.inc src/*.h)
+HOST_CC := cc -std=c11 -Wall -Wextra -Werror -Isrc
 # -Oz ist in VICE nachgemessen: 2 384 Bytes kleiner als -Os und nur 2,2 Prozent
 # langsamer im Bildaufbau (194 824 -> 199 077 Takte). Zum Nachrechnen:
 # `make clean build size bench OPT=-Os` gegen dasselbe ohne OPT (Zahlen: README).
@@ -21,7 +22,7 @@ build: $(PRG)
 
 $(PRG): $(SOURCES) src/maps.h $(SHARED)
 	mkdir -p build
-	$(LLVM_MOS_CLANG) --target=mos-c64 $(OPT) -o $(PRG) $(SOURCES)
+	$(LLVM_MOS_CLANG) --target=mos-c64 $(OPT) -Isrc -o $(PRG) $(SOURCES)
 	$(MAKE) --no-print-directory build/spielen.sh
 
 # Zum Spielen ohne Bauen: liegt neben der .prg und startet nur sie.
