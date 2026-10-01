@@ -1,7 +1,7 @@
 #ifndef SHARED_NIGHT_H
 #define SHARED_NIGHT_H
-/* The night at the inn: the question, the answers, and the morning. The same on
- * both versions. Included by game.c after the helpers it leans on: learn, emit,
+/* The night at the inn: the question, the answers, and the morning, and what a
+ * closing dialogue leads on to. The same on both versions. Included by game.c after the helpers it leans on: learn, emit,
  * open_scene, open_dialogue and enter_place. */
 
 static void ask_about_the_night(Game *g) {
@@ -47,5 +47,17 @@ static void prompt_action(Game *g, Action a) {
 static void ask_after_dialogue(Game *g, bool read_out, Count was) {
   if (read_out && g->phase == PHASE_BEFORE && (g->opens == OPEN_NIGHT || was == D_X_FUTON))
     ask_about_the_night(g);
+}
+/* What a dialogue sets in motion when it closes, however the player closed it: the
+ * repair view, Daigo walking along. The night asks only after reading to the end
+ * (see ask_after_dialogue). Call it before the dialogue's `opens` is cleared. */
+static void opens_after_dialogue(Game *g, bool read_out, Count was) {
+  if (g->opens == OPEN_MEND) {
+    g->state = GAME_MEND;
+    g->selection = 0;
+  } else if (g->opens == OPEN_FOLLOW)
+    g->daigo_follows = true;
+  else
+    ask_after_dialogue(g, read_out, was);
 }
 #endif

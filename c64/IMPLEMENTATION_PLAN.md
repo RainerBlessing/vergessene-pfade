@@ -124,10 +124,8 @@ jedem Zwischenstand stimmig.
 Ergebnis: C64-Datei **29 680 → 30 646 Bytes (+966)**, insgesamt seit Beginn **+2 400**
 (28 246 → 30 646), also 40 % der 6-KB-Grenze. Fünf Dialoge und zwei Untersuchungspunkte
 stehen geteilt in `shared/` (`examine_points_futon.inc`). Der PC nutzt dieselben
-Funktionen; sein Verhalten ist unverändert (seine Tests sind grün). **Bewusst nicht
-geteilt:** die Behandlung von `OPEN_MEND` und `OPEN_FOLLOW` beim Schließen eines
-Dialogs. Der PC führt sie auch beim Abbrechen aus, die C64 nur nach dem Lesen bis zum
-Ende. Das ist eine Entscheidung, keine Anpassung (siehe unten, Offene Frage).
+Funktionen; sein Verhalten ist unverändert (seine Tests sind grün). **Beim Schließen
+eines Dialogs** wichen die Fassungen ab (`OPEN_MEND`, `OPEN_FOLLOW`). Das wurde danach entschieden (siehe unten): es gilt das Verhalten des PC.
 
 ## Stage 9: Der Morgen in Dorf und Wald
 **Ziel**: Morgen-Änderungen der Karte je Ausgang (`outcome_changes` mit Phase), der Fuchs ist
@@ -146,9 +144,12 @@ durchgespielt; Driftmelder ohne Ausnahme für die drei Sumi-Regeln.
 **Tests**: `the_whole_slice_to_the_end`.
 **Status**: Not Started
 
-## Offene Frage (aus Stufe 8)
-`game_action` schließt einen Dialog auf PC und C64 verschieden: Auf dem PC öffnet
-Abbrechen mit **Escape** trotzdem die Reparaturansicht (`OPEN_MEND`) und lässt Daigo
-folgen (`OPEN_FOLLOW`); auf der C64 geschieht das nur nach dem Lesen bis zum Ende. Beide
-Fassungen kommentieren „Escape closes and nothing more“. Bevor die Dialog-Schlussbehandlung
-(Teaser, Ende) in Stufe 10 geteilt wird, muss entschieden werden, welches gilt.
+## Entschieden (aus Stufe 8): Escape beim Schließen eines Dialogs
+`game_action` schloss einen Dialog auf PC und C64 verschieden: Auf dem PC öffnete Escape
+trotzdem die Reparaturansicht (`OPEN_MEND`) und ließ Daigo folgen (`OPEN_FOLLOW`), auf der
+C64 geschah das nur nach dem Lesen bis zum Ende. **Entschieden (Rainer, 2026-10-01):** Es
+geschieht auch ohne das Lesen, wie auf dem PC. Gelesen werden muss nur für die Nacht und
+das Ende (bzw. den Teaser). Die Behandlung steht einmal in `opens_after_dialogue()`
+(`shared/night.h`); die C64 hat sich angepasst. Tests auf beiden Seiten
+(`escape_still_opens_what_the_dialogue_opens`, `test_escape_still_opens`; der C64-Test war
+zuerst rot).

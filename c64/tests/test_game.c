@@ -256,6 +256,28 @@ static void read_to_the_end(Game *g) {
   while (g->state == GAME_DIALOGUE)
     game_action(g, ACT_CONFIRM);
 }
+/* Escape on a dialogue still sets in motion what it opens (a mend, a walk with
+ * Daigo), as on the PC: the choice is made by the conversation, not by how far
+ * the player read. What needs the reading -- the night, the end -- still does. */
+static void escape_still_opens_what_the_dialogue_opens(void) {
+  Game g;
+  start(&g);
+  g.state = GAME_DIALOGUE;
+  g.dialogue = D_ORIHA_MEND;
+  g.page = 0;
+  g.opens = OPEN_MEND;
+  game_action(&g, ACT_CANCEL);
+  assert(g.state == GAME_MEND && g.selection == 0);
+  g.state = GAME_DIALOGUE;
+  g.dialogue = D_DAIGO_OFFER;
+  g.page = 0;
+  g.opens = OPEN_FOLLOW;
+  g.daigo_follows = false;
+  game_action(&g, ACT_CANCEL);
+  assert(g.state == GAME_EXPLORATION && g.daigo_follows);
+  assert(g.opens == OPEN_NOTHING);
+}
+
 static void the_futon_asks_the_same(void) {
   Game g;
   start(&g);
@@ -1197,6 +1219,7 @@ int main(void) {
   a_stuck_stone_rolls_back();
   morning_reactions_follow_the_outcome();
   before_the_night_nothing_changes();
+  escape_still_opens_what_the_dialogue_opens();
   the_futon_asks_the_same();
   a_night_opened_by_a_dialogue_asks();
   sleeping_brings_the_morning();

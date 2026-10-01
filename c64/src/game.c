@@ -519,18 +519,13 @@ void game_action(Game *g, Action a) {
     Count was = g->dialogue;
     g->state = GAME_EXPLORATION;
     msg_clear(g); /* the scene's echo of the last round ends with it */
-    /* Escape closes and nothing more; reading to the end can lead on. */
-    if (a == ACT_CONFIRM && g->opens == OPEN_MEND) {
-      g->state = GAME_MEND;
-      g->selection = 0;
-    } else if (a == ACT_CONFIRM && g->opens == OPEN_FOLLOW)
-      g->daigo_follows = true;
-    else if (a == ACT_CONFIRM && g->opens == OPEN_END && !g->ended) {
+    /* What a dialogue opens happens however it was closed; the night and the end of
+     * the slice need the reading. */
+    if (read_out && g->opens == OPEN_END && !g->ended) {
       g->ended = true; /* einmal, danach laeuft die Welt weiter */
       g->state = GAME_END;
-    }
-    ask_after_dialogue(g, read_out,
-                       was); /* the night, or the futon that explained itself */
+    } else
+      opens_after_dialogue(g, read_out, was);
     g->opens = OPEN_NOTHING;
     return;
   }

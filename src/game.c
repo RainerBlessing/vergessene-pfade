@@ -434,20 +434,16 @@ void game_action(Game *g, Action a) {
     if (a != ACT_CANCEL &&
         !(a == ACT_CONFIRM && ++g->page >= dialogues[g->dialogue].count))
       return;
-    /* Escape closes and nothing more; reading to the end can lead on. */
+    /* What a dialogue opens happens however it was closed; the night and the teaser
+     * need the reading. */
     bool read_out = a == ACT_CONFIRM;
     DialogueId was = g->dialogue;
     g->state = GAME_EXPLORATION;
     g->message[0] = 0; /* the scene's echo of the last round ends with it */
-    if (g->opens == OPEN_MEND) {
-      g->state = GAME_MEND;
-      g->selection = 0;
-    } else if (g->opens == OPEN_FOLLOW)
-      g->daigo_follows = true;
-    else if (g->opens == OPEN_TEASER && read_out)
+    if (g->opens == OPEN_TEASER && read_out)
       open_scene(g, "Die vergessenen Pfade", D_SCENE_TEASER);
-    ask_after_dialogue(g, read_out,
-                       was); /* the night, or the futon that explained itself */
+    else
+      opens_after_dialogue(g, read_out, was);
     g->opens = OPEN_NOTHING;
     return;
   }
