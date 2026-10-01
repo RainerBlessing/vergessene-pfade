@@ -4,6 +4,8 @@ PRG := build/vergessene-pfade.prg
 SOURCES := src/main.c src/render.c src/screen.c src/sound.c src/game.c src/content.c src/world.c
 CORE := src/game.c src/content.c src/world.c
 VIEW := src/render.c src/screen.c
+# Was beide Fassungen teilen: eine Aenderung dort baut alles neu.
+SHARED := $(wildcard ../shared/*.h ../shared/*.inc)
 HOST_CC := cc -std=c11 -Wall -Wextra -Werror
 # -Oz ist in VICE nachgemessen: 2 384 Bytes kleiner als -Os und nur 2,2 Prozent
 # langsamer im Bildaufbau (194 824 -> 199 077 Takte). Zum Nachrechnen:
@@ -17,7 +19,7 @@ BENCH_SOURCES := tools/bench_render.c $(VIEW) $(CORE)
 
 build: $(PRG)
 
-$(PRG): $(SOURCES) src/maps.h
+$(PRG): $(SOURCES) src/maps.h $(SHARED)
 	mkdir -p build
 	$(LLVM_MOS_CLANG) --target=mos-c64 $(OPT) -o $(PRG) $(SOURCES)
 	$(MAKE) --no-print-directory build/spielen.sh
@@ -43,11 +45,11 @@ test: build/test_game build/test_screen
 	./build/test_game
 	./build/test_screen
 
-build/test_game: tests/test_game.c $(CORE) src/maps.h
+build/test_game: tests/test_game.c $(CORE) src/maps.h $(SHARED)
 	mkdir -p build
 	$(HOST_CC) -o $@ tests/test_game.c $(CORE)
 
-build/test_screen: tests/test_screen.c tests/c64.h $(CORE) $(VIEW) src/maps.h
+build/test_screen: tests/test_screen.c tests/c64.h $(CORE) $(VIEW) src/maps.h $(SHARED)
 	mkdir -p build
 	$(HOST_CC) -Itests -o $@ tests/test_screen.c $(VIEW) $(CORE)
 
@@ -63,7 +65,7 @@ size: $(PRG)
 bench: $(BENCH)
 	LLVM_MOS_BIN=$(LLVM_MOS_BIN) python3 tools/bench.py $(BENCH)
 
-$(BENCH): $(BENCH_SOURCES) src/maps.h
+$(BENCH): $(BENCH_SOURCES) src/maps.h $(SHARED)
 	mkdir -p build
 	$(LLVM_MOS_CLANG) --target=mos-c64 $(OPT) -Isrc -o $(BENCH) $(BENCH_SOURCES)
 
