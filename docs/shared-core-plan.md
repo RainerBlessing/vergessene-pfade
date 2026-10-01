@@ -64,7 +64,74 @@ und SFX (C64) sind zwei Adapter auf demselben Kanal.
 **Success Criteria**: `game_action` im Kern; PC-Zusätze (Debug, Ereignislog)
 liegen außen.
 **Tests**: Kernsuite auf dem Host.
-**Status**: Not Started
+**Status**: Complete (Branch `shared-core-state`)
+
+- 3a, Ausgabekanal: Complete. `shared/feedback.h` hält `EventType`, `SfxId` und
+  `sfx_for_event()`. Die PC-Zuordnung Ereignis → Klang (`audio_events`) und acht
+  `cue()`-Stellen der C64-Fassung riefen dieselbe Entscheidung an verschiedenen
+  Orten auf; jetzt steht sie einmal da. Die C64 hat dafür `emit()`, das nur den
+  Klang merkt. Kosten: +22 Bytes Code, Tests beider Seiten grün (PC mit SDL
+  gebaut, 4 von 4).
+  Bewusst nicht geteilt, weil die Fassungen es verschieden auslösen:
+  - `SFX_WRITE`: PC bei jeder neuen Beobachtung (`EV_OBSERVE`), C64 bei jeder
+    neuen Notiz. Der Kommentar sagt „in das Notizbuch“, die C64-Fassung folgt
+    ihm. Offen: auf eine Notiz-Regel einigen.
+  - Klick und Schritt: PC im Frontend (`main.c`, Zähler `steps`), C64 in der Aktion.
+- 3b, Zustandslayout: Complete. `shared/state.h` hat `GAME_CORE_FIELDS`, die
+  Felder, die beide `Game` gleich führen (Position, Sprecher, Seite, Auswahl,
+  Beobachtungen, Notizen, Stein, Schale, Daigo, Meldung); jede Fassung gibt
+  `Coord` und `Count` vor (PC: `int`, C64: `int8_t`/`uint8_t`), damit die PC-Fassung
+  nicht schmaler wird und die C64-Fassung nicht breiter. Enum-Felder (`state`,
+  `mood`, `outcome`, `opens`) bleiben je Seite unter gleichem Namen. C64-Größe
+  und BSS unverändert; PC mit SDL, ASan/UBSan und clang-tidy sauber.
+- 3c, Kampf: Complete, aber kleiner als geplant. `shared/fight.h` hält die Zahlen
+  (`PLAYER_*`, `KAMI_*`) und den Wortlaut der Kampfmeldung; die PC-Fassung nimmt
+  den Text der C64-Fassung („Das Kraut lindert deine Wunden“), und bei einer
+  Niederlage steht dort kein Satz mehr (das sagt die Szene danach). Die
+  Rechnung selbst (Schaden, Würfel) bleibt je Fassung: Ein geteiltes
+  `fight_blows()` in `shared/fight.c` kostete die C64-Fassung **+371 Bytes**
+  (mit der geteilten Meldung +590), weil die Ergebnisse über Zeiger zurückkommen und
+  der 6502 über Zeiger teuer zugreift. Das ist gemessen, nicht geschätzt (Code
+  13 434 → 13 805 beziehungsweise 14 024). Beide Seiten würfeln gleich
+  (`random * 1664525 + 1013904223`), unterscheiden sich aber noch darin, dass
+  `combat_begin()` auf dem PC den Würfel auf 42 zurücksetzt und die C64-Fassung
+  ihn weiterlaufen lässt.
+
+## Platzmessung vor Stufe 4 (C64)
+
+Gemessen mit `make size` am 2026-10-01.
+
+| | Datei | RAM belegt |
+|---|---|---|
+| Basis (`pc-stein-rueckmeldung`) | 28 252 | 28 647 |
+| nach Stufe 1–3 | 28 314 | 28 709 |
+| **Mehrkosten Stufe 1–3** | **+62** | **+62** |
+
+Die +62 Bytes sind das Feld `phase` je Regel (+42, Stufe 1) und `emit()` (+22,
+Stufe 3a), abzüglich 2.
+
+**Was frei ist.** Das Linkerskript (`mos-platform/c64/lib/link.ld`) gibt dem Programm
+`$0801` bis `$CFFF`, also 51 199 Bytes; der weiche Stapel wächst von `$D000` nach
+unten. Bei 28 709 belegten Bytes bleiben **rund 22 500 Bytes (44 %)**. Die
+README rechnet „43 % von 64K“; der nutzbare Teil ist kleiner, aber die Reserve ist
+trotzdem groß. Der Nullseiten-Anteil (`-mlto-zp=110`) ist ausgeschöpft: Mehr Code
+bekommt dort keine Plätze mehr und wird dadurch langsamer, nicht ungültig.
+
+**Was knapp werden kann.** Inhalt wächst (Issue #25: Texte und Karten). Die
+Nur-Lese-Daten sind heute 14 839 Bytes; verdoppeln sie sich, bleiben etwa 7 700
+Bytes für Code und Stapel. Ein Kern, der ein paar hundert Bytes kostet, ist
+bezahlbar, gehört aber gegen Inhalt abgewogen.
+
+**Was die Messungen über die Form des geteilten Codes sagen.**
+- Teurer Code ist der, der Ergebnisse über Zeiger zurückgibt oder Zustand
+  hin- und herkopiert: `fight_blows()` +371 Bytes, mit geteilter Meldung +590.
+- Billig ist Code, der wie auf der C64 direkt auf `g->feld` zugreift
+  (Stufe 1: Auswahl der Regel, +12 Bytes Code; Stufe 3a: +22).
+- Folge für Stufe 4: Regeln als `static inline`-Funktionen in einer `.inc`, die
+  `game.c` beider Fassungen einbindet (wie `shared/talk.h`), mit der
+  C64-Form als Vorlage; die PC-Fassung passt sich an, nicht umgekehrt.
+- Nicht gemessen: Laufzeit (`make bench` braucht VICE mit Anzeige). Die Regeln
+  laufen einmal je Tastendruck; ein Bildaufbau kostet rund 199 000 Takte.
 
 ## Stufe 4: Regeln einzeln umziehen
 **Goal**: `examine`, `mend`, `stake`, `encounter`, `push`/`move` wandern nacheinander

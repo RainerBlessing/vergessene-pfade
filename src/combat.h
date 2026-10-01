@@ -1,6 +1,7 @@
 #ifndef COMBAT_H
 #define COMBAT_H
 #include "inventory.h"
+#include "../shared/fight.h"
 typedef struct {
   const char *name;
   int hp, attack, defense;

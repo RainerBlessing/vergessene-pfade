@@ -1,6 +1,9 @@
 #ifndef GAME_H
 #define GAME_H
 #include "content.h"
+#include "../../shared/feedback.h"
+#include "../../shared/fight.h"
+#include "../../shared/state.h"
 
 typedef enum {
   ACT_NONE,
@@ -24,61 +27,25 @@ typedef enum {
   GAME_END /* die Schlusstafel des Ausschnitts */
 } GameState;
 
-/* Short sounds tied to single actions, as in the SDL version: no music, no
- * typing. One action leaves at most one cue; when several apply, the later
- * entry in this list (the more specific one) wins. */
-typedef enum {
-  SFX_NONE,
-  SFX_CLICK,  /* confirming a line or a choice */
-  SFX_STEP_A, /* two quiet footfalls, used alternately */
-  SFX_STEP_B,
-  SFX_WRITE,   /* a new observation goes into the notebook */
-  SFX_SCRAPE,  /* the boundary stone moves */
-  SFX_SETTLE,  /* and drops into its hollow */
-  SFX_FOX,     /* bandage, then a small animal sound */
-  SFX_CERAMIC, /* a shard finds its edge */
-  SFX_STAKE,   /* two blows on wood */
-  SFX_CREAK,   /* the kami rises */
-  SFX_HIT,     /* a blow lands */
-  SFX_BREAK,   /* the kami falls apart */
-  SFX_COUNT
-} SfxId;
 
 /* Platz fuer jede Notiz: das Buch verliert keine, wie gruendlich man auch sucht. */
 #define NOTE_LIMIT (NOTE_COUNT - 1)
 #define NOTES_PER_PAGE 3
 #define MESSAGE_LIMIT 80
-#define PLAYER_HP 24
-#define PLAYER_ATTACK 8
-#define PLAYER_DEFENSE 2
+
+typedef int8_t Coord;
+typedef uint8_t Count;
 
 typedef struct {
   uint8_t map, state;
-  int8_t x, y, dx, dy;
-  int8_t npc;    /* the speaker: an NPC, SPEAKER_SCENE, or -1 for a tile */
-  char examined; /* the tile the last text belongs to */
-  const char *scene;
-  const char *place;
-  uint8_t page, selection, dialogue, scroll;
-  uint8_t place_ticks, note_ticks;
-  Obs obs;
-  uint8_t notes[NOTE_LIMIT], note_count;
+  GAME_CORE_FIELDS
   uint8_t mood, outcome, fighting;
-  int8_t stone_x, stone_y; /* the boundary stone the loggers moved */
-  uint8_t mend_placed;     /* pieces of the bowl already set */
-  int8_t daigo_x, daigo_y; /* the foreman walks along while staking the boundary */
-  bool daigo_follows;
-  uint8_t staked; /* bit per stake already driven in */
-  uint8_t opens;  /* what the open conversation leads to */
-  /* Die zuletzt versperrte Richtung: Beim zweiten Versuch in dieselbe Richtung
-   * sagt das Spiel, was im Weg steht (#20). */
-  int8_t blocked_dx, blocked_dy;
-  bool ended;  /* die Schlusstafel kommt einmal */
-  uint8_t sfx; /* the cue of the last action (SfxId); the caller plays it */
+  uint8_t opens; /* what the open conversation leads to */
+  bool ended;    /* die Schlusstafel kommt einmal */
+  uint8_t sfx;   /* the cue of the last action (SfxId); the caller plays it */
   uint8_t bag[ITEM_COUNT];
   int16_t hp, kami_hp;
   uint32_t random;
-  char message[MESSAGE_LIMIT];
 } Game;
 
 void game_init(Game *g);

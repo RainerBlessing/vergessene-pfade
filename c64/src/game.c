@@ -90,6 +90,10 @@ static void cue(Game *g, SfxId id) {
   if (id > g->sfx)
     g->sfx = (uint8_t)id;
 }
+/* The C64 keeps no event, only the sound that follows from it (see feedback.h). */
+static void emit(Game *g, EventType type, int a, int b) {
+  cue(g, sfx_for_event(type, a, b));
+}
 static void learn(Game *g, Obs grants, uint8_t note) {
   g->obs |= grants;
   if (note == NOTE_NONE)
@@ -356,8 +360,7 @@ static void inventory_action(Game *g, Action a) {
   uint8_t item = owned[g->selection];
   const ExaminePoint *p = point_for_item(g, item);
   if (p) {
-    if (item == ITEM_HERB && p->dialogue != D_NONE)
-      cue(g, SFX_FOX);
+    emit(g, EV_ITEM_USE, item, p->dialogue);
     use_point(g, p, p->symbol);
     return;
   }
@@ -397,7 +400,7 @@ static void mend_action(Game *g, Action a) {
   bool fits = pieces[g->selection] == g->mend_placed;
   if (fits) {
     g->mend_placed++;
-    cue(g, SFX_CERAMIC);
+    emit(g, EV_MEND, g->mend_placed, 1);
   }
   g->selection = 0;
   if (!fits) { /* a piece that does not fit costs nothing */
@@ -426,10 +429,10 @@ static bool stake_here(Game *g) {
         (g->staked & (1u << i)))
       continue;
     g->staked |= (uint8_t)(1u << i);
-    cue(g, SFX_STAKE);
     uint8_t count = 0;
     for (uint8_t k = 0; k < STAKE_COUNT; k++)
       count = (uint8_t)(count + ((g->staked >> k) & 1u));
+    emit(g, EV_STAKE, count, 0);
     if (count == STAKE_COUNT) {
       g->daigo_follows = false;
       g->daigo_x = (int8_t)npcs[NPC_DAIGO].x;
@@ -504,24 +507,24 @@ static void fight_round(Game *g, bool herb) {
   if (herb) {
     if (!heal(g)) {
       msg_clear(g);
-      msg_add(g, "Kein Heilkraut benutzt. Waehle neu.");
+      msg_add(g, FIGHT_NO_HERB_TEXT);
       return;
     }
   } else {
     hit = damage(PLAYER_ATTACK, KAMI_DEFENSE, roll(g));
     g->kami_hp -= hit;
-    cue(g, SFX_HIT);
+    emit(g, EV_ENCOUNTER_ACTION, ENC_ATTACK, g->mood);
   }
   if (g->kami_hp <= 0) {
     g->kami_hp = 0;
     g->fighting = 0;
     msg_clear(g);
-    msg_add(g, "Dein Hieb verursacht ");
+    msg_add(g, FIGHT_HIT_TEXT);
     msg_num(g, hit);
-    msg_add(g, " Schaden.\nDer Kami sinkt in sich zusammen.");
+    msg_add(g, FIGHT_WON_TEXT);
     learn(g, 0, N_FOUGHT);
-    cue(g, SFX_BREAK);
     g->outcome = OUT_FIGHT;
+    emit(g, EV_OUTCOME, OUT_FIGHT, 0);
     open_scene(g, "Am Rand des Hains", D_ENC_VICTORY);
     return;
   }
@@ -538,20 +541,20 @@ static void fight_round(Game *g, bool herb) {
   }
   msg_clear(g);
   if (herb)
-    msg_add(g, "Das Kraut lindert deine Wunden.\nDer Kami verursacht ");
+    msg_add(g, FIGHT_HERB_TEXT);
   else {
-    msg_add(g, "Dein Hieb verursacht ");
+    msg_add(g, FIGHT_HIT_TEXT);
     msg_num(g, hit);
-    msg_add(g, " Schaden.\nDer Kami verursacht ");
+    msg_add(g, FIGHT_THEN_TEXT);
   }
   msg_num(g, taken);
-  msg_add(g, " Schaden.");
+  msg_add(g, FIGHT_END_TEXT);
 }
 /* The spirit rises from the grove; its mood is remembered between encounters. */
 static void begin_encounter(Game *g) {
   g->state = GAME_ENCOUNTER;
   g->selection = 0;
-  cue(g, SFX_CREAK);
+  emit(g, EV_ENCOUNTER, g->mood, 0);
   learn(g, OBS(OBS_KAMI_SEEN), N_KAMI);
   g->dialogue = D_ENC_APPEAR;
   g->page = 0;
@@ -623,7 +626,7 @@ static bool push_stone(Game *g, int8_t dx, int8_t dy) {
   g->stone_x = tx;
   g->stone_y = ty;
   bool settled = tx == STONE_HOLLOW_X && ty == STONE_HOLLOW_Y;
-  cue(g, settled ? SFX_SETTLE : SFX_SCRAPE);
+  emit(g, EV_STONE_PUSH, tx, ty);
   if (settled)
     g->obs &= ~OBS(OBS_STONE_MOVED);
   else

@@ -2,22 +2,6 @@
 #define AUDIO_H
 #include "game.h"
 #include <SDL3/SDL.h>
-/* Short sounds tied to single actions. No music, no typing. */
-typedef enum {
-  SFX_CLICK,  /* confirming a line or a choice */
-  SFX_STEP_A, /* two quiet footfalls, used alternately */
-  SFX_STEP_B,
-  SFX_WRITE,   /* a new observation goes into the notebook */
-  SFX_SCRAPE,  /* the boundary stone moves */
-  SFX_SETTLE,  /* and drops into its hollow */
-  SFX_FOX,     /* bandage, then a small animal sound */
-  SFX_CERAMIC, /* a shard finds its edge */
-  SFX_STAKE,   /* two blows on wood */
-  SFX_CREAK,   /* the kami rises */
-  SFX_HIT,     /* a blow lands */
-  SFX_BREAK,   /* the kami falls apart */
-  SFX_COUNT
-} SfxId;
 #define SFX_VOICES 6
 /* Loud enough beside a window; low enough that no single sound clips. */
 #define AUDIO_GAIN 1.35f

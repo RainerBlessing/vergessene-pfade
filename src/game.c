@@ -16,7 +16,7 @@ bool game_init(Game *g, const char *assets) {
   g->scene = "Unterwegs";
   g->dialogue = D_SCENE_ARRIVAL;
   g->state = GAME_TITLE; /* the arrival scene waits behind the title page */
-  g->player = (Player){.hp = 24, .max_hp = 24, .attack = 8, .defense = 2};
+  g->player = (Player){.hp = PLAYER_HP, .max_hp = PLAYER_HP, .attack = PLAYER_ATTACK, .defense = PLAYER_DEFENSE};
   char path[1024];
   snprintf(path, sizeof path, "%s/maps/village.map", assets);
   if (!map_load(&g->maps[MAP_VILLAGE], path))

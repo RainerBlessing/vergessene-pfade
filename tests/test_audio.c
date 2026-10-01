@@ -23,7 +23,7 @@ int main(void) {
    * the game's events reach the right one. No device is needed for either. */
   Audio a;
   audio_open(&a);
-  for (int id = 0; id < SFX_COUNT; id++) {
+  for (int id = SFX_CLICK; id < SFX_COUNT; id++) {
     CHECK(a.length[id] > 0 && a.samples[id]);
     float peak = 0;
     for (int i = 0; i < a.length[id]; i++) {
