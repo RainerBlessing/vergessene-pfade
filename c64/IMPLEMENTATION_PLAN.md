@@ -93,7 +93,15 @@ Dialoge, die Notiz `N_MORNING`); die Texte liegen einmal in `shared/*.inc`.
 drei Figuren mit ihrer Morgenzeile; mit `PHASE_BEFORE` bleibt es bei der bisherigen
 Reaktion. Die Morgenregeln stehen nur noch in `shared/`. Größe gemessen.
 **Tests**: `morning_reactions_follow_the_outcome`, `before_the_night_nothing_changes`.
-**Status**: Not Started
+**Status**: Complete
+
+Ergebnis: C64-Datei **28 246 → 29 680 Bytes (+1 434)**, Code +57, Nur-Lese-Daten
++1 377 (zehn Dialoge, eine Notiz, zehn Regeln mit je 18 Bytes). Damit sind etwa 24 %
+der 6-KB-Grenze verbraucht. Die Texte und die zehn Regeln stehen jetzt einmal in
+`shared/` (`dialogue_rules_2_morning.inc`); der PC-eigene Block in `src/content.c`
+ist weg. Die Includes heißen `_1`, `_2_morning`, `_3`, weil clang-format
+aufeinanderfolgende `#include`-Zeilen alphabetisch ordnet und die Reihenfolge der
+Regeln zählt.
 
 ## Stage 8: Die Übernachtungsfrage
 **Ziel**: Nach Sumis Reaktion auf den Ausgang fragt das Spiel „Übernachten?“

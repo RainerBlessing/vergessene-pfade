@@ -72,50 +72,12 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
                          "Stelle bleibt grau.",
                          "Irgendwo hinter den Bergen liegen\nweitere Doerfer. Auch "
                          "dort, denkst\ndu, wird etwas leiser geworden sein."}},
-    [D_SUMI_MORNING_FIGHT] = {2,
-                              {"Der Holzplatz ist voll. Daigo hat\nseine Schulden "
-                               "bezahlt, Kenta\nhat wieder Arbeit.",
-                               "Der Bach ist truebe geworden.\nWahrscheinlich das "
-                               "Wetter."}},
-    [D_SUMI_MORNING_BOUNDARY] = {2,
-                                 {"Die Voegel sind zurueck. Ich habe\nheute frueh am "
-                                  "Schrein gekehrt,\nzum ersten Mal seit Jahren.",
-                                  "Das Lager macht zu. Die Steine\nstehen wieder. Mein "
-                                  "Sohn hat\njetzt keine Arbeit."}},
-    [D_SUMI_MORNING_MEND] = {2,
-                             {"Totholz reicht fuer den halben\nWinter. Wir werden "
-                              "sparsam\nheizen.",
-                              "Und jedes Jahr eine Gabe. Zwei\nFamilien fragen schon, "
-                              "wovon\nsie leben sollen."}},
-    [D_MIO_MORNING_FIGHT] = {2,
-                             {"Seit dort wieder die Aexte\nschlagen, ist sein Bau "
-                              "verlassen.",
-                              "Ich hoffe, er hat einen ruhigeren\nPlatz gefunden."}},
-    [D_MIO_MORNING_FIGHT_HELPED] = {2,
-                                    {"Du hast ihm geholfen. Aber seit\ndort wieder "
-                                     "die Aexte schlagen,\nhabe ich ihn nicht mehr "
-                                     "gesehen.",
-                                     "Vielleicht ist er tiefer in den\nWald gezogen."}},
-    [D_MIO_MORNING_BOUNDARY] = {1,
-                                {"Der Fuchs schlaeft wieder vor\nseinem Bau. Hoerst "
-                                 "du die Voegel?"}},
-    [D_MIO_MORNING_MEND] = {1, {"Der Fuchs hat Junge! Drei. Sie\nsind noch ganz grau."}},
-    [D_DAIGO_MORNING_FIGHT] = {1,
-                               {"Wir faellen bis zum Bach. Niemand\nhaelt uns mehr "
-                                "auf. Trotzdem ist\nes still hier oben."}},
-    [D_DAIGO_MORNING_BOUNDARY] = {1,
-                                  {"Das Lager ist abgebaut. Ich gehe\nins naechste "
-                                   "Tal. Frag nicht,\nob ich dir danke."}},
-    [D_DAIGO_MORNING_MEND] = {1,
-                              {"Totholz und Setzlinge. Weniger,\nals ich brauche. Mehr "
-                               "als nichts."}},
 };
 
 /* At most 2 lines of 36 characters; no digits or slashes (test_game). */
 const char *const notes[NOTE_COUNT] = {
 #include "../shared/notes.inc"
     [N_FOX_GONE] = "Der Fuchsbau ist leer. Der Fuchs\nist fortgezogen.",
-    [N_MORNING] = "Eine Nacht ist vergangen. Das Dorf\nsieht anders aus.",
     [N_TRACE] = "Neben dem Schrein ist der Boden\ngrau. Keine Spur, nichts.",
     [N_VISITOR] = "Am Schrein steht: Ein Besucher kam,\nbevor der Wald unruhig wurde.",
 };
@@ -125,29 +87,9 @@ const char *const notes[NOTE_COUNT] = {
 #define OPEN_AFTER_OUTCOME OPEN_NIGHT
 #define MARKS (OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK))
 const DialogueRule dialogue_rules[] = {
-#include "../shared/dialogue_rules_a.inc"
-    /* The morning after: each outcome reads differently to each of them. */
-    {NPC_SUMI, 0, 0, 0, D_SUMI_MORNING_FIGHT, N_MORNING, ITEM_NONE, OUT_FIGHT,
-     OPEN_NOTHING, PHASE_MORNING},
-    {NPC_SUMI, 0, 0, 0, D_SUMI_MORNING_BOUNDARY, N_MORNING, ITEM_NONE, OUT_BOUNDARY,
-     OPEN_NOTHING, PHASE_MORNING},
-    {NPC_SUMI, 0, 0, 0, D_SUMI_MORNING_MEND, N_MORNING, ITEM_NONE, OUT_MEND, OPEN_NOTHING,
-     PHASE_MORNING},
-    {NPC_MIO, OBS(OBS_FOX_TENDED), 0, 0, D_MIO_MORNING_FIGHT_HELPED, NOTE_NONE, ITEM_NONE,
-     OUT_FIGHT, OPEN_NOTHING, PHASE_MORNING},
-    {NPC_MIO, 0, 0, 0, D_MIO_MORNING_FIGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT, OPEN_NOTHING,
-     PHASE_MORNING},
-    {NPC_MIO, 0, 0, 0, D_MIO_MORNING_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY,
-     OPEN_NOTHING, PHASE_MORNING},
-    {NPC_MIO, 0, 0, 0, D_MIO_MORNING_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND, OPEN_NOTHING,
-     PHASE_MORNING},
-    {NPC_DAIGO, 0, 0, 0, D_DAIGO_MORNING_FIGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT,
-     OPEN_NOTHING, PHASE_MORNING},
-    {NPC_DAIGO, 0, 0, 0, D_DAIGO_MORNING_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY,
-     OPEN_NOTHING, PHASE_MORNING},
-    {NPC_DAIGO, 0, 0, 0, D_DAIGO_MORNING_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND,
-     OPEN_NOTHING, PHASE_MORNING},
-#include "../shared/dialogue_rules_b.inc"
+#include "../shared/dialogue_rules_1.inc"
+#include "../shared/dialogue_rules_2_morning.inc"
+#include "../shared/dialogue_rules_3.inc"
 };
 const int dialogue_rule_count = (int)(sizeof dialogue_rules / sizeof dialogue_rules[0]);
 

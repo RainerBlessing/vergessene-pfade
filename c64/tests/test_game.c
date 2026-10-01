@@ -214,6 +214,55 @@ static void fight_changes_world(void) {
   assert(g.dialogue == D_SUMI_FOUGHT);
 }
 
+/* Der Morgen danach (#4): jede Figur antwortet je Ausgang anders. */
+static void talk_to(Game *g, NpcId npc) {
+  g->state = GAME_EXPLORATION;
+  face(g, npcs[npc].map, (int8_t)npcs[npc].x, (int8_t)(npcs[npc].y + 1), 0, -1);
+  game_action(g, ACT_CONFIRM);
+}
+static void morning_reactions_follow_the_outcome(void) {
+  static const struct {
+    NpcId npc;
+    uint8_t outcome;
+    bool fox_tended;
+    uint8_t line;
+  } expect[] = {
+      {NPC_SUMI, OUT_FIGHT, false, D_SUMI_MORNING_FIGHT},
+      {NPC_SUMI, OUT_BOUNDARY, false, D_SUMI_MORNING_BOUNDARY},
+      {NPC_SUMI, OUT_MEND, false, D_SUMI_MORNING_MEND},
+      {NPC_MIO, OUT_FIGHT, false, D_MIO_MORNING_FIGHT},
+      {NPC_MIO, OUT_FIGHT, true, D_MIO_MORNING_FIGHT_HELPED},
+      {NPC_MIO, OUT_BOUNDARY, false, D_MIO_MORNING_BOUNDARY},
+      {NPC_MIO, OUT_MEND, false, D_MIO_MORNING_MEND},
+      {NPC_DAIGO, OUT_FIGHT, false, D_DAIGO_MORNING_FIGHT},
+      {NPC_DAIGO, OUT_BOUNDARY, false, D_DAIGO_MORNING_BOUNDARY},
+      {NPC_DAIGO, OUT_MEND, false, D_DAIGO_MORNING_MEND},
+  };
+  for (uint8_t i = 0; i < sizeof expect / sizeof expect[0]; i++) {
+    Game g;
+    start(&g);
+    g.outcome = expect[i].outcome;
+    g.phase = PHASE_MORNING;
+    if (expect[i].fox_tended)
+      g.obs |= OBS(OBS_FOX_TENDED);
+    talk_to(&g, expect[i].npc);
+    assert(g.state == GAME_DIALOGUE && g.dialogue == expect[i].line);
+    assert(game_knows(&g, OBS_FOX_TENDED) == expect[i].fox_tended);
+  }
+}
+
+/* Vor der Nacht bleibt es bei der Reaktion auf den Ausgang. */
+static void before_the_night_nothing_changes(void) {
+  Game g;
+  start(&g);
+  g.outcome = OUT_FIGHT;
+  assert(g.phase == PHASE_BEFORE);
+  talk_to(&g, NPC_SUMI);
+  assert(g.dialogue == D_SUMI_FOUGHT);
+  talk_to(&g, NPC_DAIGO);
+  assert(g.dialogue == D_DAIGO_FOUGHT);
+}
+
 /* The old boundary: the stone goes back into its hollow, one push per step.
  * Only someone who has seen both the drag marks and the hollow can push it. */
 static void see_stone_and_hollow(Game *g) {
@@ -1060,6 +1109,8 @@ int main(void) {
   pushing_needs_both_observations();
   restore_old_boundary();
   a_stuck_stone_rolls_back();
+  morning_reactions_follow_the_outcome();
+  before_the_night_nothing_changes();
   oriha_answers_what_was_seen();
   mend_the_bowl();
   the_bowl_calms_the_spirit();

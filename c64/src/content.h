@@ -37,8 +37,9 @@ typedef uint32_t Obs;
 typedef enum { OUT_NONE, OUT_FIGHT, OUT_BOUNDARY, OUT_MEND, OUTCOME_COUNT } Outcome;
 /* In a rule: applies whatever has been decided. */
 #define OUT_ANY OUTCOME_COUNT
-/* The C64 slice has no phases; a rule's phase is always PHASE_ANY. */
-#define PHASE_ANY 0xFF
+/* Before the night, and the morning after it. */
+typedef enum { PHASE_BEFORE, PHASE_MORNING, PHASE_COUNT } Phase;
+#define PHASE_ANY PHASE_COUNT
 
 typedef enum { ITEM_NONE, ITEM_HERB, ITEM_SHARDS, ITEM_BOWL, ITEM_COUNT } ItemId;
 typedef struct {
@@ -138,6 +139,16 @@ typedef enum {
   D_ENC_DEFEAT,
   D_SCENE_BOUNDARY,
   D_SCENE_MEND,
+  D_SUMI_MORNING_FIGHT,
+  D_SUMI_MORNING_BOUNDARY,
+  D_SUMI_MORNING_MEND,
+  D_MIO_MORNING_FIGHT,
+  D_MIO_MORNING_FIGHT_HELPED,
+  D_MIO_MORNING_BOUNDARY,
+  D_MIO_MORNING_MEND,
+  D_DAIGO_MORNING_FIGHT,
+  D_DAIGO_MORNING_BOUNDARY,
+  D_DAIGO_MORNING_MEND,
   DIALOGUE_COUNT
 } DialogueId;
 #define DIALOGUE_PAGES 3
@@ -179,6 +190,7 @@ typedef enum {
   N_KAMI_CALM,
   N_DEAL,
   N_MEND,
+  N_MORNING,
   NOTE_COUNT
 } NoteId;
 extern const char *const notes[NOTE_COUNT];

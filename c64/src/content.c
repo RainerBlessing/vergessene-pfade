@@ -33,8 +33,9 @@ const char *const notes[NOTE_COUNT] = {
 #define OPEN_AFTER_OUTCOME OPEN_END
 #define MARKS (OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK))
 const DialogueRule dialogue_rules[] = {
-#include "../../shared/dialogue_rules_a.inc"
-#include "../../shared/dialogue_rules_b.inc"
+#include "../../shared/dialogue_rules_1.inc"
+#include "../../shared/dialogue_rules_2_morning.inc"
+#include "../../shared/dialogue_rules_3.inc"
 };
 const uint8_t dialogue_rule_count =
     (uint8_t)(sizeof dialogue_rules / sizeof dialogue_rules[0]);

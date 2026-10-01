@@ -31,3 +31,4 @@
   [N_KAMI_CALM] = "Vor der geflickten Schale hat der\nKami sich hingesetzt.",
   [N_DEAL] = "Daigo will mit mir eine neue\nGrenze abstecken.",
   [N_MEND] = "Drei Pfaehle stehen entlang der\nSpuren. Der Kami blieb sitzen.",
+    [N_MORNING] = "Eine Nacht ist vergangen. Das Dorf\nsieht anders aus.",

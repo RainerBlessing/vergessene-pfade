@@ -39,6 +39,7 @@ typedef struct {
   uint8_t map, state;
   GAME_CORE_FIELDS
   uint8_t mood, outcome, fighting;
+  uint8_t phase; /* Phase: before the night, or the morning after it */
   uint8_t opens; /* what the open conversation leads to */
   bool ended;    /* die Schlusstafel kommt einmal */
   uint8_t sfx;   /* the cue of the last action (SfxId); the caller plays it */

@@ -199,7 +199,7 @@ static void arrive(Game *g, uint8_t map, int8_t x, int8_t y) {
 
 /* --- talking --- */
 static void talk(Game *g, int8_t npc) {
-  const DialogueRule *r = talk_select(npc, g->obs, g->outcome, PHASE_ANY, g->bag);
+  const DialogueRule *r = talk_select(npc, g->obs, g->outcome, g->phase, g->bag);
   if (!r)
     return;
   if (r->gives != ITEM_NONE)
