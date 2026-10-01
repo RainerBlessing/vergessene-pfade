@@ -4,6 +4,7 @@
 #include "content.h"
 #include "inventory.h"
 #include "world.h"
+#include "../shared/feedback.h"
 typedef enum {
   ACT_NONE,
   ACT_UP,
@@ -27,22 +28,6 @@ typedef enum {
   GAME_PROMPT
 } GameState;
 
-/* Session-log events; the frontend drains them with game_take_events. */
-typedef enum {
-  EV_OBSERVE,          /* a = ObsId */
-  EV_EXAMINE,          /* a = tile symbol or 0 for items, b = DialogueId */
-  EV_EXAMINE_NOTHING,  /* a = tile symbol, b = suppressed repeats of the previous one */
-  EV_NPC_TALK,         /* a = NpcId, b = DialogueId */
-  EV_NOTEBOOK_OPEN,    /* a = number of entries */
-  EV_ITEM_USE,         /* a = ItemId, b = DialogueId, or D_NONE when nothing happened */
-  EV_ENCOUNTER,        /* a = Mood at the start */
-  EV_ENCOUNTER_ACTION, /* a = EncounterAction, b = Mood afterwards */
-  EV_OUTCOME,          /* a = Outcome */
-  EV_STONE_PUSH,       /* a,b = the stone's position after moving it */
-  EV_MEND,             /* a = pieces in place, b = 1 when the piece fitted */
-  EV_STAKE,            /* a = stakes set */
-  EV_PHASE             /* a = Phase */
-} EventType;
 typedef struct {
   EventType type;
   int map, x, y, a, b;

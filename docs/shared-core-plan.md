@@ -64,7 +64,23 @@ und SFX (C64) sind zwei Adapter auf demselben Kanal.
 **Success Criteria**: `game_action` im Kern; PC-Zusätze (Debug, Ereignislog)
 liegen außen.
 **Tests**: Kernsuite auf dem Host.
-**Status**: Not Started
+**Status**: In Progress (Branch `shared-core-state`)
+
+- 3a, Ausgabekanal: Complete. `shared/feedback.h` hält `EventType`, `SfxId` und
+  `sfx_for_event()`. Die PC-Zuordnung Ereignis → Klang (`audio_events`) und acht
+  `cue()`-Stellen der C64-Fassung riefen dieselbe Entscheidung an verschiedenen
+  Orten auf; jetzt steht sie einmal da. Die C64 hat dafür `emit()`, das nur den
+  Klang merkt. Kosten: +22 Bytes Code, Tests beider Seiten grün (PC mit SDL
+  gebaut, 4 von 4).
+  Bewusst nicht geteilt, weil die Fassungen es verschieden auslösen:
+  - `SFX_WRITE`: PC bei jeder neuen Beobachtung (`EV_OBSERVE`), C64 bei jeder
+    neuen Notiz. Der Kommentar sagt „in das Notizbuch“, die C64-Fassung folgt
+    ihm. Offen: auf eine Notiz-Regel einigen.
+  - Klick und Schritt: PC im Frontend (`main.c`, Zähler `steps`), C64 in der Aktion.
+- 3b, Zustandslayout: Not Started.
+- 3c, Kampf: Not Started. `combat.c` (PC, `snprintf`) und `fight_round` (C64,
+  `msg_add`) haben verschiedene Texte („Das Kraut heilt bis zu 8“ gegen „lindert
+  deine Wunden“); sie anzugleichen ändert, was Spielende lesen.
 
 ## Stufe 4: Regeln einzeln umziehen
 **Goal**: `examine`, `mend`, `stake`, `encounter`, `push`/`move` wandern nacheinander

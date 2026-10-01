@@ -1,6 +1,7 @@
 #ifndef GAME_H
 #define GAME_H
 #include "content.h"
+#include "../../shared/feedback.h"
 
 typedef enum {
   ACT_NONE,
@@ -24,25 +25,6 @@ typedef enum {
   GAME_END /* die Schlusstafel des Ausschnitts */
 } GameState;
 
-/* Short sounds tied to single actions, as in the SDL version: no music, no
- * typing. One action leaves at most one cue; when several apply, the later
- * entry in this list (the more specific one) wins. */
-typedef enum {
-  SFX_NONE,
-  SFX_CLICK,  /* confirming a line or a choice */
-  SFX_STEP_A, /* two quiet footfalls, used alternately */
-  SFX_STEP_B,
-  SFX_WRITE,   /* a new observation goes into the notebook */
-  SFX_SCRAPE,  /* the boundary stone moves */
-  SFX_SETTLE,  /* and drops into its hollow */
-  SFX_FOX,     /* bandage, then a small animal sound */
-  SFX_CERAMIC, /* a shard finds its edge */
-  SFX_STAKE,   /* two blows on wood */
-  SFX_CREAK,   /* the kami rises */
-  SFX_HIT,     /* a blow lands */
-  SFX_BREAK,   /* the kami falls apart */
-  SFX_COUNT
-} SfxId;
 
 /* Platz fuer jede Notiz: das Buch verliert keine, wie gruendlich man auch sucht. */
 #define NOTE_LIMIT (NOTE_COUNT - 1)
