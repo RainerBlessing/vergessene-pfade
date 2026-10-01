@@ -77,7 +77,13 @@ liegen außen.
     neuen Notiz. Der Kommentar sagt „in das Notizbuch“, die C64-Fassung folgt
     ihm. Offen: auf eine Notiz-Regel einigen.
   - Klick und Schritt: PC im Frontend (`main.c`, Zähler `steps`), C64 in der Aktion.
-- 3b, Zustandslayout: Not Started.
+- 3b, Zustandslayout: Complete. `shared/state.h` hat `GAME_CORE_FIELDS`, die
+  Felder, die beide `Game` gleich führen (Position, Sprecher, Seite, Auswahl,
+  Beobachtungen, Notizen, Stein, Schale, Daigo, Meldung); jede Fassung gibt
+  `Coord` und `Count` vor (PC: `int`, C64: `int8_t`/`uint8_t`), damit die PC-Fassung
+  nicht schmaler wird und die C64-Fassung nicht breiter. Enum-Felder (`state`,
+  `mood`, `outcome`, `opens`) bleiben je Seite unter gleichem Namen. C64-Größe
+  und BSS unverändert; PC mit SDL, ASan/UBSan und clang-tidy sauber.
 - 3c, Kampf: Not Started. `combat.c` (PC, `snprintf`) und `fight_round` (C64,
   `msg_add`) haben verschiedene Texte („Das Kraut heilt bis zu 8“ gegen „lindert
   deine Wunden“); sie anzugleichen ändert, was Spielende lesen.
