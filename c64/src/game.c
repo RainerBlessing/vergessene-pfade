@@ -212,6 +212,7 @@ static void talk(Game *g, int8_t npc) {
 /* Reihenfolge der Nachbarn: Norden, Osten, Sueden, Westen. */
 static const int8_t neighbours[4][2] = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}};
 static bool stone_at(const Game *g, Coord x, Coord y);
+static void reset_stone(Game *g);
 static const ExaminePoint *point_at(const Game *g, int8_t x, int8_t y) {
   char symbol = game_tile(g, g->map, x, y);
   for (uint8_t i = 0; i < examine_point_count; i++) {
@@ -255,15 +256,6 @@ static const ExaminePoint *point_for_item(const Game *g, uint8_t item) {
       return p;
   }
   return 0;
-}
-/* Rolling the stuck stone back to where the drag marks start. */
-static void reset_stone(Game *g) {
-  g->stone_x = STONE_START_X;
-  g->stone_y = STONE_START_Y;
-  g->daigo_x = (int8_t)npcs[NPC_DAIGO].x;
-  g->daigo_y = (int8_t)npcs[NPC_DAIGO].y;
-  g->obs &= ~OBS(OBS_STONE_MOVED);
-  emit(g, EV_STONE_PUSH, g->stone_x, g->stone_y);
 }
 static void use_point(Game *g, const ExaminePoint *p, char examined) {
   if (p->kind == POINT_STONE && p->dialogue == D_X_STONE_STUCK)

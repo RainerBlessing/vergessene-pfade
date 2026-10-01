@@ -166,10 +166,14 @@ in den Kern. Kampf: die Rechnung bleibt je Fassung (siehe 3c).
   **−59 Bytes**; beide Suiten und PC (SDL, ASan/UBSan) grün. Warum es kleiner
   wurde, habe ich nicht untersucht (vermutlich andere Einbettung unter LTO);
   gemessen, nicht begründet.
-  Bewusst **nicht** geteilt: `reset_stone` (der festsitzende Stein rollt zurück).
-  Die Fassungen weichen dort ab, und das ist eine Entscheidung, kein Tippfehler:
-  - PC meldet `EV_STONE_PUSH` und damit den Klang SCRAPE; die C64 blieb stumm.
-    **Entschieden:** Das Zurückrollen ist zu hören. Die C64 meldet es jetzt auch
-    (+12 Bytes, Test `a_stuck_stone_rolls_back`).
-  - C64 setzt Daigo auf seinen Platz zurück; der PC lässt ihn stehen. Das kann
-    nur auffallen, wenn Daigo dem Spieler folgt, während der Stein festsitzt.
+  `reset_stone`: zuerst bewusst nicht geteilt, dann entschieden und geteilt
+  (siehe unten).
+- 4d, `reset_stone`: Complete. Das Zurückrollen des Steins ist zu hören (die C64
+  meldet jetzt `EV_STONE_PUSH` wie der PC, +12 Bytes, Test
+  `a_stuck_stone_rolls_back`). Die C64 setzte dabei Daigo auf seinen Platz
+  zurück, der PC nicht; geprüft: Das beendet den Begleit-Zustand nicht
+  (`daigo_follows` blieb unberührt, der nächste Schritt überschreibt die
+  Position), und der Test bleibt ohne die Zeilen grün. Entschieden: Daigo wird
+  nicht zurückgesetzt, das Verhalten des PC gilt. Damit steht `reset_stone`
+  in `shared/stone.h`. C64-Datei 28 266 (−10 gegenüber der Fassung mit
+  Daigo-Zeilen); beide Suiten und PC (SDL, ASan/UBSan) grün.

@@ -146,6 +146,7 @@ static void talk(Game *g, int npc) {
   open_dialogue(g, npc, 0, r->dialogue, r->opens);
 }
 static bool stone_at(const Game *g, Coord x, Coord y);
+static void reset_stone(Game *g);
 static const ExaminePoint *point_at(const Game *g, int x, int y) {
   char symbol = game_tile(g, g->map, x, y);
   for (int i = 0; i < examine_point_count; i++) {
@@ -176,13 +177,6 @@ static const ExaminePoint *point_for_item(const Game *g, ItemId item) {
       return p;
   }
   return NULL;
-}
-/* Rolling the stuck stone back to where the drag marks start. */
-static void reset_stone(Game *g) {
-  g->stone_x = STONE_START_X;
-  g->stone_y = STONE_START_Y;
-  g->obs &= ~OBS(OBS_STONE_MOVED);
-  emit(g, EV_STONE_PUSH, g->stone_x, g->stone_y);
 }
 static void use_point(Game *g, const ExaminePoint *p, char examined) {
   if (p->kind == POINT_STONE && p->dialogue == D_X_STONE_STUCK)
