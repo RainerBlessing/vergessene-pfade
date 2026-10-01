@@ -64,7 +64,7 @@ und SFX (C64) sind zwei Adapter auf demselben Kanal.
 **Success Criteria**: `game_action` im Kern; PC-Zusätze (Debug, Ereignislog)
 liegen außen.
 **Tests**: Kernsuite auf dem Host.
-**Status**: In Progress (Branch `shared-core-state`)
+**Status**: Complete (Branch `shared-core-state`)
 
 - 3a, Ausgabekanal: Complete. `shared/feedback.h` hält `EventType`, `SfxId` und
   `sfx_for_event()`. Die PC-Zuordnung Ereignis → Klang (`audio_events`) und acht
@@ -84,9 +84,18 @@ liegen außen.
   nicht schmaler wird und die C64-Fassung nicht breiter. Enum-Felder (`state`,
   `mood`, `outcome`, `opens`) bleiben je Seite unter gleichem Namen. C64-Größe
   und BSS unverändert; PC mit SDL, ASan/UBSan und clang-tidy sauber.
-- 3c, Kampf: Not Started. `combat.c` (PC, `snprintf`) und `fight_round` (C64,
-  `msg_add`) haben verschiedene Texte („Das Kraut heilt bis zu 8“ gegen „lindert
-  deine Wunden“); sie anzugleichen ändert, was Spielende lesen.
+- 3c, Kampf: Complete, aber kleiner als geplant. `shared/fight.h` hält die Zahlen
+  (`PLAYER_*`, `KAMI_*`) und den Wortlaut der Kampfmeldung; die PC-Fassung nimmt
+  den Text der C64-Fassung („Das Kraut lindert deine Wunden“), und bei einer
+  Niederlage steht dort kein Satz mehr (das sagt die Szene danach). Die
+  Rechnung selbst (Schaden, Würfel) bleibt je Fassung: Ein geteiltes
+  `fight_blows()` in `shared/fight.c` kostete die C64-Fassung **+371 Bytes**
+  (mit der geteilten Meldung +590), weil die Ergebnisse über Zeiger zurückkommen und
+  der 6502 über Zeiger teuer zugreift. Das ist gemessen, nicht geschätzt (Code
+  13 434 → 13 805 beziehungsweise 14 024). Beide Seiten würfeln gleich
+  (`random * 1664525 + 1013904223`), unterscheiden sich aber noch darin, dass
+  `combat_begin()` auf dem PC den Würfel auf 42 zurücksetzt und die C64-Fassung
+  ihn weiterlaufen lässt.
 
 ## Stufe 4: Regeln einzeln umziehen
 **Goal**: `examine`, `mend`, `stake`, `encounter`, `push`/`move` wandern nacheinander

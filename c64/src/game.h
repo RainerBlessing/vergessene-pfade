@@ -2,6 +2,7 @@
 #define GAME_H
 #include "content.h"
 #include "../../shared/feedback.h"
+#include "../../shared/fight.h"
 #include "../../shared/state.h"
 
 typedef enum {
@@ -31,9 +32,6 @@ typedef enum {
 #define NOTE_LIMIT (NOTE_COUNT - 1)
 #define NOTES_PER_PAGE 3
 #define MESSAGE_LIMIT 80
-#define PLAYER_HP 24
-#define PLAYER_ATTACK 8
-#define PLAYER_DEFENSE 2
 
 typedef int8_t Coord;
 typedef uint8_t Count;

@@ -507,7 +507,7 @@ static void fight_round(Game *g, bool herb) {
   if (herb) {
     if (!heal(g)) {
       msg_clear(g);
-      msg_add(g, "Kein Heilkraut benutzt. Waehle neu.");
+      msg_add(g, FIGHT_NO_HERB_TEXT);
       return;
     }
   } else {
@@ -519,9 +519,9 @@ static void fight_round(Game *g, bool herb) {
     g->kami_hp = 0;
     g->fighting = 0;
     msg_clear(g);
-    msg_add(g, "Dein Hieb verursacht ");
+    msg_add(g, FIGHT_HIT_TEXT);
     msg_num(g, hit);
-    msg_add(g, " Schaden.\nDer Kami sinkt in sich zusammen.");
+    msg_add(g, FIGHT_WON_TEXT);
     learn(g, 0, N_FOUGHT);
     g->outcome = OUT_FIGHT;
     emit(g, EV_OUTCOME, OUT_FIGHT, 0);
@@ -541,14 +541,14 @@ static void fight_round(Game *g, bool herb) {
   }
   msg_clear(g);
   if (herb)
-    msg_add(g, "Das Kraut lindert deine Wunden.\nDer Kami verursacht ");
+    msg_add(g, FIGHT_HERB_TEXT);
   else {
-    msg_add(g, "Dein Hieb verursacht ");
+    msg_add(g, FIGHT_HIT_TEXT);
     msg_num(g, hit);
-    msg_add(g, " Schaden.\nDer Kami verursacht ");
+    msg_add(g, FIGHT_THEN_TEXT);
   }
   msg_num(g, taken);
-  msg_add(g, " Schaden.");
+  msg_add(g, FIGHT_END_TEXT);
 }
 /* The spirit rises from the grove; its mood is remembered between encounters. */
 static void begin_encounter(Game *g) {
