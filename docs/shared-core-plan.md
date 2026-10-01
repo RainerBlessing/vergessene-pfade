@@ -150,3 +150,13 @@ in den Kern. Kampf: die Rechnung bleibt je Fassung (siehe 3c).
   Unterschiede, die dabei verschwanden: Die PC-Fassung loggt auch ein falsches
   Teilstück (`EV_MEND` mit `b = 0`), die C64-Fassung ließ den Aufruf aus; jetzt
   ruft beide ihn auf, und `sfx_for_event` macht daraus auf der C64 keinen Klang.
+- 4b, `stake_here`: Complete. `shared/stake.h`. C64-Größe **+9 Bytes** (Datei
+  28 314 → 28 323); beide Suiten und PC (SDL, ASan/UBSan) grün. Die erste
+  Fassung kostete +60 Bytes, weil `stakes[i].x != g->x` auf der C64 als
+  16-Bit-Vergleich übersetzt wurde. Die C64-Vorlage verglich Bytes
+  (`(uint8_t)g->x`); mit demselben Cast im geteilten Code sind es +9. Lehre
+  für die weiteren Regeln: Die **Typen und Casts der C64-Fassung** gehören
+  mit in den geteilten Code, nicht nur die Anweisungsfolge. Die C64-Fassung
+  hat dafür `finish()` bekommen (setzt den Ausgang einmal und meldet ihn); der
+  Aufruf von `emit` darin kostet nichts messbar, weil der Übersetzer ihn
+  zusammenfaltet.

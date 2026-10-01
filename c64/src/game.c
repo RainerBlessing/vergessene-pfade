@@ -94,6 +94,12 @@ static void cue(Game *g, SfxId id) {
 static void emit(Game *g, EventType type, int a, int b) {
   cue(g, sfx_for_event(type, a, b));
 }
+static void finish(Game *g, uint8_t outcome) {
+  if (g->outcome != OUT_NONE)
+    return;
+  g->outcome = outcome;
+  emit(g, EV_OUTCOME, outcome, 0);
+}
 static void learn(Game *g, Obs grants, uint8_t note) {
   g->obs |= grants;
   if (note == NOTE_NONE)
@@ -395,34 +401,7 @@ static void take_item(Game *g, uint8_t item) {
 #include "../../shared/mend.h"
 
 /* Driving in a stake: only where the tracks run, and only with Daigo there. */
-static bool stake_here(Game *g) {
-  int8_t dx = (int8_t)(g->daigo_x - g->x), dy = (int8_t)(g->daigo_y - g->y);
-  if (!g->daigo_follows || g->map != MAP_FOREST || dx * dx + dy * dy > 1)
-    return false; /* the two of them drive it in together */
-  if (g->outcome != OUT_NONE)
-    return false; /* was entschieden ist, ist entschieden */
-  for (uint8_t i = 0; i < STAKE_COUNT; i++) {
-    if (stakes[i].x != (uint8_t)g->x || stakes[i].y != (uint8_t)g->y ||
-        (g->staked & (1u << i)))
-      continue;
-    g->staked |= (uint8_t)(1u << i);
-    uint8_t count = 0;
-    for (uint8_t k = 0; k < STAKE_COUNT; k++)
-      count = (uint8_t)(count + ((g->staked >> k) & 1u));
-    emit(g, EV_STAKE, count, 0);
-    if (count == STAKE_COUNT) {
-      g->daigo_follows = false;
-      g->daigo_x = (int8_t)npcs[NPC_DAIGO].x;
-      g->daigo_y = (int8_t)npcs[NPC_DAIGO].y;
-      learn(g, 0, N_MEND);
-      g->outcome = OUT_MEND;
-      open_scene(g, "Die neue Grenze", D_SCENE_MEND);
-    } else
-      open_scene(g, "Entlang der Spuren", D_STAKE_SET);
-    return true;
-  }
-  return false;
-}
+#include "../../shared/stake.h"
 
 /* --- the encounter --- */
 static const EncounterOffer *offer_at_hand(const Game *g) {
