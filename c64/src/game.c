@@ -211,9 +211,7 @@ static void talk(Game *g, int8_t npc) {
 /* --- examining --- */
 /* Reihenfolge der Nachbarn: Norden, Osten, Sueden, Westen. */
 static const int8_t neighbours[4][2] = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}};
-static bool stone_at(const Game *g, int8_t x, int8_t y) {
-  return g->map == MAP_FOREST && x == g->stone_x && y == g->stone_y;
-}
+static bool stone_at(const Game *g, Coord x, Coord y);
 static const ExaminePoint *point_at(const Game *g, int8_t x, int8_t y) {
   char symbol = game_tile(g, g->map, x, y);
   for (uint8_t i = 0; i < examine_point_count; i++) {
@@ -564,37 +562,13 @@ static bool blocking_npc(const Game *g, int8_t x, int8_t y) {
 static bool can_enter(const Game *g, int8_t x, int8_t y) {
   return !blocking_npc(g, x, y) && game_passable(g, g->map, x, y);
 }
-bool game_can_push(const Game *g) {
-  /* Die Ausgaenge schliessen sich aus. Der Kompromiss ist erst mit dem dritten
-   * Pfahl entschieden -- angefangen ist er aber schon vorher, und dann bleibt
-   * der Stein liegen, wo er liegt. */
-  return matches(g, OBS(OBS_STONE_DRAGGED) | OBS(OBS_STONE_HOLLOW), 0) &&
-         g->outcome == OUT_NONE && !g->daigo_follows && g->staked == 0;
-}
 /* Pushing the stone one tile. Nothing here knows why it matters: the
  * inscription and the empty hollow say that, and the player draws the line. */
-static bool push_stone(Game *g, int8_t dx, int8_t dy) {
-  int8_t tx = (int8_t)(g->stone_x + dx), ty = (int8_t)(g->stone_y + dy);
-  const TileDef *target = tile_def(game_tile(g, MAP_FOREST, tx, ty));
-  if (!game_can_push(g) || !target || !(target->flags & TF_PASSABLE) ||
-      (target->flags & (TF_GUARDED | TF_TRANSITION)) || game_npc_at(g, tx, ty) >= 0)
-    return false;
-  g->stone_x = tx;
-  g->stone_y = ty;
-  bool settled = tx == STONE_HOLLOW_X && ty == STONE_HOLLOW_Y;
-  emit(g, EV_STONE_PUSH, tx, ty);
-  if (settled)
-    g->obs &= ~OBS(OBS_STONE_MOVED);
-  else
-    g->obs |= OBS(OBS_STONE_MOVED);
-  if (settled) {
-    g->mood = MOOD_CALM;
-    learn(g, 0, N_BOUNDARY);
-    g->outcome = OUT_BOUNDARY;
-    open_scene(g, "Die alte Grenze", D_SCENE_BOUNDARY);
-  }
-  return true;
+/* Can the stone be set down on this tile? */
+static bool stone_fits(const TileDef *t) {
+  return t && (t->flags & TF_PASSABLE) && !(t->flags & (TF_GUARDED | TF_TRANSITION));
 }
+#include "../../shared/stone.h"
 /* Ein versperrter Schritt schweigt beim ersten Mal -- wer sieht, wogegen er
  * laeuft, braucht keinen Text. Erst der zweite Versuch in dieselbe Richtung
  * bekommt eine Antwort (#20). */

@@ -145,9 +145,7 @@ static void talk(Game *g, int npc) {
   emit(g, EV_NPC_TALK, npc, r->dialogue);
   open_dialogue(g, npc, 0, r->dialogue, r->opens);
 }
-static bool stone_at(const Game *g, int x, int y) {
-  return g->map == MAP_FOREST && x == g->stone_x && y == g->stone_y;
-}
+static bool stone_at(const Game *g, Coord x, Coord y);
 static const ExaminePoint *point_at(const Game *g, int x, int y) {
   char symbol = game_tile(g, g->map, x, y);
   for (int i = 0; i < examine_point_count; i++) {
@@ -489,37 +487,13 @@ static void encounter_action(Game *g, Action a) {
     g->state = GAME_EXPLORATION;
   }
 }
-bool game_can_push(const Game *g) {
-  /* Die Ausgaenge schliessen sich aus. Der Kompromiss ist erst mit dem dritten
-   * Pfahl entschieden -- angefangen ist er aber schon vorher, und dann bleibt
-   * der Stein liegen, wo er liegt. */
-  return matches(g, OBS(OBS_STONE_DRAGGED) | OBS(OBS_STONE_HOLLOW), 0) &&
-         g->outcome == OUT_NONE && !g->daigo_follows && g->staked == 0;
-}
 /* Pushing the stone one tile. Nothing here knows why it matters: the inscription
  * and the empty hollow say that, and the player draws the line. */
-static bool push_stone(Game *g, int dx, int dy) {
-  int tx = g->stone_x + dx, ty = g->stone_y + dy;
-  const TileDef *target = tile_def(game_tile(g, MAP_FOREST, tx, ty));
-  if (!game_can_push(g) || !target || !target->passable || target->guarded ||
-      target->transition || game_npc_at(g, tx, ty) >= 0)
-    return false;
-  g->stone_x = tx;
-  g->stone_y = ty;
-  bool settled = tx == STONE_HOLLOW_X && ty == STONE_HOLLOW_Y;
-  if (settled)
-    g->obs &= ~OBS(OBS_STONE_MOVED);
-  else
-    g->obs |= OBS(OBS_STONE_MOVED);
-  emit(g, EV_STONE_PUSH, g->stone_x, g->stone_y);
-  if (settled) {
-    g->mood = MOOD_CALM;
-    learn(g, 0, N_BOUNDARY);
-    finish(g, OUT_BOUNDARY);
-    open_scene(g, "Die alte Grenze", D_SCENE_BOUNDARY);
-  }
-  return true;
+/* Can the stone be set down on this tile? */
+static bool stone_fits(const TileDef *t) {
+  return t && t->passable && !t->guarded && !t->transition;
 }
+#include "../shared/stone.h"
 /* Ein versperrter Schritt schweigt beim ersten Mal -- wer sieht, wogegen er
  * laeuft, braucht keinen Text. Erst der zweite Versuch in dieselbe Richtung
  * bekommt eine Antwort (#20). */

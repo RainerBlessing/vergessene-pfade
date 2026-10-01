@@ -160,3 +160,14 @@ in den Kern. Kampf: die Rechnung bleibt je Fassung (siehe 3c).
   hat dafür `finish()` bekommen (setzt den Ausgang einmal und meldet ihn); der
   Aufruf von `emit` darin kostet nichts messbar, weil der Übersetzer ihn
   zusammenfaltet.
+- 4c, Stein: Complete. `shared/stone.h` hat `game_can_push`, `stone_at` und
+  `push_stone`; jede Fassung liefert `stone_fits()` (darf der Stein auf diese
+  Kachel: PC über Felder, C64 über Flags). C64-Datei 28 323 → 28 264, also
+  **−59 Bytes**; beide Suiten und PC (SDL, ASan/UBSan) grün. Warum es kleiner
+  wurde, habe ich nicht untersucht (vermutlich andere Einbettung unter LTO);
+  gemessen, nicht begründet.
+  Bewusst **nicht** geteilt: `reset_stone` (der festsitzende Stein rollt zurück).
+  Die Fassungen weichen dort ab, und das ist eine Entscheidung, kein Tippfehler:
+  - PC meldet `EV_STONE_PUSH` und damit den Klang SCRAPE; die C64 bleibt stumm.
+  - C64 setzt Daigo auf seinen Platz zurück; der PC lässt ihn stehen. Das kann
+    nur auffallen, wenn Daigo dem Spieler folgt, während der Stein festsitzt.
