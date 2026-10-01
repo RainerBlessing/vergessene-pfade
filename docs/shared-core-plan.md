@@ -40,9 +40,18 @@ für Geteiltes nichts mehr.
   Designated Initializer machen die Reihenfolge egal, und beide Enums behalten
   ihre eigene Liste. C64-Größe unverändiert (13 412 / 14 839), alle Tests grün.
   `content_drift.py` setzt die `.inc`-Dateien beim Lesen wieder ein.
-- 2b, Regeltabellen (`DialogueRule`, `ExaminePoint`, `TileOverride`, `Place`):
-  Not Started. Hier fehlt noch ein gemeinsames Layout und die Frage, ob ein
-  Generator nötig wird.
+- 2b, Regeltabellen: In Progress.
+  - `Place`: Complete. `shared/places.inc`, beide Tabellen identisch.
+  - `DialogueRule`: Complete. 30 Regeln stehen in `shared/dialogue_rules_a.inc`
+    (erste Regel) und `_b.inc` (der Rest); die 10 PC-eigenen Morgenregeln liegen
+    dazwischen und stehen nur in `src/content.c`. Die drei Regeln, die auf dem PC
+    in die Nacht und auf dem C64 zur Schlusstafel führen, nennen
+    `OPEN_AFTER_OUTCOME`; jede Seite definiert das Makro. Der Driftmelder löst
+    solche Aliase auf, damit die Erlaubnisliste weiter gilt.
+  - `ExaminePoint`: Not Started. PC-eigene Einträge liegen an vier Stellen
+    zwischen den geteilten, deren Reihenfolge nicht überall gleich ist; die PC-Seite
+    schreibt Felder benannt, die C64-Seite positionell. Erst die Reihenfolge klären.
+  - `TileOverride`: bleibt je Seite (PC hat `phase` und `tag`, zwei Tabellen).
 
 ## Stufe 3: gemeinsamer Zustand und Ausgabekanal
 **Goal**: Ein Zustandslayout (flach, klein typisiert) im Kern; Ereignisse (PC)

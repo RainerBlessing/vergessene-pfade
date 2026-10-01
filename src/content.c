@@ -120,12 +120,11 @@ const char *const notes[NOTE_COUNT] = {
     [N_VISITOR] = "Am Schrein steht: Ein Besucher kam,\nbevor der Wald unruhig wurde.",
 };
 
+/* Wohin die Antwort auf einen Ausgang fuehrt: in die Nacht (PC) oder zur Schlusstafel (C64). */
+#define OPEN_AFTER_OUTCOME OPEN_NIGHT
 #define MARKS (OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK))
 const DialogueRule dialogue_rules[] = {
-    /* The bowl's story outranks every reaction, at any time: it is the only
-     * source of N_OWNER. */
-    {NPC_SUMI, MARKS, OBS(OBS_BOWL_OWNER), OBS(OBS_BOWL_OWNER), D_SUMI_OWNER, N_OWNER,
-     ITEM_NONE, OUT_ANY, OPEN_NOTHING, PHASE_ANY},
+#include "../shared/dialogue_rules_a.inc"
     /* The morning after: each outcome reads differently to each of them. */
     {NPC_SUMI, 0, 0, 0, D_SUMI_MORNING_FIGHT, N_MORNING, ITEM_NONE, OUT_FIGHT,
      OPEN_NOTHING, PHASE_MORNING},
@@ -147,71 +146,7 @@ const DialogueRule dialogue_rules[] = {
      OPEN_NOTHING, PHASE_MORNING},
     {NPC_DAIGO, 0, 0, 0, D_DAIGO_MORNING_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND,
      OPEN_NOTHING, PHASE_MORNING},
-    /* Sumi: the task and the bowl's story must stay reachable, so they come
-     * before her reaction to an outcome. */
-    {NPC_SUMI, 0, OBS(OBS_ASKED_BY_SUMI), OBS(OBS_ASKED_BY_SUMI), D_SUMI_TASK, N_ASKED,
-     ITEM_NONE, OUT_NONE, OPEN_NOTHING, PHASE_ANY},
-    {NPC_SUMI, 0, 0, 0, D_SUMI_FOUGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT, OPEN_NIGHT,
-     PHASE_ANY},
-    {NPC_SUMI, 0, 0, 0, D_SUMI_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY, OPEN_NIGHT,
-     PHASE_ANY},
-    {NPC_SUMI, 0, 0, 0, D_SUMI_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND, OPEN_NIGHT,
-     PHASE_ANY},
-    {NPC_SUMI, OBS(OBS_BOWL_OWNER), 0, 0, D_SUMI_OWNER_KNOWN, NOTE_NONE, ITEM_NONE,
-     OUT_ANY, OPEN_NOTHING, PHASE_ANY},
-    {NPC_SUMI, OBS(OBS_ASKED_BY_SUMI), 0, 0, D_SUMI_WAITING, N_SUMI_STONES, ITEM_NONE,
-     OUT_ANY, OPEN_NOTHING, PHASE_ANY},
-    {NPC_ORIHA, OBS(OBS_BOWL_READY), 0, 0, D_ORIHA_READY, N_BOWL_READY, ITEM_BOWL,
-     OUT_ANY, OPEN_NOTHING, PHASE_ANY},
-    {NPC_ORIHA, OBS(OBS_BOWL_READY), 0, 0, D_ORIHA_AFTER, NOTE_NONE, ITEM_NONE, OUT_ANY,
-     OPEN_NOTHING, PHASE_ANY},
-    {NPC_ORIHA, OBS(OBS_BOWL_DRYING), 0, 0, D_ORIHA_DRYING, NOTE_NONE, ITEM_NONE, OUT_ANY,
-     OPEN_NOTHING, PHASE_ANY},
-    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | OBS(OBS_BOWL_OWNER), 0, 0, D_ORIHA_MEND, NOTE_NONE,
-     ITEM_NONE, OUT_ANY, OPEN_MEND, PHASE_ANY},
-    /* Wer beide Zeichen verbunden hat, wird nicht noch einmal losgeschickt --
-     * er bekommt die naechste Tuer genannt. Die Geschichte erzaehlt nur Sumi. */
-    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | MARKS, OBS(OBS_BOWL_OWNER), 0, D_ORIHA_MARK_MATCH,
-     NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING, PHASE_ANY},
-    /* Nur das Zeichen auf der Scherbe gesehen: was fuer ein Zeichen es ist. */
-    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS) | OBS(OBS_BOWL_MARK), OBS(OBS_HOUSE_MARK), 0,
-     D_ORIHA_MARK, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING, PHASE_ANY},
-    {NPC_ORIHA, OBS(OBS_BOWL_SHARDS), 0, 0, D_ORIHA_SHARDS, NOTE_NONE, ITEM_NONE, OUT_ANY,
-     OPEN_NOTHING, PHASE_ANY},
-    {NPC_ORIHA, 0, 0, 0, D_ORIHA, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING, PHASE_ANY},
-    {NPC_MIO, OBS(OBS_FOX_TENDED), 0, 0, D_MIO_THANKS, NOTE_NONE, ITEM_NONE, OUT_ANY,
-     OPEN_NOTHING, PHASE_ANY},
-    /* Mio keeps helping while the fox is hurt: the herb can be used up elsewhere. */
-    {NPC_MIO, OBS(OBS_FOX_WOUNDED), OBS(OBS_MIO_HERB), OBS(OBS_MIO_HERB), D_MIO_HERB,
-     N_HERB, ITEM_HERB, OUT_ANY, OPEN_NOTHING, PHASE_ANY},
-    {NPC_MIO, OBS(OBS_FOX_WOUNDED), 0, 0, D_MIO_HERB_MORE, NOTE_NONE, ITEM_HERB, OUT_ANY,
-     OPEN_NOTHING, PHASE_ANY},
-    {NPC_MIO, OBS(OBS_MIO_HERB), 0, 0, D_MIO_HERB_AGAIN, NOTE_NONE, ITEM_NONE, OUT_ANY,
-     OPEN_NOTHING, PHASE_ANY},
-    {NPC_MIO, 0, 0, 0, D_MIO, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING, PHASE_ANY},
-    {NPC_KENTA, OBS(OBS_KENTA_STARE), 0, 0, D_KENTA_AGAIN, NOTE_NONE, ITEM_NONE, OUT_ANY,
-     OPEN_NOTHING, PHASE_ANY},
-    {NPC_KENTA, 0, 0, OBS(OBS_KENTA_STARE), D_KENTA, N_KENTA, ITEM_NONE, OUT_ANY,
-     OPEN_NOTHING, PHASE_ANY},
-    {NPC_DAIGO, 0, 0, 0, D_DAIGO_FOUGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT, OPEN_NOTHING,
-     PHASE_ANY},
-    {NPC_DAIGO, 0, 0, 0, D_DAIGO_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY,
-     OPEN_NOTHING, PHASE_ANY},
-    {NPC_DAIGO, 0, 0, 0, D_DAIGO_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND, OPEN_NOTHING,
-     PHASE_ANY},
-    /* The compromise: he comes along once the kami sits and the tracks are known. */
-    {NPC_DAIGO, OBS(OBS_KAMI_CALMED) | OBS(OBS_TRACKS) | OBS(OBS_LEDGER_DEBT),
-     OBS(OBS_DAIGO_DEAL), OBS(OBS_DAIGO_DEAL), D_DAIGO_OFFER, N_DEAL, ITEM_NONE, OUT_NONE,
-     OPEN_FOLLOW, PHASE_ANY},
-    {NPC_DAIGO, OBS(OBS_DAIGO_DEAL), 0, 0, D_DAIGO_WALKING, NOTE_NONE, ITEM_NONE,
-     OUT_NONE, OPEN_FOLLOW, PHASE_ANY},
-    /* Der Kami sitzt, aber Daigo fehlt noch etwas: Er sagt, was er braucht,
-     * ohne zu sagen, wo es steht. */
-    {NPC_DAIGO, OBS(OBS_KAMI_CALMED), OBS(OBS_DAIGO_DEAL), 0, D_DAIGO_CALM, NOTE_NONE,
-     ITEM_NONE, OUT_NONE, OPEN_NOTHING, PHASE_ANY},
-    {NPC_DAIGO, OBS(OBS_LEDGER_DEBT), 0, 0, D_DAIGO_LEDGER, NOTE_NONE, ITEM_NONE, OUT_ANY,
-     OPEN_NOTHING, PHASE_ANY},
-    {NPC_DAIGO, 0, 0, 0, D_DAIGO, NOTE_NONE, ITEM_NONE, OUT_ANY, OPEN_NOTHING, PHASE_ANY},
+#include "../shared/dialogue_rules_b.inc"
 };
 const int dialogue_rule_count = (int)(sizeof dialogue_rules / sizeof dialogue_rules[0]);
 
@@ -536,9 +471,7 @@ const char *const night_choices[NIGHT_CHOICES] = {"UEBERNACHTEN", "NOCH HIERBLEI
 
 /* Buildings say what they are, whether or not anyone is in. */
 const Place places[] = {
-    {MAP_VILLAGE, 2, 13, 8, 4, "Gasthaus von Kiriyama", 0},
-    {MAP_VILLAGE, 21, 3, 8, 4, "Orihas Lackwerkstatt", 0},
-    {MAP_VILLAGE, 2, 3, 8, 4, "Sumis Haus", OBS(OBS_ASKED_BY_SUMI)},
+#include "../shared/places.inc"
 };
 const int place_count = (int)(sizeof places / sizeof places[0]);
 
