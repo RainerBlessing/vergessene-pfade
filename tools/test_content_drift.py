@@ -164,12 +164,10 @@ class TestVergleiche(unittest.TestCase):
     def test_echte_dateien_kein_befund(self):
         """8. Ein Lauf gegen die echten Dateien des Repos → kein Befund."""
         repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        with open(os.path.join(repo, "src", "content.c"), encoding="utf-8") as f:
-            pc_content = f.read()
-        with open(os.path.join(repo, "src", "inventory.c"), encoding="utf-8") as f:
-            pc_items = f.read()
-        with open(os.path.join(repo, "c64", "src", "content.c"), encoding="utf-8") as f:
-            c64_content = f.read()
+        # Durch _read: die geteilten Texte stehen in shared/*.inc, nicht in content.c.
+        pc_content = cd._read(os.path.join(repo, "src", "content.c"))
+        pc_items = cd._read(os.path.join(repo, "src", "inventory.c"))
+        c64_content = cd._read(os.path.join(repo, "c64", "src", "content.c"))
         with open(
             os.path.join(repo, "tools", "content_drift_allowlist.json"),
             encoding="utf-8",

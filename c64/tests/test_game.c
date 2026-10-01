@@ -21,6 +21,8 @@ static void start(Game *g) {
 static void read_out(Game *g) {
   while (g->state == GAME_DIALOGUE)
     game_action(g, ACT_CONFIRM);
+  if (g->state == GAME_PROMPT) /* the question about the night: stay */
+    game_action(g, ACT_CANCEL);
   if (g->state == GAME_END)
     game_action(g, ACT_CONFIRM);
 }
@@ -212,6 +214,236 @@ static void fight_changes_world(void) {
   face(&g, MAP_VILLAGE, 5, 5, 0, -1);
   game_action(&g, ACT_CONFIRM);
   assert(g.dialogue == D_SUMI_FOUGHT);
+}
+
+/* Der Morgen danach (#4): jede Figur antwortet je Ausgang anders. */
+static void talk_to(Game *g, NpcId npc) {
+  g->state = GAME_EXPLORATION;
+  face(g, npcs[npc].map, (int8_t)npcs[npc].x, (int8_t)(npcs[npc].y + 1), 0, -1);
+  game_action(g, ACT_CONFIRM);
+}
+static void morning_reactions_follow_the_outcome(void) {
+  static const struct {
+    NpcId npc;
+    uint8_t outcome;
+    bool fox_tended;
+    uint8_t line;
+  } expect[] = {
+      {NPC_SUMI, OUT_FIGHT, false, D_SUMI_MORNING_FIGHT},
+      {NPC_SUMI, OUT_BOUNDARY, false, D_SUMI_MORNING_BOUNDARY},
+      {NPC_SUMI, OUT_MEND, false, D_SUMI_MORNING_MEND},
+      {NPC_MIO, OUT_FIGHT, false, D_MIO_MORNING_FIGHT},
+      {NPC_MIO, OUT_FIGHT, true, D_MIO_MORNING_FIGHT_HELPED},
+      {NPC_MIO, OUT_BOUNDARY, false, D_MIO_MORNING_BOUNDARY},
+      {NPC_MIO, OUT_MEND, false, D_MIO_MORNING_MEND},
+      {NPC_DAIGO, OUT_FIGHT, false, D_DAIGO_MORNING_FIGHT},
+      {NPC_DAIGO, OUT_BOUNDARY, false, D_DAIGO_MORNING_BOUNDARY},
+      {NPC_DAIGO, OUT_MEND, false, D_DAIGO_MORNING_MEND},
+  };
+  for (uint8_t i = 0; i < sizeof expect / sizeof expect[0]; i++) {
+    Game g;
+    start(&g);
+    g.outcome = expect[i].outcome;
+    g.phase = PHASE_MORNING;
+    if (expect[i].fox_tended)
+      g.obs |= OBS(OBS_FOX_TENDED);
+    talk_to(&g, expect[i].npc);
+    assert(g.state == GAME_DIALOGUE && g.dialogue == expect[i].line);
+    assert(game_knows(&g, OBS_FOX_TENDED) == expect[i].fox_tended);
+  }
+}
+
+/* Die Nacht im Gasthaus (#4): der Futon erklaert sich und fragt, ob man bleibt. */
+static void read_to_the_end(Game *g) {
+  while (g->state == GAME_DIALOGUE)
+    game_action(g, ACT_CONFIRM);
+}
+/* Escape on a dialogue still sets in motion what it opens (a mend, a walk with
+ * Daigo), as on the PC: the choice is made by the conversation, not by how far
+ * the player read. What needs the reading -- the night, the end -- still does. */
+static void escape_still_opens_what_the_dialogue_opens(void) {
+  Game g;
+  start(&g);
+  g.state = GAME_DIALOGUE;
+  g.dialogue = D_ORIHA_MEND;
+  g.page = 0;
+  g.opens = OPEN_MEND;
+  game_action(&g, ACT_CANCEL);
+  assert(g.state == GAME_MEND && g.selection == 0);
+  g.state = GAME_DIALOGUE;
+  g.dialogue = D_DAIGO_OFFER;
+  g.page = 0;
+  g.opens = OPEN_FOLLOW;
+  g.daigo_follows = false;
+  game_action(&g, ACT_CANCEL);
+  assert(g.state == GAME_EXPLORATION && g.daigo_follows);
+  assert(g.opens == OPEN_NOTHING);
+}
+
+static void the_futon_asks_the_same(void) {
+  Game g;
+  start(&g);
+  g.outcome = OUT_FIGHT; /* der Wald ist entschieden */
+  face(&g, MAP_VILLAGE, 4, 15, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.state == GAME_DIALOGUE && g.dialogue == D_X_FUTON);
+  read_to_the_end(&g);
+  assert(g.state == GAME_PROMPT && g.dialogue == D_PROMPT_SLEEP && g.selection == 0);
+}
+static void a_night_opened_by_a_dialogue_asks(void) {
+  Game g;
+  start(&g);
+  g.outcome = OUT_BOUNDARY;
+  g.state = GAME_DIALOGUE;
+  g.dialogue = D_SUMI_BOUNDARY;
+  g.page = 0;
+  g.opens = OPEN_NIGHT;
+  read_to_the_end(&g);
+  assert(g.state == GAME_PROMPT && g.dialogue == D_PROMPT_SLEEP);
+  /* Escape on the dialogue leads nowhere: reading to the end does. */
+  g.state = GAME_DIALOGUE;
+  g.dialogue = D_SUMI_BOUNDARY;
+  g.page = 0;
+  g.opens = OPEN_NIGHT;
+  game_action(&g, ACT_CANCEL);
+  assert(g.state == GAME_EXPLORATION);
+}
+static void sleeping_brings_the_morning(void) {
+  Game g;
+  start(&g);
+  g.outcome = OUT_MEND;
+  g.state = GAME_PROMPT;
+  g.dialogue = D_PROMPT_SLEEP;
+  g.selection = 0;
+  game_action(&g, ACT_CONFIRM);
+  assert(g.phase == PHASE_MORNING && game_knows(&g, OBS_MORNING));
+  assert(g.map == MAP_VILLAGE && g.x == 4 && g.y == 14);
+  assert(g.state == GAME_DIALOGUE && g.dialogue == D_SCENE_MORNING);
+  assert(g.notes[g.note_count - 1] == N_MORNING);
+  read_to_the_end(&g);
+  /* Der Futon sagt jetzt nur noch, dass man geschlafen hat -- ohne Frage. */
+  face(&g, MAP_VILLAGE, 4, 15, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_X_FUTON_MORNING);
+  read_to_the_end(&g);
+  assert(g.state == GAME_EXPLORATION);
+}
+static void staying_awake_changes_nothing(void) {
+  Game g;
+  start(&g);
+  g.outcome = OUT_FIGHT;
+  g.state = GAME_PROMPT;
+  g.dialogue = D_PROMPT_SLEEP;
+  g.selection = 1; /* NOCH HIERBLEIBEN */
+  game_action(&g, ACT_CONFIRM);
+  assert(g.state == GAME_EXPLORATION && g.phase == PHASE_BEFORE);
+  g.state = GAME_PROMPT; /* Escape is the safe answer, too */
+  g.selection = 0;
+  game_action(&g, ACT_CANCEL);
+  assert(g.state == GAME_EXPLORATION && g.phase == PHASE_BEFORE);
+  /* The selection toggles between the two answers. */
+  g.state = GAME_PROMPT;
+  g.selection = 0;
+  game_action(&g, ACT_DOWN);
+  assert(g.selection == 1);
+  game_action(&g, ACT_UP);
+  assert(g.selection == 0);
+}
+static void an_unsettled_forest_gives_no_sleep(void) {
+  Game g;
+  start(&g);
+  assert(g.outcome == OUT_NONE);
+  g.state = GAME_PROMPT;
+  g.dialogue = D_PROMPT_SLEEP;
+  g.selection = 0;
+  game_action(&g, ACT_CONFIRM);
+  assert(g.phase == PHASE_BEFORE && g.state == GAME_DIALOGUE);
+  assert(g.dialogue == D_X_FUTON_AWAKE);
+}
+
+/* Der Morgen im Wald und im Dorf (#4): jeder Ausgang verwandelt die Karte noch einmal. */
+static void the_fox_leaves_overnight_and_comes_back_with_kits(void) {
+  Game g;
+  start(&g);
+  g.obs |= OBS(OBS_FOX_TENDED);
+  assert(game_tile(&g, MAP_FOREST, 5, 20) == 'f');
+  g.outcome = OUT_FIGHT;
+  assert(game_tile(&g, MAP_FOREST, 5, 20) == 'f'); /* it stays the day of the fight */
+  g.phase = PHASE_MORNING;
+  assert(game_tile(&g, MAP_FOREST, 5, 20) == 'e'); /* by morning it has left */
+  g.outcome = OUT_MEND;
+  assert(game_tile(&g, MAP_FOREST, 5, 20) == 'g'); /* and came back with kits */
+}
+static void the_den_says_what_it_holds(void) {
+  Game g;
+  start(&g);
+  g.outcome = OUT_FIGHT;
+  g.phase = PHASE_MORNING;
+  face(&g, MAP_FOREST, 6, 20, -1, 0);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.state == GAME_DIALOGUE && g.dialogue == D_X_DEN_EMPTY);
+  assert(g.notes[g.note_count - 1] == N_FOX_GONE);
+  read_to_the_end(&g);
+  g.outcome = OUT_MEND;
+  g.obs |= OBS(OBS_FOX_TENDED);
+  face(&g, MAP_FOREST, 6, 20, -1, 0);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_X_FOX_KITS);
+}
+static void the_morning_changes_the_map_per_outcome(void) {
+  static const struct {
+    uint8_t outcome, map;
+    int8_t x, y;
+    char morning;
+  } expect[] = {
+      {OUT_FIGHT, MAP_VILLAGE, 25, 13, 'W'},  {OUT_FIGHT, MAP_FOREST, 16, 4, 'x'},
+      {OUT_FIGHT, MAP_FOREST, 4, 22, 'x'},    {OUT_BOUNDARY, MAP_FOREST, 20, 11, 'j'},
+      {OUT_BOUNDARY, MAP_FOREST, 7, 28, '.'}, {OUT_MEND, MAP_VILLAGE, 22, 13, 's'},
+      {OUT_MEND, MAP_FOREST, 26, 11, 'x'},
+  };
+  for (uint8_t i = 0; i < sizeof expect / sizeof expect[0]; i++) {
+    Game g;
+    start(&g);
+    g.outcome = expect[i].outcome;
+    assert(game_tile(&g, expect[i].map, expect[i].x, expect[i].y) != expect[i].morning);
+    g.phase = PHASE_MORNING;
+    assert(game_tile(&g, expect[i].map, expect[i].x, expect[i].y) == expect[i].morning);
+  }
+}
+static void the_grey_patch_and_the_visitor_line(void) {
+  Game g;
+  start(&g);
+  assert(game_tile(&g, MAP_FOREST, 37, 19) != 'v');
+  g.outcome = OUT_BOUNDARY;
+  assert(game_tile(&g, MAP_FOREST, 37, 19) == 'v'); /* whatever was decided */
+  face(&g, MAP_FOREST, 37, 20, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_X_TRACE && game_knows(&g, OBS_GREY_TRACE));
+  assert(g.notes[g.note_count - 1] == N_TRACE);
+  read_to_the_end(&g);
+  /* Reading tracks adds what is missing, not an explanation. */
+  g.obs &= ~OBS(OBS_GREY_TRACE);
+  g.obs |= OBS(OBS_FOX_TENDED);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_X_TRACE_TRACKS);
+  read_to_the_end(&g);
+  /* Only then does the shrine show the line about a visitor. */
+  face(&g, MAP_FOREST, 37, 19, 1, 0);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_X_INSCRIPTION_LATE);
+  assert(g.notes[g.note_count - 1] == N_VISITOR);
+}
+
+/* Vor der Nacht bleibt es bei der Reaktion auf den Ausgang. */
+static void before_the_night_nothing_changes(void) {
+  Game g;
+  start(&g);
+  g.outcome = OUT_FIGHT;
+  assert(g.phase == PHASE_BEFORE);
+  talk_to(&g, NPC_SUMI);
+  assert(g.dialogue == D_SUMI_FOUGHT);
+  talk_to(&g, NPC_DAIGO);
+  assert(g.dialogue == D_DAIGO_FOUGHT);
 }
 
 /* The old boundary: the stone goes back into its hollow, one push per step.
@@ -792,8 +1024,9 @@ static void one_ending_at_a_time(void) {
   assert(h.staked == 0 && h.outcome == OUT_BOUNDARY);
 }
 
-/* Nach dem Ausgang und Sumis Wort sagt der Ausschnitt, dass er zu Ende ist --
- * einmal, danach laeuft die Welt weiter (#22). */
+/* Der Ausgang, Sumis Wort, die Nacht, der Morgen, der Besucher am Schrein, der Teaser --
+ * und erst dann sagt der Ausschnitt, dass er zu Ende ist: einmal, danach laeuft die Welt
+ * weiter (#22, #4). */
 static void the_slice_says_when_it_ends(void) {
   Game g;
   start(&g);
@@ -801,23 +1034,58 @@ static void the_slice_says_when_it_ends(void) {
   face(&g, MAP_FOREST, STONE_START_X, (int8_t)(STONE_START_Y + 1), 0, -1);
   for (int i = 0; i < 4; i++)
     game_action(&g, ACT_UP);
-  while (g.state == GAME_DIALOGUE)
-    game_action(&g, ACT_CONFIRM);
+  read_to_the_end(&g);
   assert(g.outcome == OUT_BOUNDARY && !g.ended);
+  /* Sumi asks about the night; no plate yet. */
   face(&g, MAP_VILLAGE, 5, 5, 0, -1);
   game_action(&g, ACT_CONFIRM);
   assert(g.dialogue == D_SUMI_BOUNDARY);
+  read_to_the_end(&g);
+  assert(g.state == GAME_PROMPT && !g.ended);
+  game_action(&g, ACT_CONFIRM); /* UEBERNACHTEN */
+  read_to_the_end(&g);
+  assert(g.phase == PHASE_MORNING && g.state == GAME_EXPLORATION && !g.ended);
+  /* The visitor at the shrine: the line, then the teaser, then the plate. */
+  g.obs |= OBS(OBS_GREY_TRACE);
+  face(&g, MAP_FOREST, 37, 19, 1, 0);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_X_INSCRIPTION_LATE && g.notes[g.note_count - 1] == N_VISITOR);
+  while (g.state == GAME_DIALOGUE && g.dialogue == D_X_INSCRIPTION_LATE)
+    game_action(&g, ACT_CONFIRM);
+  assert(g.state == GAME_DIALOGUE && g.dialogue == D_SCENE_TEASER);
+  assert(game_knows(&g, OBS_TEASED) && !g.ended);
   while (g.state == GAME_DIALOGUE)
     game_action(&g, ACT_CONFIRM);
   assert(g.state == GAME_END && g.ended);
   game_action(&g, ACT_CONFIRM);
   assert(g.state == GAME_EXPLORATION);
-  /* Beim zweiten Mal bleibt sie weg. */
-  face(&g, MAP_VILLAGE, 5, 5, 0, -1);
+  /* Reading the line again leads nowhere new. */
+  face(&g, MAP_FOREST, 37, 19, 1, 0);
   game_action(&g, ACT_CONFIRM);
-  while (g.state == GAME_DIALOGUE)
-    game_action(&g, ACT_CONFIRM);
+  read_to_the_end(&g);
   assert(g.state == GAME_EXPLORATION);
+}
+
+/* The visitor ends the slice only in the morning, and escaping the line does not. */
+static void the_visitor_ends_it_only_in_the_morning(void) {
+  Game g;
+  start(&g);
+  g.outcome = OUT_BOUNDARY;
+  g.obs |= OBS(OBS_GREY_TRACE);
+  face(&g, MAP_FOREST, 37, 19, 1, 0);
+  game_action(&g, ACT_CONFIRM); /* the evening of the same day */
+  assert(g.dialogue == D_X_INSCRIPTION_LATE);
+  read_to_the_end(&g);
+  assert(g.state == GAME_EXPLORATION && !game_knows(&g, OBS_TEASED));
+  g.phase = PHASE_MORNING;
+  g.obs |= OBS(OBS_MORNING);
+  game_action(&g, ACT_CONFIRM);
+  game_action(&g, ACT_CANCEL); /* Escape closes it: no teaser, no plate ... */
+  assert(g.state == GAME_EXPLORATION && !g.ended);
+  assert(!game_knows(&g, OBS_TEASED)); /* ... and the teaser is not used up */
+  game_action(&g, ACT_CONFIRM);        /* reading it to the end later leads on */
+  read_to_the_end(&g);
+  assert(game_knows(&g, OBS_TEASED) && g.state == GAME_END && g.ended);
 }
 
 /* Der Holzstapel sagt, was man sieht -- nach jedem Ausgang etwas anderes (#16). */
@@ -1060,6 +1328,19 @@ int main(void) {
   pushing_needs_both_observations();
   restore_old_boundary();
   a_stuck_stone_rolls_back();
+  morning_reactions_follow_the_outcome();
+  before_the_night_nothing_changes();
+  escape_still_opens_what_the_dialogue_opens();
+  the_futon_asks_the_same();
+  the_visitor_ends_it_only_in_the_morning();
+  the_fox_leaves_overnight_and_comes_back_with_kits();
+  the_den_says_what_it_holds();
+  the_morning_changes_the_map_per_outcome();
+  the_grey_patch_and_the_visitor_line();
+  a_night_opened_by_a_dialogue_asks();
+  sleeping_brings_the_morning();
+  staying_awake_changes_nothing();
+  an_unsettled_forest_gives_no_sleep();
   oriha_answers_what_was_seen();
   mend_the_bowl();
   the_bowl_calms_the_spirit();

@@ -27,238 +27,45 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
     [D_ORIHA_OWNER] = {1,
                        {"Sumis Grossmutter also. Dann hat\ndiese Schale eine lange "
                         "Geschichte.\nLass mich darueber nachdenken."}},
-    /* Stein und Mulde verweisen aufeinander, sobald beide bekannt sind (#14). */
-    [D_X_DEN_EMPTY] = {2,
-                       {"Frische Holzspaene liegen vor dem\nverlassenen Bau.",
-                        "Zwischen den Baeumen haben die\nHolzfaeller weitergearbeitet."}},
-    [D_X_FOX_KITS] = {1,
-                      {"Drei junge Fuechse balgen sich vor\ndem Bau. Die Alte sieht "
-                       "dir zu."}},
     /* An empty page shows the last message: the numbers of the closing round. */
     [D_ENC_OFFER_BOWL] = {2,
                           {"Du stellst die geflickte Schale\nins Moos. Die goldenen "
                            "Naehte\nfangen das Licht.",
                            "Der Kami beugt sich darueber.\nDas Knurren hoert auf. "
                            "Es setzt\nsich neben die Schale."}},
-    [D_X_FUTON] = {1,
-                   {"Ein bereitgelegter Futon fuer\nReisende. Hier kannst du\n"
-                    "uebernachten."}},
-    [D_X_FUTON_AWAKE] = {1,
-                         {"Du liegst wach. Solange der Wald\nunruhig ist, findest du "
-                          "keinen\nSchlaf."}},
-    [D_X_FUTON_MORNING] = {1,
-                           {"Du hast geschlafen. Jetzt ist\nTag, und das Dorf ist "
-                            "wach."}},
-    [D_PROMPT_SLEEP] = {1,
-                        {"Fuer heute ist alles entschieden.\nIm Gasthaus "
-                         "uebernachten?"}},
-    [D_SCENE_MORNING] = {1,
-                         {"Du schlaefst, bis die Schiebetuer\nklappert. Am naechsten "
-                          "Morgen\nist Kiriyama ein anderes Dorf."}},
-    [D_X_TRACE] = {1,
-                   {"Neben dem Schrein ist der Boden\ngrau. Keine Fussspur. Nichts\n"
-                    "Verbranntes. Keine Flechte."}},
-    [D_X_TRACE_TRACKS] = {2,
-                          {"Neben dem Schrein ist der Boden\ngrau. Keine Fussspur. "
-                           "Nichts\nVerbranntes. Keine Flechte.",
-                           "Und nicht einmal Tiere sind\nhier gegangen."}},
-    [D_X_INSCRIPTION_LATE] = {2,
-                              {"Ein kleiner, verwitterter Schrein.\nEingeritzt: Bis zu "
-                               "den drei\nSteinen und nicht weiter.",
-                               "Weiter unten, kaum lesbar: Es kam\nein Besucher, bevor "
-                               "der Wald\nunruhig wurde."}},
-    [D_SCENE_TEASER] = {2,
-                        {"Du sitzt lange am Schrein.\nDer Wald ist ruhig. Die graue\n"
-                         "Stelle bleibt grau.",
-                         "Irgendwo hinter den Bergen liegen\nweitere Doerfer. Auch "
-                         "dort, denkst\ndu, wird etwas leiser geworden sein."}},
-    [D_SUMI_MORNING_FIGHT] = {2,
-                              {"Der Holzplatz ist voll. Daigo hat\nseine Schulden "
-                               "bezahlt, Kenta\nhat wieder Arbeit.",
-                               "Der Bach ist truebe geworden.\nWahrscheinlich das "
-                               "Wetter."}},
-    [D_SUMI_MORNING_BOUNDARY] = {2,
-                                 {"Die Voegel sind zurueck. Ich habe\nheute frueh am "
-                                  "Schrein gekehrt,\nzum ersten Mal seit Jahren.",
-                                  "Das Lager macht zu. Die Steine\nstehen wieder. Mein "
-                                  "Sohn hat\njetzt keine Arbeit."}},
-    [D_SUMI_MORNING_MEND] = {2,
-                             {"Totholz reicht fuer den halben\nWinter. Wir werden "
-                              "sparsam\nheizen.",
-                              "Und jedes Jahr eine Gabe. Zwei\nFamilien fragen schon, "
-                              "wovon\nsie leben sollen."}},
-    [D_MIO_MORNING_FIGHT] = {2,
-                             {"Seit dort wieder die Aexte\nschlagen, ist sein Bau "
-                              "verlassen.",
-                              "Ich hoffe, er hat einen ruhigeren\nPlatz gefunden."}},
-    [D_MIO_MORNING_FIGHT_HELPED] = {2,
-                                    {"Du hast ihm geholfen. Aber seit\ndort wieder "
-                                     "die Aexte schlagen,\nhabe ich ihn nicht mehr "
-                                     "gesehen.",
-                                     "Vielleicht ist er tiefer in den\nWald gezogen."}},
-    [D_MIO_MORNING_BOUNDARY] = {1,
-                                {"Der Fuchs schlaeft wieder vor\nseinem Bau. Hoerst "
-                                 "du die Voegel?"}},
-    [D_MIO_MORNING_MEND] = {1, {"Der Fuchs hat Junge! Drei. Sie\nsind noch ganz grau."}},
-    [D_DAIGO_MORNING_FIGHT] = {1,
-                               {"Wir faellen bis zum Bach. Niemand\nhaelt uns mehr "
-                                "auf. Trotzdem ist\nes still hier oben."}},
-    [D_DAIGO_MORNING_BOUNDARY] = {1,
-                                  {"Das Lager ist abgebaut. Ich gehe\nins naechste "
-                                   "Tal. Frag nicht,\nob ich dir danke."}},
-    [D_DAIGO_MORNING_MEND] = {1,
-                              {"Totholz und Setzlinge. Weniger,\nals ich brauche. Mehr "
-                               "als nichts."}},
 };
 
 /* At most 2 lines of 36 characters; no digits or slashes (test_game). */
 const char *const notes[NOTE_COUNT] = {
 #include "../shared/notes.inc"
-    [N_FOX_GONE] = "Der Fuchsbau ist leer. Der Fuchs\nist fortgezogen.",
-    [N_MORNING] = "Eine Nacht ist vergangen. Das Dorf\nsieht anders aus.",
-    [N_TRACE] = "Neben dem Schrein ist der Boden\ngrau. Keine Spur, nichts.",
-    [N_VISITOR] = "Am Schrein steht: Ein Besucher kam,\nbevor der Wald unruhig wurde.",
 };
 
-/* Wohin die Antwort auf einen Ausgang fuehrt: in die Nacht (PC) oder zur Schlusstafel
- * (C64). */
-#define OPEN_AFTER_OUTCOME OPEN_NIGHT
 #define MARKS (OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK))
 const DialogueRule dialogue_rules[] = {
-#include "../shared/dialogue_rules_a.inc"
-    /* The morning after: each outcome reads differently to each of them. */
-    {NPC_SUMI, 0, 0, 0, D_SUMI_MORNING_FIGHT, N_MORNING, ITEM_NONE, OUT_FIGHT,
-     OPEN_NOTHING, PHASE_MORNING},
-    {NPC_SUMI, 0, 0, 0, D_SUMI_MORNING_BOUNDARY, N_MORNING, ITEM_NONE, OUT_BOUNDARY,
-     OPEN_NOTHING, PHASE_MORNING},
-    {NPC_SUMI, 0, 0, 0, D_SUMI_MORNING_MEND, N_MORNING, ITEM_NONE, OUT_MEND, OPEN_NOTHING,
-     PHASE_MORNING},
-    {NPC_MIO, OBS(OBS_FOX_TENDED), 0, 0, D_MIO_MORNING_FIGHT_HELPED, NOTE_NONE, ITEM_NONE,
-     OUT_FIGHT, OPEN_NOTHING, PHASE_MORNING},
-    {NPC_MIO, 0, 0, 0, D_MIO_MORNING_FIGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT, OPEN_NOTHING,
-     PHASE_MORNING},
-    {NPC_MIO, 0, 0, 0, D_MIO_MORNING_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY,
-     OPEN_NOTHING, PHASE_MORNING},
-    {NPC_MIO, 0, 0, 0, D_MIO_MORNING_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND, OPEN_NOTHING,
-     PHASE_MORNING},
-    {NPC_DAIGO, 0, 0, 0, D_DAIGO_MORNING_FIGHT, NOTE_NONE, ITEM_NONE, OUT_FIGHT,
-     OPEN_NOTHING, PHASE_MORNING},
-    {NPC_DAIGO, 0, 0, 0, D_DAIGO_MORNING_BOUNDARY, NOTE_NONE, ITEM_NONE, OUT_BOUNDARY,
-     OPEN_NOTHING, PHASE_MORNING},
-    {NPC_DAIGO, 0, 0, 0, D_DAIGO_MORNING_MEND, NOTE_NONE, ITEM_NONE, OUT_MEND,
-     OPEN_NOTHING, PHASE_MORNING},
-#include "../shared/dialogue_rules_b.inc"
+#include "../shared/dialogue_rules_1.inc"
+#include "../shared/dialogue_rules_2_morning.inc"
+#include "../shared/dialogue_rules_3.inc"
 };
 const int dialogue_rule_count = (int)(sizeof dialogue_rules / sizeof dialogue_rules[0]);
 
 const ExaminePoint examine_points[] = {
-#include "../shared/examine_points_a.inc"
-    {.kind = POINT_SYMBOL,
-     .map = MAP_FOREST,
-     .symbol = 'O',
-     .needs = OBS(OBS_GREY_TRACE),
-     .grants = OBS(OBS_SHRINE_INSCRIPTION),
-     .dialogue = D_X_INSCRIPTION_LATE,
-     .note = N_VISITOR},
-#include "../shared/examine_points_b.inc"
-    {.kind = POINT_SYMBOL,
-     .map = MAP_FOREST,
-     .symbol = 'e',
-     .dialogue = D_X_DEN_EMPTY,
-     .note = N_FOX_GONE},
-    {.kind = POINT_SYMBOL, .map = MAP_FOREST, .symbol = 'g', .dialogue = D_X_FOX_KITS},
-    /* The night at the inn, once something has been decided. */
-    {.kind = POINT_SYMBOL,
-     .map = MAP_VILLAGE,
-     .symbol = 'u',
-     .needs = OBS(OBS_MORNING),
-     .dialogue = D_X_FUTON_MORNING},
-    {.kind = POINT_SYMBOL, .map = MAP_VILLAGE, .symbol = 'u', .dialogue = D_X_FUTON},
-    /* The shrine after an outcome: a grey patch, and a line further down. */
-    {.kind = POINT_SYMBOL,
-     .map = MAP_FOREST,
-     .symbol = 'v',
-     .needs = OBS(OBS_FOX_TENDED),
-     .grants = OBS(OBS_GREY_TRACE),
-     .dialogue = D_X_TRACE_TRACKS,
-     .note = N_TRACE},
-    {.kind = POINT_SYMBOL,
-     .map = MAP_FOREST,
-     .symbol = 'v',
-     .grants = OBS(OBS_GREY_TRACE),
-     .dialogue = D_X_TRACE,
-     .note = N_TRACE},
+#include "../shared/examine_points_1.inc"
+#include "../shared/examine_points_2_late.inc"
+#include "../shared/examine_points_3.inc"
+#include "../shared/examine_points_4_morning.inc"
+#include "../shared/examine_points_futon.inc"
 };
 const int examine_point_count = (int)(sizeof examine_points / sizeof examine_points[0]);
 
-/* Sobald der Handel steht, sind die drei Stellen zu sehen: Suchen gehoert nicht
- * zu dieser Entscheidung, sie ist laengst gefallen (#21). */
-#define MARK(x, y)                                                                       \
-  {MAP_FOREST, x, y, 'P', OBS(OBS_DAIGO_DEAL), OUT_ANY, PHASE_ANY, TAG_NEUTRAL}
-#define TRACK(x, y)                                                                      \
-  {MAP_FOREST, x, y, 't', OBS(OBS_FOX_TENDED), OUT_ANY, PHASE_ANY, TAG_NEUTRAL}
+#include "../shared/tile_macros.inc"
+#define TILE(map, x, y, sym, needs, out, ph, tag) {map, x, y, sym, needs, out, ph, tag}
 const TileOverride tile_overrides[] = {
-    MARK(14, 14),
-    MARK(22, 15),
-    MARK(30, 14),
-    /* Orihas shelf: the bowl rests there while the lacquer dries. */
-    {MAP_VILLAGE, 22, 4, 'q', OBS(OBS_BOWL_READY), OUT_ANY, PHASE_ANY, TAG_NEUTRAL},
-    {MAP_VILLAGE, 22, 4, 'b', OBS(OBS_BOWL_DRYING), OUT_ANY, PHASE_ANY, TAG_NEUTRAL},
-    {MAP_FOREST, 5, 20, 'f', OBS(OBS_FOX_TENDED), OUT_ANY, PHASE_ANY, TAG_NEUTRAL},
-    /* Paw prints: around the camp, along the grove edge, to the stone gap. */
-    TRACK(8, 19),
-    TRACK(9, 18),
-    TRACK(10, 17),
-    TRACK(11, 16),
-    TRACK(12, 15),
-    TRACK(14, 14),
-    TRACK(16, 14),
-    TRACK(18, 15),
-    TRACK(20, 15),
-    TRACK(22, 15),
-    TRACK(26, 15),
-    TRACK(28, 15),
-    TRACK(30, 14),
-    TRACK(32, 14),
-    TRACK(34, 13),
+#include "../shared/tile_overrides.inc"
 };
 /* What each outcome changes, at once and again the next morning. Every outcome
  * shows a gain and a loss in both phases; a test checks that. */
-#define CHANGE(map, x, y, sym, out, ph, tag) {map, x, y, sym, 0, out, ph, tag}
 const TileOverride outcome_changes[] = {
-    /* Bekaempfen: the village has wood, the grove and the fox are gone. */
-    CHANGE(MAP_VILLAGE, 23, 13, 'W', OUT_FIGHT, PHASE_ANY, TAG_GAIN),
-    CHANGE(MAP_VILLAGE, 24, 13, 'W', OUT_FIGHT, PHASE_ANY, TAG_GAIN),
-    CHANGE(MAP_FOREST, 20, 6, 'x', OUT_FIGHT, PHASE_ANY, TAG_LOSS),
-    CHANGE(MAP_FOREST, 24, 7, 'x', OUT_FIGHT, PHASE_ANY, TAG_LOSS),
-    CHANGE(MAP_FOREST, 5, 20, 'e', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
-    CHANGE(MAP_FOREST, 7, 18, 'x', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
-    CHANGE(MAP_FOREST, 4, 22, 'x', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
-    CHANGE(MAP_FOREST, 9, 21, 'x', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
-    CHANGE(MAP_VILLAGE, 25, 13, 'W', OUT_FIGHT, PHASE_MORNING, TAG_GAIN),
-    CHANGE(MAP_FOREST, 16, 4, 'x', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
-    CHANGE(MAP_FOREST, 30, 4, 'x', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
-    /* Alte Grenze: the grove is kept, the camp loses its ground. */
-    CHANGE(MAP_FOREST, 16, 11, 'h', OUT_BOUNDARY, PHASE_ANY, TAG_GAIN),
-    CHANGE(MAP_FOREST, 14, 28, '.', OUT_BOUNDARY, PHASE_ANY, TAG_LOSS),
-    CHANGE(MAP_FOREST, 20, 11, 'j', OUT_BOUNDARY, PHASE_MORNING, TAG_GAIN),
-    CHANGE(MAP_FOREST, 29, 11, 'j', OUT_BOUNDARY, PHASE_MORNING, TAG_GAIN),
-    CHANGE(MAP_FOREST, 7, 28, '.', OUT_BOUNDARY, PHASE_MORNING, TAG_LOSS),
-    CHANGE(MAP_FOREST, 8, 28, '.', OUT_BOUNDARY, PHASE_MORNING, TAG_LOSS),
-    CHANGE(MAP_FOREST, 15, 28, '.', OUT_BOUNDARY, PHASE_MORNING, TAG_LOSS),
-    CHANGE(MAP_FOREST, 12, 30, '.', OUT_BOUNDARY, PHASE_MORNING, TAG_LOSS),
-    /* Kompromiss: deadwood and saplings, but the old edge stays cut. */
-    CHANGE(MAP_FOREST, 13, 30, 'z', OUT_MEND, PHASE_ANY, TAG_GAIN),
-    CHANGE(MAP_FOREST, 22, 10, 'x', OUT_MEND, PHASE_ANY, TAG_LOSS),
-    CHANGE(MAP_VILLAGE, 23, 13, 'W', OUT_MEND, PHASE_MORNING, TAG_GAIN),
-    CHANGE(MAP_FOREST, 16, 11, 'j', OUT_MEND, PHASE_MORNING, TAG_GAIN),
-    CHANGE(MAP_FOREST, 5, 20, 'g', OUT_MEND, PHASE_MORNING, TAG_GAIN),
-    CHANGE(MAP_FOREST, 26, 11, 'x', OUT_MEND, PHASE_MORNING, TAG_LOSS),
-    CHANGE(MAP_VILLAGE, 22, 13, 's', OUT_MEND, PHASE_MORNING, TAG_LOSS),
-    /* The grey patch by the shrine appears whatever was decided. */
-    {MAP_FOREST, 37, 19, 'v', 0, OUT_FIGHT, PHASE_ANY, TAG_NEUTRAL},
-    {MAP_FOREST, 37, 19, 'v', 0, OUT_BOUNDARY, PHASE_ANY, TAG_NEUTRAL},
-    {MAP_FOREST, 37, 19, 'v', 0, OUT_MEND, PHASE_ANY, TAG_NEUTRAL},
+#include "../shared/tile_changes.inc"
 };
 const int outcome_change_count =
     (int)(sizeof outcome_changes / sizeof outcome_changes[0]);
@@ -316,7 +123,7 @@ const int mend_display[MEND_PIECES] = {2, 0, 3, 1};
 /* The stakes stand on the animal tracks, between the old stones. */
 const StakeSpot stakes[STAKE_COUNT] = {{14, 14}, {22, 15}, {30, 14}};
 
-const char *const night_choices[NIGHT_CHOICES] = {"UEBERNACHTEN", "NOCH HIERBLEIBEN"};
+const char *const night_choices[NIGHT_CHOICES] = NIGHT_CHOICE_TEXTS;
 
 /* Buildings say what they are, whether or not anyone is in. */
 const Place places[] = {

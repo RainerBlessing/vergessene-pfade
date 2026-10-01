@@ -14,11 +14,7 @@
   "npcs": {},
   "items": {},
   "mood_names": {},
-  "dialogue_rules": {
-    "D_SUMI_FOUGHT|opens": "Der C64-Ausschnitt kennt keine Nacht im Gasthaus: statt der Frage nach dem Schlafen (OPEN_NIGHT) folgt dort die Schlusstafel (OPEN_END).",
-    "D_SUMI_BOUNDARY|opens": "Wie D_SUMI_FOUGHT|opens: keine Nacht, sondern die Schlusstafel.",
-    "D_SUMI_MEND|opens": "Wie D_SUMI_FOUGHT|opens: keine Nacht, sondern die Schlusstafel."
-  },
+  "dialogue_rules": {},
   "examine_points": {},
   "tile_overrides": {},
   "places": {}

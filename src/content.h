@@ -1,5 +1,6 @@
 #ifndef CONTENT_H
 #define CONTENT_H
+#include "../shared/inn.h"
 #include "inventory.h"
 #include <stdint.h>
 enum { MAP_VILLAGE, MAP_FOREST };
@@ -330,11 +331,7 @@ extern const int place_count;
 #define NOTE_TICKS 14
 
 /* The two answers to the question about the night, in this order. */
-#define NIGHT_CHOICES 2
 extern const char *const night_choices[NIGHT_CHOICES];
-/* Where the inn stands: both ways into the night end up here. */
-#define INN_X 4
-#define INN_Y 14
 
 /* Where the new boundary is staked out, along the animal tracks. */
 #define STAKE_COUNT 3

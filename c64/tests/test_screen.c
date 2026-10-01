@@ -125,6 +125,49 @@ static void mend_view_shows_gap_and_pieces(void) {
   expect_row(19, "Bruchkante.");
 }
 
+/* Die Frage nach der Nacht: Text, zwei Antworten, und was Tasten tun. */
+static void the_night_prompt_shows_question_and_answers(void) {
+  Game g;
+  RenderCache c = {0};
+  start(&g);
+  g.state = GAME_PROMPT;
+  g.dialogue = D_PROMPT_SLEEP;
+  g.selection = 0;
+  render(&g, &c);
+  expect_row(19, "Fuer heute ist alles entschieden.");
+  expect_row(20, "Im Gasthaus uebernachten?");
+  expect_row(21, "> UEBERNACHTEN");
+  expect_row(22, "  NOCH HIERBLEIBEN");
+  expect_row(24, "W/S waehlen   RETURN waehlen");
+  game_action(&g, ACT_DOWN);
+  render(&g, &c);
+  expect_row(21, "  UEBERNACHTEN");
+  expect_row(22, "> NOCH HIERBLEIBEN");
+}
+
+/* The night changes the map without a step: the picture has to follow, and an
+ * incremental redraw has to look like a fresh one. */
+static void the_morning_redraws_what_the_night_changed(void) {
+  Game g;
+  RenderCache c = {0};
+  uint8_t before[1000], incremental[1000];
+  start(&g);
+  g.outcome = OUT_FIGHT;
+  g.map = MAP_FOREST;
+  g.x = 6;
+  g.y = 21;
+  render(&g, &c);
+  memcpy(before, test_screen, sizeof before);
+  g.phase = PHASE_MORNING; /* the den is empty by morning */
+  g.obs |= OBS(OBS_MORNING);
+  render(&g, &c);
+  memcpy(incremental, test_screen, sizeof incremental);
+  assert(memcmp(before, incremental, sizeof before) != 0);
+  RenderCache fresh = {0};
+  render(&g, &fresh);
+  assert(memcmp(incremental, test_screen, sizeof incremental) == 0);
+}
+
 /* In der Begegnung steht neben dem Text auch, was die Runde gebracht hat. */
 static void encounter_shows_the_round(void) {
   Game g;
@@ -276,7 +319,8 @@ static void the_closing_panel_names_the_ending(void) {
   render(&g, &c);
   expect_row(2, "   HIER ENDET DER AUSSCHNITT");
   expect_row(4, "   Drei Pfaehle und eine Schale im Moos.");
-  expect_row(6, "   In der vollen Fassung folgt eine");
+  expect_row(6, "   Das war der Ausschnitt: ein Abend,");
+  expect_row(10, "   bleibt unerklaert.");
   expect_row(24, "RETURN: weiterlaufen");
 }
 
@@ -447,6 +491,8 @@ int main(void) {
   notebook_opens();
   notebook_shows_what_was_written();
   mend_view_shows_gap_and_pieces();
+  the_night_prompt_shows_question_and_answers();
+  the_morning_redraws_what_the_night_changed();
   encounter_shows_the_round();
   the_health_bar_keeps_its_steps();
   the_shelf_shows_the_dried_bowl();

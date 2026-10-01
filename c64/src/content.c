@@ -28,67 +28,38 @@ const char *const notes[NOTE_COUNT] = {
 #include "../../shared/notes.inc"
 };
 
-/* Wohin die Antwort auf einen Ausgang fuehrt: in die Nacht (PC) oder zur Schlusstafel
- * (C64). */
-#define OPEN_AFTER_OUTCOME OPEN_END
 #define MARKS (OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK))
 const DialogueRule dialogue_rules[] = {
-#include "../../shared/dialogue_rules_a.inc"
-#include "../../shared/dialogue_rules_b.inc"
+#include "../../shared/dialogue_rules_1.inc"
+#include "../../shared/dialogue_rules_2_morning.inc"
+#include "../../shared/dialogue_rules_3.inc"
 };
 const uint8_t dialogue_rule_count =
     (uint8_t)(sizeof dialogue_rules / sizeof dialogue_rules[0]);
 
 const ExaminePoint examine_points[] = {
-#include "../../shared/examine_points_a.inc"
-#include "../../shared/examine_points_b.inc"
+#include "../../shared/examine_points_1.inc"
+#include "../../shared/examine_points_2_late.inc"
+#include "../../shared/examine_points_3.inc"
+#include "../../shared/examine_points_4_morning.inc"
+#include "../../shared/examine_points_futon.inc"
 };
 const uint8_t examine_point_count =
     (uint8_t)(sizeof examine_points / sizeof examine_points[0]);
 
 /* Sobald der Handel steht, sind die drei Stellen zu sehen: Suchen gehoert nicht
  * zu dieser Entscheidung, sie ist laengst gefallen (#21). */
-#define MARK(x, y) {MAP_FOREST, x, y, 'P', OBS(OBS_DAIGO_DEAL), OUT_ANY}
-#define TRACK(x, y) {MAP_FOREST, x, y, 't', OBS(OBS_FOX_TENDED), OUT_ANY}
+#include "../../shared/tile_macros.inc"
+#define TILE(map, x, y, sym, needs, out, ph, tag) {map, x, y, sym, needs, out, ph}
+/* What an outcome changed comes first: it is the newer state of the world. */
 const TileOverride tile_overrides[] = {
-    MARK(14, 14),
-    MARK(22, 15),
-    MARK(30, 14),
-    /* What the fight changed comes first: it is the newer state of the world. */
-    {MAP_VILLAGE, 23, 13, 'W', 0, OUT_FIGHT},
-    {MAP_VILLAGE, 24, 13, 'W', 0, OUT_FIGHT},
-    {MAP_FOREST, 20, 6, 'x', 0, OUT_FIGHT},
-    {MAP_FOREST, 24, 7, 'x', 0, OUT_FIGHT},
-    /* Alte Grenze: the grove keeps its edge, the camp loses its ground. */
-    {MAP_FOREST, 16, 11, 'h', 0, OUT_BOUNDARY},
-    {MAP_FOREST, 14, 28, '.', 0, OUT_BOUNDARY},
-    /* Kompromiss: deadwood for the village, the old edge stays cut. */
-    {MAP_FOREST, 13, 30, 'z', 0, OUT_MEND},
-    {MAP_FOREST, 22, 10, 'x', 0, OUT_MEND},
-    /* Orihas shelf: the bowl rests there while the lacquer dries. */
-    {MAP_VILLAGE, 22, 4, 'q', OBS(OBS_BOWL_READY), OUT_ANY},
-    {MAP_VILLAGE, 22, 4, 'b', OBS(OBS_BOWL_DRYING), OUT_ANY},
-    {MAP_FOREST, 5, 20, 'f', OBS(OBS_FOX_TENDED), OUT_ANY},
-    /* Paw prints: around the camp, along the grove edge, to the stone gap. */
-    TRACK(8, 19),
-    TRACK(9, 18),
-    TRACK(10, 17),
-    TRACK(11, 16),
-    TRACK(12, 15),
-    TRACK(14, 14),
-    TRACK(16, 14),
-    TRACK(18, 15),
-    TRACK(20, 15),
-    TRACK(22, 15),
-    TRACK(26, 15),
-    TRACK(28, 15),
-    TRACK(30, 14),
-    TRACK(32, 14),
-    TRACK(34, 13),
+#include "../../shared/tile_changes.inc"
+#include "../../shared/tile_overrides.inc"
 };
 const uint8_t tile_override_count =
     (uint8_t)(sizeof tile_overrides / sizeof tile_overrides[0]);
 
+const char *const night_choices[NIGHT_CHOICES] = NIGHT_CHOICE_TEXTS;
 const char *const mood_names[MOOD_COUNT] = {"ZORNIG", "MISSTRAUISCH", "RUHIG"};
 const uint8_t encounter_transitions[ENC_COUNT][MOOD_COUNT] = {
     /* from:        ANGRY       WARY        CALM */
@@ -150,11 +121,11 @@ const char *const closing_line[OUTCOME_COUNT] = {
 const char *const closing_page[CLOSING_LINES] = {
     "HIER ENDET DER AUSSCHNITT",
     "",
-    "In der vollen Fassung folgt eine",
-    "Nacht im Gasthaus und ein Morgen, der",
-    "zeigt, was aus der Entscheidung",
-    "geworden ist. Am Schrein liegt dann",
-    "eine Spur, die niemand erklaert.",
+    "Das war der Ausschnitt: ein Abend,",
+    "eine Nacht und ein Morgen, an dem",
+    "sichtbar wird, was die Entscheidung",
+    "gekostet hat. Die Spur am Schrein",
+    "bleibt unerklaert.",
     "",
     "RETURN: weiterlaufen",
 };

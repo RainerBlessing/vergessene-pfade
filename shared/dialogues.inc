@@ -231,3 +231,79 @@
   [D_I_BOWL_MARK_MATCH] = {1,
                              {"Auf dem Boden einer Scherbe ist\nein Zeichen "
                               "eingebrannt. Dasselbe\nwie an Sumis Tuer?"}},
+    [D_SUMI_MORNING_FIGHT] = {2,
+                              {"Der Holzplatz ist voll. Daigo hat\nseine Schulden "
+                               "bezahlt, Kenta\nhat wieder Arbeit.",
+                               "Der Bach ist truebe geworden.\nWahrscheinlich das "
+                               "Wetter."}},
+    [D_SUMI_MORNING_BOUNDARY] = {2,
+                                 {"Die Voegel sind zurueck. Ich habe\nheute frueh am "
+                                  "Schrein gekehrt,\nzum ersten Mal seit Jahren.",
+                                  "Das Lager macht zu. Die Steine\nstehen wieder. Mein "
+                                  "Sohn hat\njetzt keine Arbeit."}},
+    [D_SUMI_MORNING_MEND] = {2,
+                             {"Totholz reicht fuer den halben\nWinter. Wir werden "
+                              "sparsam\nheizen.",
+                              "Und jedes Jahr eine Gabe. Zwei\nFamilien fragen schon, "
+                              "wovon\nsie leben sollen."}},
+    [D_MIO_MORNING_FIGHT] = {2,
+                             {"Seit dort wieder die Aexte\nschlagen, ist sein Bau "
+                              "verlassen.",
+                              "Ich hoffe, er hat einen ruhigeren\nPlatz gefunden."}},
+    [D_MIO_MORNING_FIGHT_HELPED] = {2,
+                                    {"Du hast ihm geholfen. Aber seit\ndort wieder "
+                                     "die Aexte schlagen,\nhabe ich ihn nicht mehr "
+                                     "gesehen.",
+                                     "Vielleicht ist er tiefer in den\nWald gezogen."}},
+    [D_MIO_MORNING_BOUNDARY] = {1,
+                                {"Der Fuchs schlaeft wieder vor\nseinem Bau. Hoerst "
+                                 "du die Voegel?"}},
+    [D_MIO_MORNING_MEND] = {1, {"Der Fuchs hat Junge! Drei. Sie\nsind noch ganz grau."}},
+    [D_DAIGO_MORNING_FIGHT] = {1,
+                               {"Wir faellen bis zum Bach. Niemand\nhaelt uns mehr "
+                                "auf. Trotzdem ist\nes still hier oben."}},
+    [D_DAIGO_MORNING_BOUNDARY] = {1,
+                                  {"Das Lager ist abgebaut. Ich gehe\nins naechste "
+                                   "Tal. Frag nicht,\nob ich dir danke."}},
+    [D_DAIGO_MORNING_MEND] = {1,
+                              {"Totholz und Setzlinge. Weniger,\nals ich brauche. Mehr "
+                               "als nichts."}},
+    [D_X_FUTON] = {1,
+                   {"Ein bereitgelegter Futon fuer\nReisende. Hier kannst du\n"
+                    "uebernachten."}},
+    [D_X_FUTON_AWAKE] = {1,
+                         {"Du liegst wach. Solange der Wald\nunruhig ist, findest du "
+                          "keinen\nSchlaf."}},
+    [D_X_FUTON_MORNING] = {1,
+                           {"Du hast geschlafen. Jetzt ist\nTag, und das Dorf ist "
+                            "wach."}},
+    [D_PROMPT_SLEEP] = {1,
+                        {"Fuer heute ist alles entschieden.\nIm Gasthaus "
+                         "uebernachten?"}},
+    [D_SCENE_MORNING] = {1,
+                         {"Du schlaefst, bis die Schiebetuer\nklappert. Am naechsten "
+                          "Morgen\nist Kiriyama ein anderes Dorf."}},
+    /* Stein und Mulde verweisen aufeinander, sobald beide bekannt sind (#14). */
+    [D_X_DEN_EMPTY] = {2,
+                       {"Frische Holzspaene liegen vor dem\nverlassenen Bau.",
+                        "Zwischen den Baeumen haben die\nHolzfaeller weitergearbeitet."}},
+    [D_X_FOX_KITS] = {1,
+                      {"Drei junge Fuechse balgen sich vor\ndem Bau. Die Alte sieht "
+                       "dir zu."}},
+    [D_X_TRACE] = {1,
+                   {"Neben dem Schrein ist der Boden\ngrau. Keine Fussspur. Nichts\n"
+                    "Verbranntes. Keine Flechte."}},
+    [D_X_TRACE_TRACKS] = {2,
+                          {"Neben dem Schrein ist der Boden\ngrau. Keine Fussspur. "
+                           "Nichts\nVerbranntes. Keine Flechte.",
+                           "Und nicht einmal Tiere sind\nhier gegangen."}},
+    [D_X_INSCRIPTION_LATE] = {2,
+                              {"Ein kleiner, verwitterter Schrein.\nEingeritzt: Bis zu "
+                               "den drei\nSteinen und nicht weiter.",
+                               "Weiter unten, kaum lesbar: Es kam\nein Besucher, bevor "
+                               "der Wald\nunruhig wurde."}},
+    [D_SCENE_TEASER] = {2,
+                        {"Du sitzt lange am Schrein.\nDer Wald ist ruhig. Die graue\n"
+                         "Stelle bleibt grau.",
+                         "Irgendwo hinter den Bergen liegen\nweitere Doerfer. Auch "
+                         "dort, denkst\ndu, wird etwas leiser geworden sein."}},

@@ -200,6 +200,18 @@ static void dialogue_panel(const Game *g, uint8_t top) {
   hint(g->page + 1 < d->count ? "RETURN weiter" : "RETURN schliessen");
 }
 
+/* The question about the night: the line that asks, and the two answers. */
+static void prompt_panel(const Game *g, uint8_t top) {
+  uint8_t y = screen_lines(0, top + 1, dialogues[g->dialogue].pages[0], COLOR_WHITE);
+  for (uint8_t i = 0; i < NIGHT_CHOICES; i++) {
+    screen_row(y, COLOR_WHITE);
+    screen_text(0, y, i == g->selection ? ">" : " ", COLOR_YELLOW);
+    screen_text(2, y++, night_choices[i], COLOR_WHITE);
+  }
+  blank(y);
+  hint("W/S waehlen   RETURN waehlen");
+}
+
 static void exploration_panel(const Game *g, uint8_t top) {
   uint8_t next = screen_lines(0, top + 1, g->message, COLOR_LIGHTGREEN);
   blank(next);
@@ -344,6 +356,8 @@ void render(const Game *g, RenderCache *cache) {
   separator(PANEL_TOP);
   if (g->state == GAME_DIALOGUE)
     dialogue_panel(g, PANEL_TOP);
+  else if (g->state == GAME_PROMPT)
+    prompt_panel(g, PANEL_TOP);
   else if (g->state == GAME_INVENTORY)
     inventory_panel(g, PANEL_TOP);
   else

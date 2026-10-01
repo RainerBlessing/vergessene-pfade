@@ -24,7 +24,8 @@ typedef enum {
   GAME_NOTEBOOK,
   GAME_ENCOUNTER,
   GAME_MEND,
-  GAME_END /* die Schlusstafel des Ausschnitts */
+  GAME_PROMPT, /* the question about the night */
+  GAME_END     /* die Schlusstafel des Ausschnitts */
 } GameState;
 
 /* Platz fuer jede Notiz: das Buch verliert keine, wie gruendlich man auch sucht. */
@@ -39,6 +40,7 @@ typedef struct {
   uint8_t map, state;
   GAME_CORE_FIELDS
   uint8_t mood, outcome, fighting;
+  uint8_t phase; /* Phase: before the night, or the morning after it */
   uint8_t opens; /* what the open conversation leads to */
   bool ended;    /* die Schlusstafel kommt einmal */
   uint8_t sfx;   /* the cue of the last action (SfxId); the caller plays it */

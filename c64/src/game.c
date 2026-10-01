@@ -30,8 +30,9 @@ static void msg_num(Game *g, int16_t v) {
 static bool matches(const Game *g, Obs needs, Obs forbids) {
   return (g->obs & needs) == needs && !(g->obs & forbids);
 }
-static bool fits_now(const Game *g, Obs needs, uint8_t outcome) {
-  return (g->obs & needs) == needs && (outcome == OUT_ANY || outcome == g->outcome);
+static bool fits_now(const Game *g, Obs needs, uint8_t outcome, uint8_t phase) {
+  return (g->obs & needs) == needs && (outcome == OUT_ANY || outcome == g->outcome) &&
+         (phase == PHASE_ANY || phase == g->phase);
 }
 bool game_knows(const Game *g, ObsId o) { return (g->obs & OBS(o)) != 0; }
 
@@ -46,13 +47,13 @@ char game_tile(const Game *g, uint8_t map, int8_t x, int8_t y) {
   for (uint8_t i = 0; i < tile_override_count; i++) {
     const TileOverride *o = &tile_overrides[i];
     if (o->map == map && o->x == (uint8_t)x && o->y == (uint8_t)y &&
-        fits_now(g, o->needs, o->outcome))
+        fits_now(g, o->needs, o->outcome, o->phase))
       return o->symbol;
   }
   return map_at(map, x, y);
 }
 bool game_shows(const Game *g, const TileOverride *o) {
-  return fits_now(g, o->needs, o->outcome);
+  return fits_now(g, o->needs, o->outcome, o->phase);
 }
 bool game_passable(const Game *g, uint8_t map, int8_t x, int8_t y) {
   const TileDef *t = tile_def(game_tile(g, map, x, y));
@@ -199,7 +200,7 @@ static void arrive(Game *g, uint8_t map, int8_t x, int8_t y) {
 
 /* --- talking --- */
 static void talk(Game *g, int8_t npc) {
-  const DialogueRule *r = talk_select(npc, g->obs, g->outcome, PHASE_ANY, g->bag);
+  const DialogueRule *r = talk_select(npc, g->obs, g->outcome, g->phase, g->bag);
   if (!r)
     return;
   if (r->gives != ITEM_NONE)
@@ -219,8 +220,12 @@ static void use_point(Game *g, const ExaminePoint *p, char examined) {
     g->bag[p->takes]--;
   if (p->gives != ITEM_NONE)
     g->bag[p->gives]++;
+  /* Reading about the visitor in the morning closes the slice, once - but only
+   * after the inscription itself has been read. */
+  bool closes =
+      p->note == N_VISITOR && g->phase == PHASE_MORNING && !game_knows(g, OBS_TEASED);
   learn(g, p->grants, p->note);
-  open_dialogue(g, -1, examined, p->dialogue, OPEN_NOTHING);
+  open_dialogue(g, -1, examined, p->dialogue, closes ? OPEN_TEASER : OPEN_NOTHING);
 }
 static void examine_nothing(Game *g, int8_t x, int8_t y) {
   const TileDef *tile = tile_def(game_tile(g, g->map, x, y));
@@ -493,6 +498,8 @@ static void move(Game *g, int8_t dx, int8_t dy) {
   }
 }
 
+#include "../../shared/night.h"
+
 void game_action(Game *g, Action a) {
   g->sfx = SFX_NONE;
   if (g->state != GAME_EXPLORATION && (a == ACT_CONFIRM || a == ACT_CANCEL))
@@ -509,24 +516,25 @@ void game_action(Game *g, Action a) {
   case GAME_NOTEBOOK:
     notebook_action(g, a);
     return;
-  case GAME_DIALOGUE:
+  case GAME_DIALOGUE: {
     if (a != ACT_CANCEL &&
         !(a == ACT_CONFIRM && ++g->page >= dialogues[g->dialogue].count))
       return;
+    bool read_out = a == ACT_CONFIRM;
+    Count was = g->dialogue;
     g->state = GAME_EXPLORATION;
     msg_clear(g); /* the scene's echo of the last round ends with it */
-    /* Escape closes and nothing more; reading to the end can lead on. */
-    if (a == ACT_CONFIRM && g->opens == OPEN_MEND) {
-      g->state = GAME_MEND;
-      g->selection = 0;
-    } else if (a == ACT_CONFIRM && g->opens == OPEN_FOLLOW)
-      g->daigo_follows = true;
-    else if (a == ACT_CONFIRM && g->opens == OPEN_END && !g->ended) {
+    /* What a dialogue opens happens however it was closed; the night and the teaser
+     * need the reading. */
+    opens_after_dialogue(g, read_out, was);
+    /* The teaser is the last word of the slice: then the plate, once. */
+    if (read_out && was == D_SCENE_TEASER && !g->ended) {
       g->ended = true; /* einmal, danach laeuft die Welt weiter */
       g->state = GAME_END;
     }
     g->opens = OPEN_NOTHING;
     return;
+  }
   case GAME_INVENTORY:
     inventory_action(g, a);
     return;
@@ -535,6 +543,9 @@ void game_action(Game *g, Action a) {
     return;
   case GAME_MEND:
     mend_action(g, a);
+    return;
+  case GAME_PROMPT:
+    prompt_action(g, a);
     return;
   case GAME_END:
     if (a == ACT_CONFIRM || a == ACT_CANCEL)

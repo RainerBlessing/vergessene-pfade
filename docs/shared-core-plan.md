@@ -42,9 +42,11 @@ für Geteiltes nichts mehr.
   `content_drift.py` setzt die `.inc`-Dateien beim Lesen wieder ein.
 - 2b, Regeltabellen: Complete.
   - `Place`: Complete. `shared/places.inc`, beide Tabellen identisch.
-  - `DialogueRule`: Complete. 30 Regeln stehen in `shared/dialogue_rules_a.inc`
-    (erste Regel) und `_b.inc` (der Rest); die 10 PC-eigenen Morgenregeln liegen
-    dazwischen und stehen nur in `src/content.c`. Die drei Regeln, die auf dem PC
+  - `DialogueRule`: Complete. 30 Regeln standen in `shared/dialogue_rules_1.inc`
+    (erste Regel) und `_3.inc` (der Rest); die 10 PC-eigenen Morgenregeln lagen
+    dazwischen und standen nur in `src/content.c`. (Seit Stufe 7 der C64-Pläne
+    stehen auch die Morgenregeln geteilt in `_2_morning.inc`; die Dateien heißen
+    1/2/3, damit clang-format die Reihenfolge der Includes nicht umstellt.) Die drei Regeln, die auf dem PC
     in die Nacht und auf dem C64 zur Schlusstafel führen, nennen
     `OPEN_AFTER_OUTCOME`; jede Seite definiert das Makro. Der Driftmelder löst
     solche Aliase auf, damit die Erlaubnisliste weiter gilt.
@@ -200,3 +202,7 @@ in den Kern. Kampf: die Rechnung bleibt je Fassung (siehe 3c).
   Binärdatei. Beim Prüfen der Begegnung fiel das auf (ein Mutationstest scheiterte
   nicht). Behoben (`SHARED` im Makefile). Die Größen je Branch sind sauber
   neu gebaut: Basis 28 252, Stufe 3 28 314, Stufe 4 (#51) 28 266.
+
+Nachtrag (C64-Plan, Stufen 7-10): `OPEN_AFTER_OUTCOME` gibt es nicht mehr; die drei
+Sumi-Regeln führen auf beiden Seiten in die Nacht (`OPEN_NIGHT`), und das Ende
+der C64 kommt nach dem Teaser.

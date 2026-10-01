@@ -51,6 +51,9 @@ static const TileDef tiles[] = {
     {'w', 23, 7, 0, "Schild"},
     {'c', 3, 9, 0, "Werkbank"},
     {'z', 26, 9, 0, "Totholzstapel"},
+    {'g', 6, 7, 0, "Fuchsbau"},
+    {'j', 10, 13, 0, "Setzling"},
+    {'v', 102, 12, 0, "Graue Spur"},
     {'p', 9, 9, PASS, "Grenzpfahl"},
     /* Wo ein Pfahl hin soll, sobald der Handel steht (#21). */
     {'P', 33 /* '!' */, 7, PASS, "Markierte Stelle"},

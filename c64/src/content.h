@@ -1,5 +1,6 @@
 #ifndef CONTENT_H
 #define CONTENT_H
+#include "../../shared/inn.h"
 #include "world.h"
 
 /* Observations only; the game never stores conclusions (design rule 1).
@@ -29,6 +30,9 @@ typedef enum {
   OBS_KAMI_CALMED,
   OBS_DAIGO_DEAL,
   OBS_STONE_MOVED, /* the stone stands neither where it was dragged to nor home */
+  OBS_MORNING,     /* the night has passed */
+  OBS_GREY_TRACE,  /* the grey patch by the shrine has been seen */
+  OBS_TEASED,      /* the slice has said where it leads */
   OBS_COUNT
 } ObsId;
 typedef uint32_t Obs;
@@ -37,8 +41,9 @@ typedef uint32_t Obs;
 typedef enum { OUT_NONE, OUT_FIGHT, OUT_BOUNDARY, OUT_MEND, OUTCOME_COUNT } Outcome;
 /* In a rule: applies whatever has been decided. */
 #define OUT_ANY OUTCOME_COUNT
-/* The C64 slice has no phases; a rule's phase is always PHASE_ANY. */
-#define PHASE_ANY 0xFF
+/* Before the night, and the morning after it. */
+typedef enum { PHASE_BEFORE, PHASE_MORNING, PHASE_COUNT } Phase;
+#define PHASE_ANY PHASE_COUNT
 
 typedef enum { ITEM_NONE, ITEM_HERB, ITEM_SHARDS, ITEM_BOWL, ITEM_COUNT } ItemId;
 typedef struct {
@@ -138,6 +143,27 @@ typedef enum {
   D_ENC_DEFEAT,
   D_SCENE_BOUNDARY,
   D_SCENE_MEND,
+  D_SUMI_MORNING_FIGHT,
+  D_SUMI_MORNING_BOUNDARY,
+  D_SUMI_MORNING_MEND,
+  D_MIO_MORNING_FIGHT,
+  D_MIO_MORNING_FIGHT_HELPED,
+  D_MIO_MORNING_BOUNDARY,
+  D_MIO_MORNING_MEND,
+  D_DAIGO_MORNING_FIGHT,
+  D_DAIGO_MORNING_BOUNDARY,
+  D_DAIGO_MORNING_MEND,
+  D_X_FUTON,
+  D_X_FUTON_AWAKE,
+  D_X_FUTON_MORNING,
+  D_PROMPT_SLEEP,
+  D_SCENE_MORNING,
+  D_X_DEN_EMPTY,
+  D_X_FOX_KITS,
+  D_X_TRACE,
+  D_X_TRACE_TRACKS,
+  D_X_INSCRIPTION_LATE,
+  D_SCENE_TEASER,
   DIALOGUE_COUNT
 } DialogueId;
 #define DIALOGUE_PAGES 3
@@ -179,12 +205,22 @@ typedef enum {
   N_KAMI_CALM,
   N_DEAL,
   N_MEND,
+  N_MORNING,
+  N_FOX_GONE,
+  N_TRACE,
+  N_VISITOR,
   NOTE_COUNT
 } NoteId;
 extern const char *const notes[NOTE_COUNT];
 
 /* What a conversation opens once its last page is read. */
-typedef enum { OPEN_NOTHING, OPEN_MEND, OPEN_FOLLOW, OPEN_END } DialogueOpens;
+typedef enum {
+  OPEN_NOTHING,
+  OPEN_MEND,
+  OPEN_FOLLOW,
+  OPEN_NIGHT,
+  OPEN_TEASER
+} DialogueOpens;
 /* First matching rule wins. */
 typedef struct {
   uint8_t npc;
@@ -219,13 +255,14 @@ typedef struct {
   uint8_t map, x, y;
   char symbol;
   Obs needs;
-  uint8_t outcome;
+  uint8_t outcome, phase; /* OUT_ANY, PHASE_ANY: whatever was decided, at any time */
 } TileOverride;
 extern const TileOverride tile_overrides[];
 extern const uint8_t tile_override_count;
 
 /* Encounter: actions change the spirit's mood, not only its health. */
 typedef enum { MOOD_ANGRY, MOOD_WARY, MOOD_CALM, MOOD_COUNT } Mood;
+extern const char *const night_choices[NIGHT_CHOICES];
 extern const char *const mood_names[MOOD_COUNT];
 typedef enum {
   ENC_WAIT,
