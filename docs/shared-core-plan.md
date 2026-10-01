@@ -135,7 +135,18 @@ bezahlbar, gehört aber gegen Inhalt abgewogen.
 
 ## Stufe 4: Regeln einzeln umziehen
 **Goal**: `examine`, `mend`, `stake`, `encounter`, `push`/`move` wandern nacheinander
-in den Kern. Kampf: `combat.c` (PC) und `fight_round` (C64) auseinandersetzen.
+in den Kern. Kampf: die Rechnung bleibt je Fassung (siehe 3c).
 **Success Criteria**: je Schritt beide Plattformen grün und im Budget.
 **Tests**: eine Kernsuite; die Plattformsuiten schrumpfen auf Adapter-Verhalten.
-**Status**: Not Started
+**Status**: In Progress (Branch `shared-rules-mend`)
+
+- 4a, `mend_action`: Complete (Spike). `shared/mend.h` steht in beiden `game.c`.
+  **C64-Größe unverändert** (Datei 28 314, Code 13 432), beide Suiten und PC
+  (SDL, ASan/UBSan) grün. Das bestätigt die Form aus der Platzmessung: eine
+  `static`-Funktion in einer Headerdatei, die direkt auf `g->feld` zugreift.
+  Was dafür auf jeder Seite in kleiner Form da sein muss: `select_move`, `show`,
+  `take_item`, `learn`, `open_scene`, `emit`. `Count` als Feldtyp für die
+  Stückliste lässt `game_mend_pieces` auf beiden Seiten unverändert. Zwei
+  Unterschiede, die dabei verschwanden: Die PC-Fassung loggt auch ein falsches
+  Teilstück (`EV_MEND` mit `b = 0`), die C64-Fassung ließ den Aufruf aus; jetzt
+  ruft beide ihn auf, und `sfx_for_event` macht daraus auf der C64 keinen Klang.

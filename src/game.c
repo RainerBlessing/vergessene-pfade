@@ -448,36 +448,8 @@ static void begin_encounter(Game *g) {
 }
 /* Kintsugi: each piece is set into the gap it belongs to. A piece that does not
  * fit costs nothing; the seams stay visible. */
-static void mend_action(Game *g, Action a) {
-  int pieces[MEND_PIECES];
-  int count = game_mend_pieces(g, pieces);
-  if (a == ACT_CANCEL) {
-    g->state = GAME_EXPLORATION;
-    return;
-  }
-  if (count == 0)
-    return;
-  select_move(g, a, count);
-  if (a != ACT_CONFIRM)
-    return;
-  if (g->selection >= count)
-    g->selection = 0;
-  bool fits = pieces[g->selection] == g->mend_placed;
-  if (fits)
-    g->mend_placed++;
-  emit(g, EV_MEND, g->mend_placed, fits);
-  g->selection = 0;
-  if (!fits) {
-    show(g, D_MEND_WRONG);
-    return;
-  }
-  g->message[0] = 0;
-  if (g->mend_placed == MEND_PIECES) {
-    inventory_remove(&g->player.inventory, ITEM_SHARDS, 1);
-    learn(g, OBS(OBS_BOWL_DRYING), N_MENDED);
-    open_scene(g, "In Orihas Werkstatt", D_MEND_DONE);
-  }
-}
+static void take_item(Game *g, ItemId item) { inventory_remove(&g->player.inventory, item, 1); }
+#include "../shared/mend.h"
 /* Driving in a stake: only where the tracks run, and only with Daigo there. */
 static bool stake_here(Game *g) {
   int near = (g->daigo_x - g->x) * (g->daigo_x - g->x) +

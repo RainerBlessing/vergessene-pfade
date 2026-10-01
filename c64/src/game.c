@@ -383,39 +383,16 @@ static void notebook_action(Game *g, Action a) {
 
 /* Kintsugi: each piece is set into the gap it belongs to. A piece that does not
  * fit costs nothing; the seams stay visible. */
-static void mend_action(Game *g, Action a) {
-  uint8_t pieces[MEND_PIECES];
-  uint8_t count = game_mend_pieces(g, pieces);
-  if (a == ACT_CANCEL) {
-    g->state = GAME_EXPLORATION;
-    return;
-  }
-  if (count == 0)
-    return;
-  select_move(g, a, count);
-  if (a != ACT_CONFIRM)
-    return;
-  if (g->selection >= count)
-    g->selection = 0;
-  bool fits = pieces[g->selection] == g->mend_placed;
-  if (fits) {
-    g->mend_placed++;
-    emit(g, EV_MEND, g->mend_placed, 1);
-  }
-  g->selection = 0;
-  if (!fits) { /* a piece that does not fit costs nothing */
-    msg_clear(g);
-    msg_add(g, dialogues[D_MEND_WRONG].pages[0]);
-    return;
-  }
+/* One line of a dialogue as the message, replacing what stood there. */
+static void show(Game *g, uint8_t line) {
   msg_clear(g);
-  if (g->mend_placed == MEND_PIECES) {
-    if (g->bag[ITEM_SHARDS])
-      g->bag[ITEM_SHARDS]--;
-    learn(g, OBS(OBS_BOWL_DRYING), N_MENDED);
-    open_scene(g, "In Orihas Werkstatt", D_MEND_DONE);
-  }
+  msg_add(g, dialogues[line].pages[0]);
 }
+static void take_item(Game *g, uint8_t item) {
+  if (g->bag[item])
+    g->bag[item]--;
+}
+#include "../../shared/mend.h"
 
 /* Driving in a stake: only where the tracks run, and only with Daigo there. */
 static bool stake_here(Game *g) {
