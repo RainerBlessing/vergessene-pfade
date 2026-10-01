@@ -97,6 +97,42 @@ liegen außen.
   `combat_begin()` auf dem PC den Würfel auf 42 zurücksetzt und die C64-Fassung
   ihn weiterlaufen lässt.
 
+## Platzmessung vor Stufe 4 (C64)
+
+Gemessen mit `make size` am 2026-10-01.
+
+| | Datei | RAM belegt |
+|---|---|---|
+| Basis (`pc-stein-rueckmeldung`) | 28 252 | 28 647 |
+| nach Stufe 1–3 | 28 314 | 28 709 |
+| **Mehrkosten Stufe 1–3** | **+62** | **+62** |
+
+Die +62 Bytes sind das Feld `phase` je Regel (+42, Stufe 1) und `emit()` (+22,
+Stufe 3a), abzüglich 2.
+
+**Was frei ist.** Das Linkerskript (`mos-platform/c64/lib/link.ld`) gibt dem Programm
+`$0801` bis `$CFFF`, also 51 199 Bytes; der weiche Stapel wächst von `$D000` nach
+unten. Bei 28 709 belegten Bytes bleiben **rund 22 500 Bytes (44 %)**. Die
+README rechnet „43 % von 64K“; der nutzbare Teil ist kleiner, aber die Reserve ist
+trotzdem groß. Der Nullseiten-Anteil (`-mlto-zp=110`) ist ausgeschöpft: Mehr Code
+bekommt dort keine Plätze mehr und wird dadurch langsamer, nicht ungültig.
+
+**Was knapp werden kann.** Inhalt wächst (Issue #25: Texte und Karten). Die
+Nur-Lese-Daten sind heute 14 839 Bytes; verdoppeln sie sich, bleiben etwa 7 700
+Bytes für Code und Stapel. Ein Kern, der ein paar hundert Bytes kostet, ist
+bezahlbar, gehört aber gegen Inhalt abgewogen.
+
+**Was die Messungen über die Form des geteilten Codes sagen.**
+- Teurer Code ist der, der Ergebnisse über Zeiger zurückgibt oder Zustand
+  hin- und herkopiert: `fight_blows()` +371 Bytes, mit geteilter Meldung +590.
+- Billig ist Code, der wie auf der C64 direkt auf `g->feld` zugreift
+  (Stufe 1: Auswahl der Regel, +12 Bytes Code; Stufe 3a: +22).
+- Folge für Stufe 4: Regeln als `static inline`-Funktionen in einer `.inc`, die
+  `game.c` beider Fassungen einbindet (wie `shared/talk.h`), mit der
+  C64-Form als Vorlage; die PC-Fassung passt sich an, nicht umgekehrt.
+- Nicht gemessen: Laufzeit (`make bench` braucht VICE mit Anzeige). Die Regeln
+  laufen einmal je Tastendruck; ein Bildaufbau kostet rund 199 000 Takte.
+
 ## Stufe 4: Regeln einzeln umziehen
 **Goal**: `examine`, `mend`, `stake`, `encounter`, `push`/`move` wandern nacheinander
 in den Kern. Kampf: `combat.c` (PC) und `fight_round` (C64) auseinandersetzen.
