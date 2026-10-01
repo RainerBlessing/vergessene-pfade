@@ -440,10 +440,7 @@ void game_action(Game *g, Action a) {
     DialogueId was = g->dialogue;
     g->state = GAME_EXPLORATION;
     g->message[0] = 0; /* the scene's echo of the last round ends with it */
-    if (g->opens == OPEN_TEASER && read_out)
-      open_scene(g, "Die vergessenen Pfade", D_SCENE_TEASER);
-    else
-      opens_after_dialogue(g, read_out, was);
+    opens_after_dialogue(g, read_out, was);
     g->opens = OPEN_NOTHING;
     return;
   }

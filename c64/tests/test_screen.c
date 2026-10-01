@@ -319,7 +319,8 @@ static void the_closing_panel_names_the_ending(void) {
   render(&g, &c);
   expect_row(2, "   HIER ENDET DER AUSSCHNITT");
   expect_row(4, "   Drei Pfaehle und eine Schale im Moos.");
-  expect_row(6, "   In der vollen Fassung folgt eine");
+  expect_row(6, "   Das war der Ausschnitt: ein Abend,");
+  expect_row(10, "   bleibt unerklaert.");
   expect_row(24, "RETURN: weiterlaufen");
 }
 

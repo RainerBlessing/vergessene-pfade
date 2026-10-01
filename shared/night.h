@@ -49,7 +49,7 @@ static void ask_after_dialogue(Game *g, bool read_out, Count was) {
     ask_about_the_night(g);
 }
 /* What a dialogue sets in motion when it closes, however the player closed it: the
- * repair view, Daigo walking along. The night asks only after reading to the end
+ * repair view, Daigo walking along. The night and the teaser need reading to the end
  * (see ask_after_dialogue). Call it before the dialogue's `opens` is cleared. */
 static void opens_after_dialogue(Game *g, bool read_out, Count was) {
   if (g->opens == OPEN_MEND) {
@@ -57,6 +57,8 @@ static void opens_after_dialogue(Game *g, bool read_out, Count was) {
     g->selection = 0;
   } else if (g->opens == OPEN_FOLLOW)
     g->daigo_follows = true;
+  else if (g->opens == OPEN_TEASER && read_out)
+    open_scene(g, "Die vergessenen Pfade", D_SCENE_TEASER);
   else
     ask_after_dialogue(g, read_out, was);
 }

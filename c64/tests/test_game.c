@@ -21,6 +21,8 @@ static void start(Game *g) {
 static void read_out(Game *g) {
   while (g->state == GAME_DIALOGUE)
     game_action(g, ACT_CONFIRM);
+  if (g->state == GAME_PROMPT) /* the question about the night: stay */
+    game_action(g, ACT_CANCEL);
   if (g->state == GAME_END)
     game_action(g, ACT_CONFIRM);
 }
@@ -1022,8 +1024,9 @@ static void one_ending_at_a_time(void) {
   assert(h.staked == 0 && h.outcome == OUT_BOUNDARY);
 }
 
-/* Nach dem Ausgang und Sumis Wort sagt der Ausschnitt, dass er zu Ende ist --
- * einmal, danach laeuft die Welt weiter (#22). */
+/* Der Ausgang, Sumis Wort, die Nacht, der Morgen, der Besucher am Schrein, der Teaser --
+ * und erst dann sagt der Ausschnitt, dass er zu Ende ist: einmal, danach laeuft die Welt
+ * weiter (#22, #4). */
 static void the_slice_says_when_it_ends(void) {
   Game g;
   start(&g);
@@ -1031,23 +1034,54 @@ static void the_slice_says_when_it_ends(void) {
   face(&g, MAP_FOREST, STONE_START_X, (int8_t)(STONE_START_Y + 1), 0, -1);
   for (int i = 0; i < 4; i++)
     game_action(&g, ACT_UP);
-  while (g.state == GAME_DIALOGUE)
-    game_action(&g, ACT_CONFIRM);
+  read_to_the_end(&g);
   assert(g.outcome == OUT_BOUNDARY && !g.ended);
+  /* Sumi asks about the night; no plate yet. */
   face(&g, MAP_VILLAGE, 5, 5, 0, -1);
   game_action(&g, ACT_CONFIRM);
   assert(g.dialogue == D_SUMI_BOUNDARY);
+  read_to_the_end(&g);
+  assert(g.state == GAME_PROMPT && !g.ended);
+  game_action(&g, ACT_CONFIRM); /* UEBERNACHTEN */
+  read_to_the_end(&g);
+  assert(g.phase == PHASE_MORNING && g.state == GAME_EXPLORATION && !g.ended);
+  /* The visitor at the shrine: the line, then the teaser, then the plate. */
+  g.obs |= OBS(OBS_GREY_TRACE);
+  face(&g, MAP_FOREST, 37, 19, 1, 0);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_X_INSCRIPTION_LATE && g.notes[g.note_count - 1] == N_VISITOR);
+  while (g.state == GAME_DIALOGUE && g.dialogue == D_X_INSCRIPTION_LATE)
+    game_action(&g, ACT_CONFIRM);
+  assert(g.state == GAME_DIALOGUE && g.dialogue == D_SCENE_TEASER);
+  assert(game_knows(&g, OBS_TEASED) && !g.ended);
   while (g.state == GAME_DIALOGUE)
     game_action(&g, ACT_CONFIRM);
   assert(g.state == GAME_END && g.ended);
   game_action(&g, ACT_CONFIRM);
   assert(g.state == GAME_EXPLORATION);
-  /* Beim zweiten Mal bleibt sie weg. */
-  face(&g, MAP_VILLAGE, 5, 5, 0, -1);
+  /* Reading the line again leads nowhere new. */
+  face(&g, MAP_FOREST, 37, 19, 1, 0);
   game_action(&g, ACT_CONFIRM);
-  while (g.state == GAME_DIALOGUE)
-    game_action(&g, ACT_CONFIRM);
+  read_to_the_end(&g);
   assert(g.state == GAME_EXPLORATION);
+}
+
+/* The visitor ends the slice only in the morning, and escaping the line does not. */
+static void the_visitor_ends_it_only_in_the_morning(void) {
+  Game g;
+  start(&g);
+  g.outcome = OUT_BOUNDARY;
+  g.obs |= OBS(OBS_GREY_TRACE);
+  face(&g, MAP_FOREST, 37, 19, 1, 0);
+  game_action(&g, ACT_CONFIRM); /* the evening of the same day */
+  assert(g.dialogue == D_X_INSCRIPTION_LATE);
+  read_to_the_end(&g);
+  assert(g.state == GAME_EXPLORATION && !game_knows(&g, OBS_TEASED));
+  g.phase = PHASE_MORNING;
+  g.obs |= OBS(OBS_MORNING);
+  game_action(&g, ACT_CONFIRM);
+  game_action(&g, ACT_CANCEL); /* Escape closes it: no teaser, no plate */
+  assert(g.state == GAME_EXPLORATION && !g.ended);
 }
 
 /* Der Holzstapel sagt, was man sieht -- nach jedem Ausgang etwas anderes (#16). */
@@ -1294,6 +1328,7 @@ int main(void) {
   before_the_night_nothing_changes();
   escape_still_opens_what_the_dialogue_opens();
   the_futon_asks_the_same();
+  the_visitor_ends_it_only_in_the_morning();
   the_fox_leaves_overnight_and_comes_back_with_kits();
   the_den_says_what_it_holds();
   the_morning_changes_the_map_per_outcome();

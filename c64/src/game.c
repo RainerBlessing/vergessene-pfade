@@ -220,8 +220,14 @@ static void use_point(Game *g, const ExaminePoint *p, char examined) {
     g->bag[p->takes]--;
   if (p->gives != ITEM_NONE)
     g->bag[p->gives]++;
+  /* Reading about the visitor in the morning closes the slice, once - but only
+   * after the inscription itself has been read. */
+  bool closes =
+      p->note == N_VISITOR && g->phase == PHASE_MORNING && !game_knows(g, OBS_TEASED);
   learn(g, p->grants, p->note);
-  open_dialogue(g, -1, examined, p->dialogue, OPEN_NOTHING);
+  open_dialogue(g, -1, examined, p->dialogue, closes ? OPEN_TEASER : OPEN_NOTHING);
+  if (closes)
+    learn(g, OBS(OBS_TEASED), NOTE_NONE);
 }
 static void examine_nothing(Game *g, int8_t x, int8_t y) {
   const TileDef *tile = tile_def(game_tile(g, g->map, x, y));
@@ -520,13 +526,14 @@ void game_action(Game *g, Action a) {
     Count was = g->dialogue;
     g->state = GAME_EXPLORATION;
     msg_clear(g); /* the scene's echo of the last round ends with it */
-    /* What a dialogue opens happens however it was closed; the night and the end of
-     * the slice need the reading. */
-    if (read_out && g->opens == OPEN_END && !g->ended) {
+    /* What a dialogue opens happens however it was closed; the night and the teaser
+     * need the reading. */
+    opens_after_dialogue(g, read_out, was);
+    /* The teaser is the last word of the slice: then the plate, once. */
+    if (read_out && was == D_SCENE_TEASER && !g->ended) {
       g->ended = true; /* einmal, danach laeuft die Welt weiter */
       g->state = GAME_END;
-    } else
-      opens_after_dialogue(g, read_out, was);
+    }
     g->opens = OPEN_NOTHING;
     return;
   }

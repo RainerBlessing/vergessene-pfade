@@ -149,13 +149,26 @@ eine, in derselben Reihenfolge. Drei neue Kacheln auf der C64 (`g`, `j`, `v`; di
 sind eine Wahl, nicht aus dem PC übernommen).
 
 ## Stage 10: Teaser und Ende
-**Ziel**: Das Lesen des Besuchers am Morgen öffnet die Teaser-Szene, danach die
-Schlusstafel. Die Unterschiede `OPEN_AFTER_OUTCOME` und der Eintrag in der Erlaubnisliste
-des Drift-Checks fallen weg.
-**Erfolgskriterien**: Ablauf Ausgang → Nacht → Morgen → Teaser → Tafel in einem Test
-durchgespielt; Driftmelder ohne Ausnahme für die drei Sumi-Regeln.
-**Tests**: `the_whole_slice_to_the_end`.
-**Status**: Not Started
+**Ziel**: Sumi fragt nach ihrem Wort zum Ausgang nach der Nacht; das Lesen des Besuchers am
+Morgen öffnet die Teaser-Szene, danach kommt die Schlusstafel. Die Unterschiede
+`OPEN_AFTER_OUTCOME` und der Eintrag in der Erlaubnisliste des Drift-Checks fallen weg.
+**Erfolgskriterien**: Ausgang → Sumi → Frage → Nacht → Morgen → graue Spur → Besucher →
+Teaser → Tafel in einem Test durchgespielt; die Tafel kommt einmal; ohne den Morgen ist der
+Besucher nur eine Zeile. Driftmelder ohne Ausnahme in den Regeln.
+**Tests**: `the_slice_says_when_it_ends` (umgeschrieben auf den ganzen Ablauf),
+`the_visitor_ends_it_only_in_the_morning`, `the_closing_panel_names_the_ending`. Zuerst rot.
+**Status**: Complete
+
+Ergebnis: C64-Datei **31 484 → 31 920 Bytes (+436)**, insgesamt seit Beginn **+3 674**
+(28 246 → 31 920), also 60 % der 6-KB-Grenze (Rest 2 470 Bytes). Die Dialog-Schlussbehandlung
+steht ganz geteilt in `opens_after_dialogue()`; `OPEN_END` gibt es nicht mehr, der Teaser
+(`OPEN_TEASER`) ist auf beiden Seiten gleich. `OPEN_AFTER_OUTCOME` und die drei Einträge der
+Erlaubnisliste sind weg; die Regeln beider Fassungen sind jetzt gleich. Die Schlusstafel
+sagte noch „in der vollen Fassung folgt eine Nacht und ein Morgen“ und musste neu
+formuliert werden (Wortlaut von mir, bitte prüfen). Beim Schreiben der Tests fiel auf: Das
+Lesen des Besuchers merkt sich `OBS_TEASED` schon, wenn die Zeile aufgeht, nicht erst nach
+dem Lesen. Wer sie mit Escape schließt, hat den Teaser und die Tafel also für immer
+verpasst. Das war auf dem PC schon so und blieb unverändert.
 
 ## Entschieden (aus Stufe 8): Escape beim Schließen eines Dialogs
 `game_action` schloss einen Dialog auf PC und C64 verschieden: Auf dem PC öffnete Escape

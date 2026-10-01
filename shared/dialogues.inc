@@ -302,3 +302,8 @@
                                "den drei\nSteinen und nicht weiter.",
                                "Weiter unten, kaum lesbar: Es kam\nein Besucher, bevor "
                                "der Wald\nunruhig wurde."}},
+    [D_SCENE_TEASER] = {2,
+                        {"Du sitzt lange am Schrein.\nDer Wald ist ruhig. Die graue\n"
+                         "Stelle bleibt grau.",
+                         "Irgendwo hinter den Bergen liegen\nweitere Doerfer. Auch "
+                         "dort, denkst\ndu, wird etwas leiser geworden sein."}},

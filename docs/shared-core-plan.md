@@ -202,3 +202,7 @@ in den Kern. Kampf: die Rechnung bleibt je Fassung (siehe 3c).
   Binärdatei. Beim Prüfen der Begegnung fiel das auf (ein Mutationstest scheiterte
   nicht). Behoben (`SHARED` im Makefile). Die Größen je Branch sind sauber
   neu gebaut: Basis 28 252, Stufe 3 28 314, Stufe 4 (#51) 28 266.
+
+Nachtrag (C64-Plan, Stufen 7-10): `OPEN_AFTER_OUTCOME` gibt es nicht mehr; die drei
+Sumi-Regeln führen auf beiden Seiten in die Nacht (`OPEN_NIGHT`), und das Ende
+der C64 kommt nach dem Teaser.

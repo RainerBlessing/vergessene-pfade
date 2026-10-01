@@ -28,9 +28,6 @@ const char *const notes[NOTE_COUNT] = {
 #include "../../shared/notes.inc"
 };
 
-/* Wohin die Antwort auf einen Ausgang fuehrt: in die Nacht (PC) oder zur Schlusstafel
- * (C64). */
-#define OPEN_AFTER_OUTCOME OPEN_END
 #define MARKS (OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK))
 const DialogueRule dialogue_rules[] = {
 #include "../../shared/dialogue_rules_1.inc"
@@ -124,11 +121,11 @@ const char *const closing_line[OUTCOME_COUNT] = {
 const char *const closing_page[CLOSING_LINES] = {
     "HIER ENDET DER AUSSCHNITT",
     "",
-    "In der vollen Fassung folgt eine",
-    "Nacht im Gasthaus und ein Morgen, der",
-    "zeigt, was aus der Entscheidung",
-    "geworden ist. Am Schrein liegt dann",
-    "eine Spur, die niemand erklaert.",
+    "Das war der Ausschnitt: ein Abend,",
+    "eine Nacht und ein Morgen, an dem",
+    "sichtbar wird, was die Entscheidung",
+    "gekostet hat. Die Spur am Schrein",
+    "bleibt unerklaert.",
     "",
     "RETURN: weiterlaufen",
 };

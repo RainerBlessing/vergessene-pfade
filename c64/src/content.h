@@ -32,6 +32,7 @@ typedef enum {
   OBS_STONE_MOVED, /* the stone stands neither where it was dragged to nor home */
   OBS_MORNING,     /* the night has passed */
   OBS_GREY_TRACE,  /* the grey patch by the shrine has been seen */
+  OBS_TEASED,      /* the slice has said where it leads */
   OBS_COUNT
 } ObsId;
 typedef uint32_t Obs;
@@ -162,6 +163,7 @@ typedef enum {
   D_X_TRACE,
   D_X_TRACE_TRACKS,
   D_X_INSCRIPTION_LATE,
+  D_SCENE_TEASER,
   DIALOGUE_COUNT
 } DialogueId;
 #define DIALOGUE_PAGES 3
@@ -212,7 +214,13 @@ typedef enum {
 extern const char *const notes[NOTE_COUNT];
 
 /* What a conversation opens once its last page is read. */
-typedef enum { OPEN_NOTHING, OPEN_MEND, OPEN_FOLLOW, OPEN_NIGHT, OPEN_END } DialogueOpens;
+typedef enum {
+  OPEN_NOTHING,
+  OPEN_MEND,
+  OPEN_FOLLOW,
+  OPEN_NIGHT,
+  OPEN_TEASER
+} DialogueOpens;
 /* First matching rule wins. */
 typedef struct {
   uint8_t npc;

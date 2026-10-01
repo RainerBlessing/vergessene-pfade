@@ -6,7 +6,8 @@ llvm-mos. Aufbau, Toolchain und VICE-Start sind von
 
 **Umfang:** Erkundung von Dorf und Wald, die Begegnung am Hainrand und **alle
 drei Ausgänge**: „bekämpfen“, „alte Grenze wiederherstellen“ und „Kintsugi und
-Kompromiss“. Nicht enthalten: Nacht im Gasthaus, Morgen-Phase. Klang: kurze SID-Effekte, ohne eigenen Interrupt in der Hauptschleife (`src/sound.c`). Stand und
+Kompromiss“, dazu die Nacht im Gasthaus und der Morgen danach (ein Abend, eine
+Nacht und ein Morgen, der zeigt, was die Entscheidung gekostet hat). Klang: kurze SID-Effekte, ohne eigenen Interrupt in der Hauptschleife (`src/sound.c`). Stand und
 Stufen:
 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
 
@@ -94,12 +95,18 @@ und steckt mit dir drei Pfähle entlang der Spuren ab (RETURN auf dem Feld, Daig
 muss daneben stehen). Dafür bekommt das Dorf Totholz, der alte Hainrand bleibt
 verloren.
 
-## Schluss
+## Nacht, Morgen und Schluss
 
-Nach dem Ausgang und Sumis Wort dazu sagt der Ausschnitt, dass er zu Ende ist:
-eine Tafel mit dem Satz zum gewählten Ausgang und dem, was in der vollen Fassung
-folgen würde (Nacht, Morgen, die Spur am Schrein). Sie kommt einmal; danach läuft
-die Welt weiter, das Notizbuch bleibt lesbar.
+Nach dem Ausgang und Sumis Wort dazu fragt sie, ob man im Gasthaus übernachten will
+(auch der Futon fragt, wenn man ihn ansieht). Wer „Uebernachten“ wählt und dessen
+Wald entschieden ist, wacht am Morgen im Gasthaus auf: Jeder Ausgang zeigt noch
+einmal Gewinn und Verlust, Sumi, Mio und Daigo antworten anders, der Fuchs ist
+fort (oder hat Junge), und am Schrein liegt eine graue Spur. Wer sie liest und
+danach die Inschrift, bekommt den Hinweis auf den Besucher und die Teaser-Szene.
+
+Danach sagt der Ausschnitt, dass er zu Ende ist: eine Tafel mit dem Satz zum
+gewählten Ausgang. Sie kommt einmal; danach läuft die Welt weiter, das Notizbuch
+bleibt lesbar.
 
 ## Bild
 

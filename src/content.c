@@ -33,11 +33,6 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
                            "Naehte\nfangen das Licht.",
                            "Der Kami beugt sich darueber.\nDas Knurren hoert auf. "
                            "Es setzt\nsich neben die Schale."}},
-    [D_SCENE_TEASER] = {2,
-                        {"Du sitzt lange am Schrein.\nDer Wald ist ruhig. Die graue\n"
-                         "Stelle bleibt grau.",
-                         "Irgendwo hinter den Bergen liegen\nweitere Doerfer. Auch "
-                         "dort, denkst\ndu, wird etwas leiser geworden sein."}},
 };
 
 /* At most 2 lines of 36 characters; no digits or slashes (test_game). */
@@ -45,9 +40,6 @@ const char *const notes[NOTE_COUNT] = {
 #include "../shared/notes.inc"
 };
 
-/* Wohin die Antwort auf einen Ausgang fuehrt: in die Nacht (PC) oder zur Schlusstafel
- * (C64). */
-#define OPEN_AFTER_OUTCOME OPEN_NIGHT
 #define MARKS (OBS(OBS_BOWL_MARK) | OBS(OBS_HOUSE_MARK))
 const DialogueRule dialogue_rules[] = {
 #include "../shared/dialogue_rules_1.inc"
