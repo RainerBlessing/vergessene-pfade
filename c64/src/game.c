@@ -1,4 +1,5 @@
 #include "game.h"
+#include "../../shared/talk.h"
 
 /* --- small helpers instead of stdio: the C64 build has no printf --- */
 static void msg_clear(Game *g) { g->message[0] = 0; }
@@ -188,21 +189,13 @@ static void arrive(Game *g, uint8_t map, int8_t x, int8_t y) {
 
 /* --- talking --- */
 static void talk(Game *g, int8_t npc) {
-  for (uint8_t i = 0; i < dialogue_rule_count; i++) {
-    const DialogueRule *r = &dialogue_rules[i];
-    if (r->npc != (uint8_t)npc || !matches(g, r->needs, r->forbids))
-      continue;
-    if (!fits_now(g, 0, r->outcome))
-      continue;
-    /* Do not hand over something the player still carries: the next rule speaks. */
-    if (r->gives != ITEM_NONE && g->bag[r->gives])
-      continue;
-    if (r->gives != ITEM_NONE)
-      g->bag[r->gives]++;
-    learn(g, r->grants, r->note);
-    open_dialogue(g, npc, 0, r->dialogue, r->opens);
+  const DialogueRule *r = talk_select(npc, g->obs, g->outcome, PHASE_ANY, g->bag);
+  if (!r)
     return;
-  }
+  if (r->gives != ITEM_NONE)
+    g->bag[r->gives]++;
+  learn(g, r->grants, r->note);
+  open_dialogue(g, npc, 0, r->dialogue, r->opens);
 }
 
 /* --- examining --- */

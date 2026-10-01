@@ -346,8 +346,7 @@ class TestRegelTabellen(unittest.TestCase):
         repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         weg = re.compile(r"const Place places\[\][^;]*;", re.S)
         def ohne_orte(pfad):
-            with open(os.path.join(repo, *pfad), encoding="utf-8") as f:
-                return weg.sub("", f.read())
+            return weg.sub("", cd._read(os.path.join(repo, *pfad)))
         h_pc = "\n".join(open(f, encoding="utf-8").read() for f in cd.PC_HEADERS)
         h_c64 = "\n".join(open(f, encoding="utf-8").read() for f in cd.C64_HEADERS)
         with open(os.path.join(repo, "src", "inventory.c"), encoding="utf-8") as f:
