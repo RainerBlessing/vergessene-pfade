@@ -1427,6 +1427,27 @@ static int test_futon(const char *assets) {
 }
 /* Reading the shrine in the morning shows the line about the visitor first,
  * and only then the closing scene. */
+/* Escaping the visitor line does not use up the teaser: it comes when the line is
+ * read to its end, and only then is it remembered as told. */
+static int test_escape_keeps_the_teaser(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  g.outcome = OUT_BOUNDARY;
+  g.phase = PHASE_MORNING;
+  g.obs |= OBS(OBS_MORNING) | OBS(OBS_GREY_TRACE);
+  stand(&g, MAP_FOREST, 37, 19, 1, 0);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.dialogue == D_X_INSCRIPTION_LATE);
+  game_action(&g, ACT_CANCEL);
+  CHECK(g.state == GAME_EXPLORATION && !game_knows(&g, OBS_TEASED));
+  game_action(&g, ACT_CONFIRM);
+  for (int page = 0; page < DIALOGUE_PAGES && g.dialogue == D_X_INSCRIPTION_LATE; page++)
+    game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_DIALOGUE && g.dialogue == D_SCENE_TEASER);
+  CHECK(game_knows(&g, OBS_TEASED));
+  return 0;
+}
+
 static int test_visitor_before_teaser(const char *assets) {
   Game g;
   CHECK(game_init(&g, assets));
@@ -1651,10 +1672,10 @@ int main(int argc, char **argv) {
       test_consequences(argv[1]) || test_night_offer(argv[1]) || test_signs(argv[1]) ||
       test_note_notice(argv[1]) || test_futon_explains(argv[1]) || test_futon(argv[1]) ||
       test_change_precedence(argv[1]) || test_visitor_before_teaser(argv[1]) ||
-      test_den_with_kits(argv[1]) || test_fox_after_fight(argv[1]) ||
-      test_daigo_reactions(argv[1]) || test_no_late_deal(argv[1]) ||
-      test_morning_keeps_threads(argv[1]) || test_grey_trace(argv[1]) || test_combat() ||
-      test_tile_art())
+      test_escape_keeps_the_teaser(argv[1]) || test_den_with_kits(argv[1]) ||
+      test_fox_after_fight(argv[1]) || test_daigo_reactions(argv[1]) ||
+      test_no_late_deal(argv[1]) || test_morning_keeps_threads(argv[1]) ||
+      test_grey_trace(argv[1]) || test_combat() || test_tile_art())
     return 1;
   puts("World, examining, encounter, outcomes, consequences, morning, trace pass.");
   return 0;

@@ -226,8 +226,6 @@ static void use_point(Game *g, const ExaminePoint *p, char examined) {
       p->note == N_VISITOR && g->phase == PHASE_MORNING && !game_knows(g, OBS_TEASED);
   learn(g, p->grants, p->note);
   open_dialogue(g, -1, examined, p->dialogue, closes ? OPEN_TEASER : OPEN_NOTHING);
-  if (closes)
-    learn(g, OBS(OBS_TEASED), NOTE_NONE);
 }
 static void examine_nothing(Game *g, int8_t x, int8_t y) {
   const TileDef *tile = tile_def(game_tile(g, g->map, x, y));

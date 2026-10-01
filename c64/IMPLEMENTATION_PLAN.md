@@ -166,9 +166,14 @@ steht ganz geteilt in `opens_after_dialogue()`; `OPEN_END` gibt es nicht mehr, d
 Erlaubnisliste sind weg; die Regeln beider Fassungen sind jetzt gleich. Die Schlusstafel
 sagte noch „in der vollen Fassung folgt eine Nacht und ein Morgen“ und musste neu
 formuliert werden (Wortlaut von mir, bitte prüfen). Beim Schreiben der Tests fiel auf: Das
-Lesen des Besuchers merkt sich `OBS_TEASED` schon, wenn die Zeile aufgeht, nicht erst nach
-dem Lesen. Wer sie mit Escape schließt, hat den Teaser und die Tafel also für immer
-verpasst. Das war auf dem PC schon so und blieb unverändert.
+Lesen des Besuchers merkte sich `OBS_TEASED` schon, wenn die Zeile aufging, nicht erst nach
+dem Lesen. Wer sie mit Escape schloss, hatte Teaser und Tafel für immer verpasst; auf dem PC
+war das schon so. **Behoben (auf Hinweis aus dem Review):** `OBS_TEASED` wird erst gesetzt,
+wenn der Teaser wirklich öffnet (`opens_after_dialogue()`); wer die Zeile mit Escape
+schließt, bekommt Teaser und Tafel beim nächsten Lesen. Tests auf beiden Seiten
+(`the_visitor_ends_it_only_in_the_morning`, `test_escape_keeps_the_teaser`; beide zuerst rot).
+Das ändert auch das Verhalten des PC. C64-Datei danach 31 749 Bytes (−171 gegenüber 31 920; der
+Grund ist nicht untersucht, vermutlich andere Einbettung unter LTO), insgesamt +3 503.
 
 ## Entschieden (aus Stufe 8): Escape beim Schließen eines Dialogs
 `game_action` schloss einen Dialog auf PC und C64 verschieden: Auf dem PC öffnete Escape

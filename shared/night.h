@@ -57,8 +57,10 @@ static void opens_after_dialogue(Game *g, bool read_out, Count was) {
     g->selection = 0;
   } else if (g->opens == OPEN_FOLLOW)
     g->daigo_follows = true;
-  else if (g->opens == OPEN_TEASER && read_out)
+  else if (g->opens == OPEN_TEASER && read_out) {
     open_scene(g, "Die vergessenen Pfade", D_SCENE_TEASER);
+    learn(g, OBS(OBS_TEASED), NOTE_NONE); /* told, once it has been told */
+  }
   else
     ask_after_dialogue(g, read_out, was);
 }

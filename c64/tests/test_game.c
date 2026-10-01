@@ -1080,8 +1080,12 @@ static void the_visitor_ends_it_only_in_the_morning(void) {
   g.phase = PHASE_MORNING;
   g.obs |= OBS(OBS_MORNING);
   game_action(&g, ACT_CONFIRM);
-  game_action(&g, ACT_CANCEL); /* Escape closes it: no teaser, no plate */
+  game_action(&g, ACT_CANCEL); /* Escape closes it: no teaser, no plate ... */
   assert(g.state == GAME_EXPLORATION && !g.ended);
+  assert(!game_knows(&g, OBS_TEASED)); /* ... and the teaser is not used up */
+  game_action(&g, ACT_CONFIRM);        /* reading it to the end later leads on */
+  read_to_the_end(&g);
+  assert(game_knows(&g, OBS_TEASED) && g.state == GAME_END && g.ended);
 }
 
 /* Der Holzstapel sagt, was man sieht -- nach jedem Ausgang etwas anderes (#16). */

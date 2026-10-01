@@ -166,8 +166,6 @@ static void use_point(Game *g, const ExaminePoint *p, char examined) {
   emit(g, EV_EXAMINE, examined, p->dialogue);
   DialogueOpens opens = closes ? OPEN_TEASER : OPEN_NOTHING;
   open_dialogue(g, -1, examined, p->dialogue, opens);
-  if (closes)
-    learn(g, OBS(OBS_TEASED), NOTE_NONE);
 }
 /* Repeated presses at the same target are counted, not logged again. */
 static void examine_nothing(Game *g, int x, int y) {
