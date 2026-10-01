@@ -27,12 +27,22 @@ Ergebnis:
   `bag[]++`, `emit`) bleibt bei der Plattform; das ist der künftige Adapter.
 
 ## Stufe 2: eine Inhaltsquelle
-**Goal**: PC und C64 lesen dieselben Tabellen (`DialogueRule`, `ExaminePoint`,
-`TileOverride`, `Place`); erlaubte Abweichungen sind Felder, keine Kopien.
-**Success Criteria**: `content_drift.py` für Regeltabellen überflüssig; C64-Größe
-innerhalb des Budgets.
+**Goal**: PC und C64 lesen dieselben Texte und Tabellen; Abweichungen sind
+Einträge, die nur eine Seite hat, keine Kopien.
+**Success Criteria**: C64-Größe innerhalb des Budgets; `content_drift.py` meldet
+für Geteiltes nichts mehr.
 **Tests**: `tools/test_content_drift.py`, beide Spielsuiten.
-**Status**: Not Started
+**Status**: In Progress (Branch `shared-content-source`)
+
+- 2a, Texte: Complete. `shared/dialogues.inc` (74 Dialoge) und `shared/notes.inc`
+  (30 Notizen) stehen in beiden `content.c` per `#include` mitten in der Tabelle.
+  Nur `D_ENC_OFFER_BOWL` weicht ab und bleibt je Seite. Kein Generator: die
+  Designated Initializer machen die Reihenfolge egal, und beide Enums behalten
+  ihre eigene Liste. C64-Größe unverändiert (13 412 / 14 839), alle Tests grün.
+  `content_drift.py` setzt die `.inc`-Dateien beim Lesen wieder ein.
+- 2b, Regeltabellen (`DialogueRule`, `ExaminePoint`, `TileOverride`, `Place`):
+  Not Started. Hier fehlt noch ein gemeinsames Layout und die Frage, ob ein
+  Generator nötig wird.
 
 ## Stufe 3: gemeinsamer Zustand und Ausgabekanal
 **Goal**: Ein Zustandslayout (flach, klein typisiert) im Kern; Ereignisse (PC)

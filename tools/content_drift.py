@@ -78,8 +78,16 @@ STRING_RE = r'"((?:[^"\\]|\\.)*)"'
 
 
 def _read(path):
+    """Liest eine Quelle; ein `#include "...inc"` wird durch den Inhalt ersetzt
+    (die geteilten Texte in shared/ stehen mitten in den Tabellen)."""
     with open(path, encoding="utf-8") as f:
-        return f.read()
+        text = f.read()
+    base = os.path.dirname(path)
+
+    def include(m):
+        with open(os.path.join(base, m.group(1)), encoding="utf-8") as inc:
+            return inc.read()
+    return re.sub(r'^#include "([^"]+\.inc)"[ \t]*$', include, text, flags=re.M)
 
 
 def _extract_array(text, name):
