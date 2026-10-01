@@ -376,6 +376,47 @@ static int test_examine(const char *assets) {
   return 0;
 }
 
+/* Was neben einem steht, findet man auch, ohne sich dagegen zu druecken (#17,
+ * wie auf dem C64). Die Blickrichtung entscheidet weiter, was gemeint ist. */
+static int test_examine_reaches_neighbours(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  /* Das Hauszeichen liegt noerdlich, die Blickrichtung zeigt nach Westen. */
+  stand(&g, MAP_VILLAGE, 4, 7, -1, 0);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(game_knows(&g, OBS_HOUSE_MARK) && g.dialogue == D_X_HOUSE_MARK);
+  /* Mulde im Norden, Schleifspur im Sueden: der Blick entscheidet. */
+  stand(&g, MAP_FOREST, 24, 13, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(game_knows(&g, OBS_STONE_HOLLOW) && !game_knows(&g, OBS_STONE_DRAGGED));
+  game_action(&g, ACT_CANCEL);
+  stand(&g, MAP_FOREST, 24, 13, 0, 1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(game_knows(&g, OBS_STONE_DRAGGED));
+  game_action(&g, ACT_CANCEL);
+  /* Freies Feld, nichts in Reichweite: es bleibt bei "nichts Besonderes". */
+  stand(&g, MAP_FOREST, 24, 25, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(g.state == GAME_EXPLORATION && strstr(g.message, "nichts Besonderes"));
+  return 0;
+}
+
+/* Ein Gegenstand erreicht ebenfalls das Nachbarfeld. */
+static int test_item_reaches_neighbour(const char *assets) {
+  Game g;
+  CHECK(game_init(&g, assets));
+  stand(&g, MAP_FOREST, 5, 21, 0, -1);
+  game_action(&g, ACT_CONFIRM); /* verletzter Fuchs */
+  while (g.state == GAME_DIALOGUE)
+    game_action(&g, ACT_CONFIRM);
+  inventory_add(&g.player.inventory, ITEM_HERB, 1);
+  stand(&g, MAP_FOREST, 6, 20, 1, 0); /* neben dem Bau, Blick nach Osten */
+  game_action(&g, ACT_INVENTORY);
+  game_action(&g, ACT_CONFIRM);
+  CHECK(game_knows(&g, OBS_FOX_TENDED) && g.player.inventory.quantities[ITEM_HERB] == 0);
+  return 0;
+}
+
 static int test_examine_nothing(const char *assets) {
   Game g;
   CHECK(game_init(&g, assets));
@@ -1571,6 +1612,7 @@ int main(int argc, char **argv) {
   if (test_map_header() || test_title(argv[1]) || test_steps_do_not_flood(argv[1]) ||
       test_blocked_steps(argv[1]) || test_boundary_clues(argv[1]) ||
       test_world(argv[1]) || test_dialogue_rules(argv[1]) || test_examine(argv[1]) ||
+      test_examine_reaches_neighbours(argv[1]) || test_item_reaches_neighbour(argv[1]) ||
       test_examine_nothing(argv[1]) || test_inventory_and_notebook(argv[1]) ||
       test_content(argv[1]) || test_fox_and_tracks(argv[1]) || test_encounter(argv[1]) ||
       test_fight(argv[1]) || test_outcome_keeps_threads(argv[1]) ||

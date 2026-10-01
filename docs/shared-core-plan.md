@@ -135,7 +135,53 @@ bezahlbar, gehört aber gegen Inhalt abgewogen.
 
 ## Stufe 4: Regeln einzeln umziehen
 **Goal**: `examine`, `mend`, `stake`, `encounter`, `push`/`move` wandern nacheinander
-in den Kern. Kampf: `combat.c` (PC) und `fight_round` (C64) auseinandersetzen.
+in den Kern. Kampf: die Rechnung bleibt je Fassung (siehe 3c).
 **Success Criteria**: je Schritt beide Plattformen grün und im Budget.
 **Tests**: eine Kernsuite; die Plattformsuiten schrumpfen auf Adapter-Verhalten.
-**Status**: Not Started
+**Status**: In Progress (Branch `shared-rules-mend`)
+
+- 4a, `mend_action`: Complete (Spike). `shared/mend.h` steht in beiden `game.c`.
+  **C64-Größe unverändert** (Datei 28 314, Code 13 432), beide Suiten und PC
+  (SDL, ASan/UBSan) grün. Das bestätigt die Form aus der Platzmessung: eine
+  `static`-Funktion in einer Headerdatei, die direkt auf `g->feld` zugreift.
+  Was dafür auf jeder Seite in kleiner Form da sein muss: `select_move`, `show`,
+  `take_item`, `learn`, `open_scene`, `emit`. `Count` als Feldtyp für die
+  Stückliste lässt `game_mend_pieces` auf beiden Seiten unverändert. Zwei
+  Unterschiede, die dabei verschwanden: Die PC-Fassung loggt auch ein falsches
+  Teilstück (`EV_MEND` mit `b = 0`), die C64-Fassung ließ den Aufruf aus; jetzt
+  ruft beide ihn auf, und `sfx_for_event` macht daraus auf der C64 keinen Klang.
+- 4b, `stake_here`: Complete. `shared/stake.h`. C64-Größe **+9 Bytes** (Datei
+  28 314 → 28 323); beide Suiten und PC (SDL, ASan/UBSan) grün. Die erste
+  Fassung kostete +60 Bytes, weil `stakes[i].x != g->x` auf der C64 als
+  16-Bit-Vergleich übersetzt wurde. Die C64-Vorlage verglich Bytes
+  (`(uint8_t)g->x`); mit demselben Cast im geteilten Code sind es +9. Lehre
+  für die weiteren Regeln: Die **Typen und Casts der C64-Fassung** gehören
+  mit in den geteilten Code, nicht nur die Anweisungsfolge. Die C64-Fassung
+  hat dafür `finish()` bekommen (setzt den Ausgang einmal und meldet ihn); der
+  Aufruf von `emit` darin kostet nichts messbar, weil der Übersetzer ihn
+  zusammenfaltet.
+- 4c, Stein: Complete. `shared/stone.h` hat `game_can_push`, `stone_at` und
+  `push_stone`; jede Fassung liefert `stone_fits()` (darf der Stein auf diese
+  Kachel: PC über Felder, C64 über Flags). C64-Datei 28 323 → 28 264, also
+  **−59 Bytes**; beide Suiten und PC (SDL, ASan/UBSan) grün. Warum es kleiner
+  wurde, habe ich nicht untersucht (vermutlich andere Einbettung unter LTO);
+  gemessen, nicht begründet.
+  `reset_stone`: zuerst bewusst nicht geteilt, dann entschieden und geteilt
+  (siehe unten).
+- 4d, `reset_stone`: Complete. Das Zurückrollen des Steins ist zu hören (die C64
+  meldet jetzt `EV_STONE_PUSH` wie der PC, +12 Bytes, Test
+  `a_stuck_stone_rolls_back`). Die C64 setzte dabei Daigo auf seinen Platz
+  zurück, der PC nicht; geprüft: Das beendet den Begleit-Zustand nicht
+  (`daigo_follows` blieb unberührt, der nächste Schritt überschreibt die
+  Position), und der Test bleibt ohne die Zeilen grün. Entschieden: Daigo wird
+  nicht zurückgesetzt, das Verhalten des PC gilt. Damit steht `reset_stone`
+  in `shared/stone.h`. C64-Datei 28 266 (−10 gegenüber der Fassung mit
+  Daigo-Zeilen); beide Suiten und PC (SDL, ASan/UBSan) grün.
+- 4e, Untersuchen: Complete. `shared/examine.h` hat `point_at`, `item_point_at`,
+  `point_for_item`, `examine` und die Tabelle der Nachbarn; jede Fassung
+  behält `use_point` und `examine_nothing` (der PC protokolliert, hat das Morgen-
+  Ende und die Phase). **Entschieden:** Der PC prüft wie die C64 (Issue #17)
+  auch die Nachbarfelder, beim Untersuchen und beim Benutzen eines Gegenstands.
+  Neue PC-Tests `test_examine_reaches_neighbours` und
+  `test_item_reaches_neighbour` (zuerst rot). C64-Datei **unverändert** 28 266;
+  beide Suiten und PC (SDL, ASan/UBSan, clang-tidy) grün.
