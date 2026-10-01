@@ -181,39 +181,9 @@ void audio_footstep(Audio *a) {
 void audio_events(Audio *a, const GameEvent *events, int count) {
   for (int i = 0; i < count; i++) {
     const GameEvent *e = &events[i];
-    switch (e->type) {
-    case EV_OBSERVE:
-      audio_play(a, SFX_WRITE);
-      break;
-    case EV_STONE_PUSH:
-      audio_play(a, e->a == STONE_HOLLOW_X && e->b == STONE_HOLLOW_Y ? SFX_SETTLE
-                                                                     : SFX_SCRAPE);
-      break;
-    case EV_ITEM_USE:
-      if (e->a == ITEM_HERB && e->b != D_NONE)
-        audio_play(a, SFX_FOX);
-      break;
-    case EV_MEND:
-      if (e->b)
-        audio_play(a, SFX_CERAMIC);
-      break;
-    case EV_STAKE:
-      audio_play(a, SFX_STAKE);
-      break;
-    case EV_ENCOUNTER:
-      audio_play(a, SFX_CREAK);
-      break;
-    case EV_ENCOUNTER_ACTION:
-      if (e->a == ENC_ATTACK)
-        audio_play(a, SFX_HIT);
-      break;
-    case EV_OUTCOME:
-      if (e->a == OUT_FIGHT)
-        audio_play(a, SFX_BREAK);
-      break;
-    default:
-      break;
-    }
+    SfxId id = e->type == EV_OBSERVE ? SFX_WRITE : sfx_for_event(e->type, e->a, e->b);
+    if (id != SFX_NONE)
+      audio_play(a, id);
   }
 }
 void audio_mix(Audio *a, float *out, int frames) {

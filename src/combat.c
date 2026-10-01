@@ -1,6 +1,6 @@
 #include "combat.h"
 #include <stdio.h>
-const EnemyDef kami = {"Waldkami", 24, 6, 2};
+const EnemyDef kami = {"Waldkami", KAMI_HP, KAMI_ATTACK, KAMI_DEFENSE};
 int combat_damage(int attack, int defense, int modifier) {
   int d = attack - defense + modifier;
   return d < 1 ? 1 : d;
@@ -16,7 +16,7 @@ void combat_turn(Combat *c, Player *p, int rage, bool herb, char *message, int s
   int hit = 0;
   if (herb) {
     if (!player_heal(p)) {
-      snprintf(message, (size_t)size, "Kein Heilkraut benutzt. Waehle neu.");
+      snprintf(message, (size_t)size, FIGHT_NO_HERB_TEXT);
       return;
     }
   } else {
@@ -26,25 +26,19 @@ void combat_turn(Combat *c, Player *p, int rage, bool herb, char *message, int s
   if (c->hp <= 0) {
     c->hp = 0;
     c->won = true;
-    snprintf(message, (size_t)size,
-             "Dein Hieb verursacht %d Schaden.\nDer Kami sinkt in sich zusammen.", hit);
+    snprintf(message, (size_t)size, FIGHT_HIT_TEXT "%d" FIGHT_WON_TEXT, hit);
     return;
   }
   int damage = combat_damage(kami.attack + rage, p->defense, roll(c));
   p->hp -= damage;
   if (p->hp <= 0) {
     p->hp = 0;
-    c->lost = true;
-    snprintf(message, (size_t)size, "Der Kami verursacht %d Schaden.\nDu faellst.",
-             damage);
+    c->lost = true; /* the scene after a defeat has the words */
     return;
   }
   if (herb)
-    snprintf(message, (size_t)size,
-             "Das Kraut heilt bis zu 8 Lebenspunkte.\nDer Kami verursacht %d Schaden.",
-             damage);
+    snprintf(message, (size_t)size, FIGHT_HERB_TEXT "%d" FIGHT_END_TEXT, damage);
   else
     snprintf(message, (size_t)size,
-             "Dein Hieb verursacht %d Schaden.\nDer Kami verursacht %d Schaden.", hit,
-             damage);
+             FIGHT_HIT_TEXT "%d" FIGHT_THEN_TEXT "%d" FIGHT_END_TEXT, hit, damage);
 }

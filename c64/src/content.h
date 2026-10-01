@@ -298,10 +298,5 @@ extern const char *const closing_line[OUTCOME_COUNT];
 #define CLOSING_LINES 9
 extern const char *const closing_page[CLOSING_LINES];
 
-/* The spirit's numbers; the player's are in game.h. */
-#define KAMI_HP 24
-#define KAMI_ATTACK 6
-#define KAMI_DEFENSE 2
-
 #define SPEAKER_SCENE (-2)
 #endif

@@ -1,5 +1,6 @@
 #ifndef COMBAT_H
 #define COMBAT_H
+#include "../shared/fight.h"
 #include "inventory.h"
 typedef struct {
   const char *name;

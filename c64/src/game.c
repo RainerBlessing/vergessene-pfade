@@ -90,6 +90,16 @@ static void cue(Game *g, SfxId id) {
   if (id > g->sfx)
     g->sfx = (uint8_t)id;
 }
+/* The C64 keeps no event, only the sound that follows from it (see feedback.h). */
+static void emit(Game *g, EventType type, int a, int b) {
+  cue(g, sfx_for_event(type, a, b));
+}
+static void finish(Game *g, uint8_t outcome) {
+  if (g->outcome != OUT_NONE)
+    return;
+  g->outcome = outcome;
+  emit(g, EV_OUTCOME, outcome, 0);
+}
 static void learn(Game *g, Obs grants, uint8_t note) {
   g->obs |= grants;
   if (note == NOTE_NONE)
@@ -199,63 +209,9 @@ static void talk(Game *g, int8_t npc) {
 }
 
 /* --- examining --- */
-/* Reihenfolge der Nachbarn: Norden, Osten, Sueden, Westen. */
-static const int8_t neighbours[4][2] = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}};
-static bool stone_at(const Game *g, int8_t x, int8_t y) {
-  return g->map == MAP_FOREST && x == g->stone_x && y == g->stone_y;
-}
-static const ExaminePoint *point_at(const Game *g, int8_t x, int8_t y) {
-  char symbol = game_tile(g, g->map, x, y);
-  for (uint8_t i = 0; i < examine_point_count; i++) {
-    const ExaminePoint *p = &examine_points[i];
-    if (p->kind == POINT_ITEM || !matches(g, p->needs, 0) || p->map != g->map)
-      continue;
-    if (p->only_after != OUT_NONE && p->only_after != g->outcome)
-      continue; /* was der Stapel sagt, haengt am Ausgang */
-    if (p->kind == POINT_STONE) {
-      if (stone_at(g, x, y))
-        return p;
-      continue;
-    }
-    if (p->kind == POINT_AT ? p->x == (uint8_t)x && p->y == (uint8_t)y
-                            : p->symbol == symbol)
-      return p;
-  }
-  return 0;
-}
-/* Gegenstaende gehen denselben Weg wie das Untersuchen: erst die Blickrichtung,
- * dann die uebrigen Nachbarn (#17). Punkte ohne Kachel gelten ueberall. */
-static const ExaminePoint *item_point_at(const Game *g, uint8_t item, char tile) {
-  for (uint8_t i = 0; i < examine_point_count; i++) {
-    const ExaminePoint *p = &examine_points[i];
-    if (p->kind != POINT_ITEM || p->item != item || !matches(g, p->needs, 0))
-      continue;
-    if (!p->symbol || (p->map == g->map && p->symbol == tile))
-      return p;
-  }
-  return 0;
-}
-static const ExaminePoint *point_for_item(const Game *g, uint8_t item) {
-  const ExaminePoint *p =
-      item_point_at(g, item, game_tile(g, g->map, g->x + g->dx, g->y + g->dy));
-  if (p)
-    return p;
-  for (uint8_t i = 0; i < 4; i++) {
-    int8_t x = (int8_t)(g->x + neighbours[i][0]), y = (int8_t)(g->y + neighbours[i][1]);
-    p = item_point_at(g, item, game_tile(g, g->map, x, y));
-    if (p && p->symbol) /* ohne Kachel hat schon der erste Versuch gegriffen */
-      return p;
-  }
-  return 0;
-}
-/* Rolling the stuck stone back to where the drag marks start. */
-static void reset_stone(Game *g) {
-  g->stone_x = STONE_START_X;
-  g->stone_y = STONE_START_Y;
-  g->daigo_x = (int8_t)npcs[NPC_DAIGO].x;
-  g->daigo_y = (int8_t)npcs[NPC_DAIGO].y;
-  g->obs &= ~OBS(OBS_STONE_MOVED);
-}
+static bool stone_at(const Game *g, Coord x, Coord y);
+static void reset_stone(Game *g);
+static bool plain_tile(const TileDef *t);
 static void use_point(Game *g, const ExaminePoint *p, char examined) {
   if (p->kind == POINT_STONE && p->dialogue == D_X_STONE_STUCK)
     reset_stone(g);
@@ -273,35 +229,7 @@ static void examine_nothing(Game *g, int8_t x, int8_t y) {
   msg_add(g, ": nichts Besonderes.");
 }
 static bool stake_here(Game *g);
-/* Blickrichtung zuerst, dann das eigene Feld, dann die uebrigen Nachbarn.
- * Der Blick entscheidet also weiter, was gemeint ist -- aber wer neben einer
- * Sache steht, findet sie auch, ohne sich erst dagegen zu druecken (#17). */
-static void examine(Game *g) {
-  if (stake_here(g))
-    return;
-  int8_t fx = (int8_t)(g->x + g->dx), fy = (int8_t)(g->y + g->dy);
-  const ExaminePoint *p = point_at(g, fx, fy);
-  if (p) {
-    use_point(g, p, game_tile(g, g->map, fx, fy));
-    return;
-  }
-  p = point_at(g, g->x, g->y);
-  if (p) {
-    use_point(g, p, game_tile(g, g->map, g->x, g->y));
-    return;
-  }
-  for (uint8_t i = 0; i < 4; i++) {
-    int8_t x = (int8_t)(g->x + neighbours[i][0]), y = (int8_t)(g->y + neighbours[i][1]);
-    if (x == fx && y == fy) /* schon angesehen */
-      continue;
-    p = point_at(g, x, y);
-    if (p) {
-      use_point(g, p, game_tile(g, g->map, x, y));
-      return;
-    }
-  }
-  examine_nothing(g, fx, fy);
-}
+#include "../../shared/examine.h"
 static void move(Game *g, int8_t dx, int8_t dy);
 /* Ein Schritt, wenn die Taste eine Richtung war. */
 static bool walk(Game *g, Action a) {
@@ -356,8 +284,7 @@ static void inventory_action(Game *g, Action a) {
   uint8_t item = owned[g->selection];
   const ExaminePoint *p = point_for_item(g, item);
   if (p) {
-    if (item == ITEM_HERB && p->dialogue != D_NONE)
-      cue(g, SFX_FOX);
+    emit(g, EV_ITEM_USE, item, p->dialogue);
     use_point(g, p, p->symbol);
     return;
   }
@@ -380,91 +307,20 @@ static void notebook_action(Game *g, Action a) {
 
 /* Kintsugi: each piece is set into the gap it belongs to. A piece that does not
  * fit costs nothing; the seams stay visible. */
-static void mend_action(Game *g, Action a) {
-  uint8_t pieces[MEND_PIECES];
-  uint8_t count = game_mend_pieces(g, pieces);
-  if (a == ACT_CANCEL) {
-    g->state = GAME_EXPLORATION;
-    return;
-  }
-  if (count == 0)
-    return;
-  select_move(g, a, count);
-  if (a != ACT_CONFIRM)
-    return;
-  if (g->selection >= count)
-    g->selection = 0;
-  bool fits = pieces[g->selection] == g->mend_placed;
-  if (fits) {
-    g->mend_placed++;
-    cue(g, SFX_CERAMIC);
-  }
-  g->selection = 0;
-  if (!fits) { /* a piece that does not fit costs nothing */
-    msg_clear(g);
-    msg_add(g, dialogues[D_MEND_WRONG].pages[0]);
-    return;
-  }
+/* One line of a dialogue as the message, replacing what stood there. */
+static void show(Game *g, uint8_t line) {
   msg_clear(g);
-  if (g->mend_placed == MEND_PIECES) {
-    if (g->bag[ITEM_SHARDS])
-      g->bag[ITEM_SHARDS]--;
-    learn(g, OBS(OBS_BOWL_DRYING), N_MENDED);
-    open_scene(g, "In Orihas Werkstatt", D_MEND_DONE);
-  }
+  msg_add(g, dialogues[line].pages[0]);
 }
+static void take_item(Game *g, uint8_t item) {
+  if (g->bag[item])
+    g->bag[item]--;
+}
+#include "../../shared/mend.h"
 
 /* Driving in a stake: only where the tracks run, and only with Daigo there. */
-static bool stake_here(Game *g) {
-  int8_t dx = (int8_t)(g->daigo_x - g->x), dy = (int8_t)(g->daigo_y - g->y);
-  if (!g->daigo_follows || g->map != MAP_FOREST || dx * dx + dy * dy > 1)
-    return false; /* the two of them drive it in together */
-  if (g->outcome != OUT_NONE)
-    return false; /* was entschieden ist, ist entschieden */
-  for (uint8_t i = 0; i < STAKE_COUNT; i++) {
-    if (stakes[i].x != (uint8_t)g->x || stakes[i].y != (uint8_t)g->y ||
-        (g->staked & (1u << i)))
-      continue;
-    g->staked |= (uint8_t)(1u << i);
-    cue(g, SFX_STAKE);
-    uint8_t count = 0;
-    for (uint8_t k = 0; k < STAKE_COUNT; k++)
-      count = (uint8_t)(count + ((g->staked >> k) & 1u));
-    if (count == STAKE_COUNT) {
-      g->daigo_follows = false;
-      g->daigo_x = (int8_t)npcs[NPC_DAIGO].x;
-      g->daigo_y = (int8_t)npcs[NPC_DAIGO].y;
-      learn(g, 0, N_MEND);
-      g->outcome = OUT_MEND;
-      open_scene(g, "Die neue Grenze", D_SCENE_MEND);
-    } else
-      open_scene(g, "Entlang der Spuren", D_STAKE_SET);
-    return true;
-  }
-  return false;
-}
+#include "../../shared/stake.h"
 
-/* --- the encounter --- */
-static const EncounterOffer *offer_at_hand(const Game *g) {
-  for (uint8_t i = 0; i < encounter_offer_count; i++)
-    if (g->bag[encounter_offers[i].item])
-      return &encounter_offers[i];
-  return 0;
-}
-uint8_t game_encounter_options(const Game *g, uint8_t *out) {
-  uint8_t n = 0;
-  for (uint8_t i = 0; i < encounter_option_count; i++) {
-    const EncounterOption *o = &encounter_options[i];
-    if (o->when != OPT_BOTH && (o->when == OPT_FIGHT) != (g->fighting != 0))
-      continue;
-    if (o->action == ENC_OFFER && !offer_at_hand(g))
-      continue;
-    if (o->action == ENC_HEAL && !g->bag[ITEM_HERB])
-      continue;
-    out[n++] = i;
-  }
-  return n;
-}
 static int16_t damage(int16_t attack, int16_t defense, int16_t modifier) {
   int16_t d = attack - defense + modifier;
   return d < 1 ? 1 : d;
@@ -475,14 +331,6 @@ static int16_t roll(Game *g) {
 }
 /* Guarded ground pushes the player one step away, onto free, safe ground. */
 static bool can_enter(const Game *g, int8_t x, int8_t y);
-static void step_back(Game *g) {
-  int8_t bx = g->x - g->dx, by = g->y - g->dy;
-  const TileDef *back = tile_def(game_tile(g, g->map, bx, by));
-  if (can_enter(g, bx, by) && back && !(back->flags & (TF_GUARDED | TF_TRANSITION))) {
-    g->x = bx;
-    g->y = by;
-  }
-}
 static void carried_home(Game *g) {
   for (uint8_t i = 0; i < TRANSITION_COUNT; i++)
     if (transitions[i].to_map == MAP_VILLAGE) {
@@ -504,24 +352,23 @@ static void fight_round(Game *g, bool herb) {
   if (herb) {
     if (!heal(g)) {
       msg_clear(g);
-      msg_add(g, "Kein Heilkraut benutzt. Waehle neu.");
+      msg_add(g, FIGHT_NO_HERB_TEXT);
       return;
     }
   } else {
     hit = damage(PLAYER_ATTACK, KAMI_DEFENSE, roll(g));
     g->kami_hp -= hit;
-    cue(g, SFX_HIT);
   }
   if (g->kami_hp <= 0) {
     g->kami_hp = 0;
     g->fighting = 0;
     msg_clear(g);
-    msg_add(g, "Dein Hieb verursacht ");
+    msg_add(g, FIGHT_HIT_TEXT);
     msg_num(g, hit);
-    msg_add(g, " Schaden.\nDer Kami sinkt in sich zusammen.");
+    msg_add(g, FIGHT_WON_TEXT);
     learn(g, 0, N_FOUGHT);
-    cue(g, SFX_BREAK);
     g->outcome = OUT_FIGHT;
+    emit(g, EV_OUTCOME, OUT_FIGHT, 0);
     open_scene(g, "Am Rand des Hains", D_ENC_VICTORY);
     return;
   }
@@ -538,63 +385,22 @@ static void fight_round(Game *g, bool herb) {
   }
   msg_clear(g);
   if (herb)
-    msg_add(g, "Das Kraut lindert deine Wunden.\nDer Kami verursacht ");
+    msg_add(g, FIGHT_HERB_TEXT);
   else {
-    msg_add(g, "Dein Hieb verursacht ");
+    msg_add(g, FIGHT_HIT_TEXT);
     msg_num(g, hit);
-    msg_add(g, " Schaden.\nDer Kami verursacht ");
+    msg_add(g, FIGHT_THEN_TEXT);
   }
   msg_num(g, taken);
-  msg_add(g, " Schaden.");
+  msg_add(g, FIGHT_END_TEXT);
 }
-/* The spirit rises from the grove; its mood is remembered between encounters. */
-static void begin_encounter(Game *g) {
-  g->state = GAME_ENCOUNTER;
-  g->selection = 0;
-  cue(g, SFX_CREAK);
-  learn(g, OBS(OBS_KAMI_SEEN), N_KAMI);
-  g->dialogue = D_ENC_APPEAR;
+static bool carries(const Game *g, uint8_t item) { return g->bag[item] != 0; }
+/* The panel reads the line from the dialogue table. */
+static void encounter_say(Game *g, Count line) {
+  g->dialogue = line;
   g->page = 0;
-  msg_clear(g);
 }
-static void encounter_action(Game *g, Action a) {
-  uint8_t options[ENCOUNTER_OPTION_LIMIT];
-  uint8_t count = game_encounter_options(g, options);
-  if (count == 0)
-    return;
-  select_move(g, a, count);
-  if (a == ACT_CANCEL) /* Escape highlights retreating, it does not do it */
-    for (uint8_t i = 0; i < count; i++)
-      if (encounter_options[options[i]].action == ENC_RETREAT)
-        g->selection = i;
-  if (a != ACT_CONFIRM)
-    return;
-  if (g->selection >= count)
-    g->selection = 0;
-  uint8_t action = encounter_options[options[g->selection]].action;
-  msg_clear(g); /* last round's numbers belong to the last round */
-  const EncounterOffer *offer = action == ENC_OFFER ? offer_at_hand(g) : 0;
-  uint8_t before = g->mood;
-  g->mood = offer ? offer->result : encounter_transitions[action][before];
-  if (offer) {
-    if (offer->takes != ITEM_NONE && g->bag[offer->takes])
-      g->bag[offer->takes]--; /* die Schale bleibt im Moos stehen */
-    learn(g, offer->grants, offer->note);
-    g->dialogue = offer->dialogue;
-  } else
-    g->dialogue = encounter_lines[action][before];
-  g->page = 0;
-  if (action == ENC_ATTACK || action == ENC_HEAL) {
-    fight_round(g, action == ENC_HEAL);
-    g->selection = 0;
-    return;
-  }
-  if (action == ENC_RETREAT) {
-    step_back(g);
-    g->fighting = 0;
-    g->state = GAME_EXPLORATION;
-  }
-}
+#include "../../shared/encounter.h"
 
 /* --- walking and pushing --- */
 /* The follower steps aside (they swap), everyone else blocks. */
@@ -605,37 +411,13 @@ static bool blocking_npc(const Game *g, int8_t x, int8_t y) {
 static bool can_enter(const Game *g, int8_t x, int8_t y) {
   return !blocking_npc(g, x, y) && game_passable(g, g->map, x, y);
 }
-bool game_can_push(const Game *g) {
-  /* Die Ausgaenge schliessen sich aus. Der Kompromiss ist erst mit dem dritten
-   * Pfahl entschieden -- angefangen ist er aber schon vorher, und dann bleibt
-   * der Stein liegen, wo er liegt. */
-  return matches(g, OBS(OBS_STONE_DRAGGED) | OBS(OBS_STONE_HOLLOW), 0) &&
-         g->outcome == OUT_NONE && !g->daigo_follows && g->staked == 0;
-}
 /* Pushing the stone one tile. Nothing here knows why it matters: the
  * inscription and the empty hollow say that, and the player draws the line. */
-static bool push_stone(Game *g, int8_t dx, int8_t dy) {
-  int8_t tx = (int8_t)(g->stone_x + dx), ty = (int8_t)(g->stone_y + dy);
-  const TileDef *target = tile_def(game_tile(g, MAP_FOREST, tx, ty));
-  if (!game_can_push(g) || !target || !(target->flags & TF_PASSABLE) ||
-      (target->flags & (TF_GUARDED | TF_TRANSITION)) || game_npc_at(g, tx, ty) >= 0)
-    return false;
-  g->stone_x = tx;
-  g->stone_y = ty;
-  bool settled = tx == STONE_HOLLOW_X && ty == STONE_HOLLOW_Y;
-  cue(g, settled ? SFX_SETTLE : SFX_SCRAPE);
-  if (settled)
-    g->obs &= ~OBS(OBS_STONE_MOVED);
-  else
-    g->obs |= OBS(OBS_STONE_MOVED);
-  if (settled) {
-    g->mood = MOOD_CALM;
-    learn(g, 0, N_BOUNDARY);
-    g->outcome = OUT_BOUNDARY;
-    open_scene(g, "Die alte Grenze", D_SCENE_BOUNDARY);
-  }
-  return true;
+/* An ordinary tile: walkable, neither guarded nor a way to another map. */
+static bool plain_tile(const TileDef *t) {
+  return t && (t->flags & TF_PASSABLE) && !(t->flags & (TF_GUARDED | TF_TRANSITION));
 }
+#include "../../shared/stone.h"
 /* Ein versperrter Schritt schweigt beim ersten Mal -- wer sieht, wogegen er
  * laeuft, braucht keinen Text. Erst der zweite Versuch in dieselbe Richtung
  * bekommt eine Antwort (#20). */

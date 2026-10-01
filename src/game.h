@@ -1,5 +1,6 @@
 #ifndef GAME_H
 #define GAME_H
+#include "../shared/feedback.h"
 #include "combat.h"
 #include "content.h"
 #include "inventory.h"
@@ -27,22 +28,6 @@ typedef enum {
   GAME_PROMPT
 } GameState;
 
-/* Session-log events; the frontend drains them with game_take_events. */
-typedef enum {
-  EV_OBSERVE,          /* a = ObsId */
-  EV_EXAMINE,          /* a = tile symbol or 0 for items, b = DialogueId */
-  EV_EXAMINE_NOTHING,  /* a = tile symbol, b = suppressed repeats of the previous one */
-  EV_NPC_TALK,         /* a = NpcId, b = DialogueId */
-  EV_NOTEBOOK_OPEN,    /* a = number of entries */
-  EV_ITEM_USE,         /* a = ItemId, b = DialogueId, or D_NONE when nothing happened */
-  EV_ENCOUNTER,        /* a = Mood at the start */
-  EV_ENCOUNTER_ACTION, /* a = EncounterAction, b = Mood afterwards */
-  EV_OUTCOME,          /* a = Outcome */
-  EV_STONE_PUSH,       /* a,b = the stone's position after moving it */
-  EV_MEND,             /* a = pieces in place, b = 1 when the piece fitted */
-  EV_STAKE,            /* a = stakes set */
-  EV_PHASE             /* a = Phase */
-} EventType;
 typedef struct {
   EventType type;
   int map, x, y, a, b;
@@ -56,38 +41,24 @@ typedef struct {
   bool valid;
   int map, x, y, dx, dy, repeat;
 } NothingTarget;
+#include "../shared/state.h"
+typedef int Coord;
+typedef int Count;
+#define MESSAGE_LIMIT 128
+
 typedef struct {
   Map maps[MAP_COUNT];
-  int map, x, y, dx, dy;
+  int map;
   GameState state;
-  /* Dialogue speaker: an NPC, SPEAKER_SCENE, or -1 with the examined tile symbol
-   * (0 for items). */
-  int npc, page, selection, dialogue, scroll;
-  char examined;
-  const char *scene; /* panel title while npc == SPEAKER_SCENE */
-  const char *place; /* the room the player just stepped into */
-  int place_ticks;   /* how much longer its name is shown */
-  int note_ticks;    /* how much longer the fresh-entry notice is shown */
-  unsigned steps;    /* counts moves; the frontend turns changes into footfalls */
-  Obs obs;
-  NoteId notes[NOTE_LIMIT];
-  int note_count;
+  GAME_CORE_FIELDS
+  unsigned steps; /* counts moves; the frontend turns changes into footfalls */
   Mood mood;
-  int stone_x, stone_y; /* the boundary stone the loggers moved */
-  int mend_placed;      /* pieces of the bowl already set */
-  int daigo_x, daigo_y; /* the foreman walks along while staking the boundary */
-  bool daigo_follows;
-  uint8_t staked;      /* bit per stake already driven in */
   DialogueOpens opens; /* what the open conversation leads to */
-  /* Die zuletzt versperrte Richtung: Beim zweiten Versuch in dieselbe Richtung
-   * sagt das Spiel, was im Weg steht (#20). */
-  int blocked_dx, blocked_dy;
   Combat combat;
   bool fighting;
   Outcome outcome;
   Phase phase;
   Player player;
-  char message[128];
   bool debug, collision;
   GameEvent events[EVENT_LIMIT];
   int event_count, events_dropped;
@@ -111,7 +82,7 @@ int game_take_events(Game *g, GameEvent *out, int max);
 int game_mend_pieces(const Game *g, int *out);
 /* Indices into encounter_options offered now, in display order; returns the count.
  * `out` must hold ENCOUNTER_OPTION_LIMIT entries. */
-int game_encounter_options(const Game *g, int *out);
+Count game_encounter_options(const Game *g, Count *out);
 /* What "offering" would hand over right now, or ITEM_NONE. */
 ItemId game_encounter_offer(const Game *g);
 #endif

@@ -16,7 +16,10 @@ bool game_init(Game *g, const char *assets) {
   g->scene = "Unterwegs";
   g->dialogue = D_SCENE_ARRIVAL;
   g->state = GAME_TITLE; /* the arrival scene waits behind the title page */
-  g->player = (Player){.hp = 24, .max_hp = 24, .attack = 8, .defense = 2};
+  g->player = (Player){.hp = PLAYER_HP,
+                       .max_hp = PLAYER_HP,
+                       .attack = PLAYER_ATTACK,
+                       .defense = PLAYER_DEFENSE};
   char path[1024];
   snprintf(path, sizeof path, "%s/maps/village.map", assets);
   if (!map_load(&g->maps[MAP_VILLAGE], path))
@@ -145,47 +148,9 @@ static void talk(Game *g, int npc) {
   emit(g, EV_NPC_TALK, npc, r->dialogue);
   open_dialogue(g, npc, 0, r->dialogue, r->opens);
 }
-static bool stone_at(const Game *g, int x, int y) {
-  return g->map == MAP_FOREST && x == g->stone_x && y == g->stone_y;
-}
-static const ExaminePoint *point_at(const Game *g, int x, int y) {
-  char symbol = game_tile(g, g->map, x, y);
-  for (int i = 0; i < examine_point_count; i++) {
-    const ExaminePoint *p = &examine_points[i];
-    if (p->kind == POINT_ITEM || !matches(g, p->needs, 0))
-      continue;
-    if (p->only_after != OUT_NONE && p->only_after != g->outcome)
-      continue; /* was der Stapel sagt, haengt am Ausgang */
-    if (p->kind == POINT_STONE) {
-      if (stone_at(g, x, y))
-        return p;
-      continue;
-    }
-    if (p->map != g->map)
-      continue;
-    if (p->kind == POINT_AT ? p->x == x && p->y == y : p->symbol == symbol)
-      return p;
-  }
-  return NULL;
-}
-static const ExaminePoint *point_for_item(const Game *g, ItemId item) {
-  char facing = game_tile(g, g->map, g->x + g->dx, g->y + g->dy);
-  for (int i = 0; i < examine_point_count; i++) {
-    const ExaminePoint *p = &examine_points[i];
-    if (p->kind != POINT_ITEM || p->item != item || !matches(g, p->needs, 0))
-      continue;
-    if (!p->symbol || (p->map == g->map && p->symbol == facing))
-      return p;
-  }
-  return NULL;
-}
-/* Rolling the stuck stone back to where the drag marks start. */
-static void reset_stone(Game *g) {
-  g->stone_x = STONE_START_X;
-  g->stone_y = STONE_START_Y;
-  g->obs &= ~OBS(OBS_STONE_MOVED);
-  emit(g, EV_STONE_PUSH, g->stone_x, g->stone_y);
-}
+static bool stone_at(const Game *g, Coord x, Coord y);
+static void reset_stone(Game *g);
+static bool plain_tile(const TileDef *t);
 static void use_point(Game *g, const ExaminePoint *p, char examined) {
   if (p->kind == POINT_STONE && p->dialogue == D_X_STONE_STUCK)
     reset_stone(g);
@@ -229,23 +194,7 @@ static void select_move(Game *g, Action a, int count) {
   else if (a == ACT_DOWN)
     g->selection = (g->selection + 1) % count;
 }
-/* Facing tile first, then the tile underfoot (passable points cannot be faced). */
-static void examine(Game *g) {
-  if (stake_here(g))
-    return;
-  int fx = g->x + g->dx, fy = g->y + g->dy;
-  const ExaminePoint *p = point_at(g, fx, fy);
-  if (p) {
-    use_point(g, p, game_tile(g, g->map, fx, fy));
-    return;
-  }
-  p = point_at(g, g->x, g->y);
-  if (p) {
-    use_point(g, p, game_tile(g, g->map, g->x, g->y));
-    return;
-  }
-  examine_nothing(g, fx, fy);
-}
+#include "../shared/examine.h"
 static void inventory_action(Game *g, Action a) {
   ItemId owned[ITEM_COUNT];
   int count = game_owned_items(g, owned);
@@ -290,41 +239,6 @@ static bool blocking_npc(const Game *g, int x, int y) {
 }
 static bool can_enter(const Game *g, int x, int y) {
   return !blocking_npc(g, x, y) && game_passable(g, g->map, x, y);
-}
-/* Guarded ground pushes the player one step away, onto free, safe ground. */
-static void step_back(Game *g) {
-  int bx = g->x - g->dx, by = g->y - g->dy;
-  const TileDef *back = tile_def(game_tile(g, g->map, bx, by));
-  if (can_enter(g, bx, by) && !back->guarded && !back->transition) {
-    g->x = bx;
-    g->y = by;
-  }
-}
-static bool option_now(const Game *g, const EncounterOption *o) {
-  return o->when == OPT_BOTH || (o->when == OPT_FIGHT) == g->fighting;
-}
-static const EncounterOffer *offer_at_hand(const Game *g) {
-  for (int i = 0; i < encounter_offer_count; i++) {
-    const EncounterOffer *o = &encounter_offers[i];
-    if (g->player.inventory.quantities[o->item])
-      return o;
-  }
-  return NULL;
-}
-ItemId game_encounter_offer(const Game *g) {
-  const EncounterOffer *o = offer_at_hand(g);
-  return o ? o->item : ITEM_NONE;
-}
-int game_encounter_options(const Game *g, int *out) {
-  int n = 0;
-  for (int i = 0; i < encounter_option_count; i++) {
-    const EncounterOption *o = &encounter_options[i];
-    if (!option_now(g, o) || (o->action == ENC_OFFER && !offer_at_hand(g)) ||
-        (o->action == ENC_HEAL && !g->player.inventory.quantities[ITEM_HERB]))
-      continue;
-    out[n++] = i;
-  }
-  return n;
 }
 static void show(Game *g, DialogueId line) {
   const char *text = line > D_NONE ? dialogues[line].pages[0] : NULL;
@@ -438,143 +352,30 @@ static void fight_round(Game *g, bool herb) {
     open_scene(g, "Kiriyama, spaeter", D_ENC_DEFEAT);
   }
 }
-/* The spirit rises from the grove; its mood is remembered between encounters. */
-static void begin_encounter(Game *g) {
-  g->state = GAME_ENCOUNTER;
-  g->selection = 0;
-  learn(g, OBS(OBS_KAMI_SEEN), N_KAMI);
-  show(g, D_ENC_APPEAR);
-  emit(g, EV_ENCOUNTER, g->mood, 0);
-}
 /* Kintsugi: each piece is set into the gap it belongs to. A piece that does not
  * fit costs nothing; the seams stay visible. */
-static void mend_action(Game *g, Action a) {
-  int pieces[MEND_PIECES];
-  int count = game_mend_pieces(g, pieces);
-  if (a == ACT_CANCEL) {
-    g->state = GAME_EXPLORATION;
-    return;
-  }
-  if (count == 0)
-    return;
-  select_move(g, a, count);
-  if (a != ACT_CONFIRM)
-    return;
-  if (g->selection >= count)
-    g->selection = 0;
-  bool fits = pieces[g->selection] == g->mend_placed;
-  if (fits)
-    g->mend_placed++;
-  emit(g, EV_MEND, g->mend_placed, fits);
-  g->selection = 0;
-  if (!fits) {
-    show(g, D_MEND_WRONG);
-    return;
-  }
-  g->message[0] = 0;
-  if (g->mend_placed == MEND_PIECES) {
-    inventory_remove(&g->player.inventory, ITEM_SHARDS, 1);
-    learn(g, OBS(OBS_BOWL_DRYING), N_MENDED);
-    open_scene(g, "In Orihas Werkstatt", D_MEND_DONE);
-  }
+static void take_item(Game *g, ItemId item) {
+  inventory_remove(&g->player.inventory, item, 1);
 }
+#include "../shared/mend.h"
 /* Driving in a stake: only where the tracks run, and only with Daigo there. */
-static bool stake_here(Game *g) {
-  int near = (g->daigo_x - g->x) * (g->daigo_x - g->x) +
-             (g->daigo_y - g->y) * (g->daigo_y - g->y);
-  if (!g->daigo_follows || g->map != MAP_FOREST || near > 1)
-    return false; /* the two of them drive it in together */
-  if (g->outcome != OUT_NONE)
-    return false; /* was entschieden ist, ist entschieden */
-  for (int i = 0; i < STAKE_COUNT; i++) {
-    if (stakes[i].x != g->x || stakes[i].y != g->y || (g->staked & (1u << i)))
-      continue;
-    g->staked |= (uint8_t)(1u << i);
-    int count = 0;
-    for (int k = 0; k < STAKE_COUNT; k++)
-      count += (int)((g->staked >> k) & 1u);
-    emit(g, EV_STAKE, count, 0);
-    if (count == STAKE_COUNT) {
-      g->daigo_follows = false;
-      g->daigo_x = npcs[NPC_DAIGO].x;
-      g->daigo_y = npcs[NPC_DAIGO].y;
-      learn(g, 0, N_MEND);
-      finish(g, OUT_MEND);
-      open_scene(g, "Die neue Grenze", D_SCENE_MEND);
-    } else
-      open_scene(g, "Entlang der Spuren", D_STAKE_SET);
-    return true;
-  }
-  return false;
+#include "../shared/stake.h"
+static bool carries(const Game *g, uint8_t item) {
+  return g->player.inventory.quantities[item] != 0;
 }
-static void encounter_action(Game *g, Action a) {
-  int options[ENCOUNTER_OPTION_LIMIT];
-  int count = game_encounter_options(g, options);
-  if (count == 0)
-    return; /* nothing to choose from */
-  select_move(g, a, count);
-  if (a == ACT_CANCEL) /* Escape highlights retreating, it does not do it */
-    for (int i = 0; i < count; i++)
-      if (encounter_options[options[i]].action == ENC_RETREAT)
-        g->selection = i;
-  if (a != ACT_CONFIRM)
-    return;
-  if (g->selection >= count)
-    g->selection = 0;
-  EncounterAction action = encounter_options[options[g->selection]].action;
-  const EncounterOffer *offer = action == ENC_OFFER ? offer_at_hand(g) : NULL;
-  Mood before = g->mood;
-  g->mood = offer ? offer->result : encounter_transitions[action][before];
-  if (offer) {
-    if (offer->takes != ITEM_NONE) /* die Schale bleibt im Moos stehen */
-      inventory_remove(&g->player.inventory, offer->takes, 1);
-    learn(g, offer->grants, offer->note);
-    show(g, offer->dialogue);
-  } else
-    show(g, encounter_lines[action][before]);
-  emit(g, EV_ENCOUNTER_ACTION, action, g->mood);
-  if (action == ENC_ATTACK || action == ENC_HEAL) {
-    fight_round(g, action == ENC_HEAL);
-    g->selection = 0;
-    return;
-  }
-  if (action == ENC_RETREAT) {
-    step_back(g);
-    g->fighting = false;
-    g->state = GAME_EXPLORATION;
-  }
-}
-bool game_can_push(const Game *g) {
-  /* Die Ausgaenge schliessen sich aus. Der Kompromiss ist erst mit dem dritten
-   * Pfahl entschieden -- angefangen ist er aber schon vorher, und dann bleibt
-   * der Stein liegen, wo er liegt. */
-  return matches(g, OBS(OBS_STONE_DRAGGED) | OBS(OBS_STONE_HOLLOW), 0) &&
-         g->outcome == OUT_NONE && !g->daigo_follows && g->staked == 0;
+static void encounter_say(Game *g, Count line) { show(g, (DialogueId)line); }
+#include "../shared/encounter.h"
+ItemId game_encounter_offer(const Game *g) {
+  const EncounterOffer *o = offer_at_hand(g);
+  return o ? o->item : ITEM_NONE;
 }
 /* Pushing the stone one tile. Nothing here knows why it matters: the inscription
  * and the empty hollow say that, and the player draws the line. */
-static bool push_stone(Game *g, int dx, int dy) {
-  int tx = g->stone_x + dx, ty = g->stone_y + dy;
-  const TileDef *target = tile_def(game_tile(g, MAP_FOREST, tx, ty));
-  if (!game_can_push(g) || !target || !target->passable || target->guarded ||
-      target->transition || game_npc_at(g, tx, ty) >= 0)
-    return false;
-  g->stone_x = tx;
-  g->stone_y = ty;
-  bool settled = tx == STONE_HOLLOW_X && ty == STONE_HOLLOW_Y;
-  if (settled)
-    g->obs &= ~OBS(OBS_STONE_MOVED);
-  else
-    g->obs |= OBS(OBS_STONE_MOVED);
-  emit(g, EV_STONE_PUSH, g->stone_x, g->stone_y);
-  if (settled) {
-    g->mood = MOOD_CALM;
-    learn(g, 0, N_BOUNDARY);
-    finish(g, OUT_BOUNDARY);
-    open_scene(g, "Die alte Grenze", D_SCENE_BOUNDARY);
-  }
-  return true;
+/* An ordinary tile: walkable, neither guarded nor a way to another map. */
+static bool plain_tile(const TileDef *t) {
+  return t && t->passable && !t->guarded && !t->transition;
 }
+#include "../shared/stone.h"
 /* Ein versperrter Schritt schweigt beim ersten Mal -- wer sieht, wogegen er
  * laeuft, braucht keinen Text. Erst der zweite Versuch in dieselbe Richtung
  * bekommt eine Antwort (#20). */
