@@ -32,3 +32,6 @@
   [N_DEAL] = "Daigo will mit mir eine neue\nGrenze abstecken.",
   [N_MEND] = "Drei Pfaehle stehen entlang der\nSpuren. Der Kami blieb sitzen.",
     [N_MORNING] = "Eine Nacht ist vergangen. Das Dorf\nsieht anders aus.",
+    [N_FOX_GONE] = "Der Fuchsbau ist leer. Der Fuchs\nist fortgezogen.",
+    [N_TRACE] = "Neben dem Schrein ist der Boden\ngrau. Keine Spur, nichts.",
+    [N_VISITOR] = "Am Schrein steht: Ein Besucher kam,\nbevor der Wald unruhig wurde.",

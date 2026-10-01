@@ -359,6 +359,79 @@ static void an_unsettled_forest_gives_no_sleep(void) {
   assert(g.dialogue == D_X_FUTON_AWAKE);
 }
 
+/* Der Morgen im Wald und im Dorf (#4): jeder Ausgang verwandelt die Karte noch einmal. */
+static void the_fox_leaves_overnight_and_comes_back_with_kits(void) {
+  Game g;
+  start(&g);
+  g.obs |= OBS(OBS_FOX_TENDED);
+  assert(game_tile(&g, MAP_FOREST, 5, 20) == 'f');
+  g.outcome = OUT_FIGHT;
+  assert(game_tile(&g, MAP_FOREST, 5, 20) == 'f'); /* it stays the day of the fight */
+  g.phase = PHASE_MORNING;
+  assert(game_tile(&g, MAP_FOREST, 5, 20) == 'e'); /* by morning it has left */
+  g.outcome = OUT_MEND;
+  assert(game_tile(&g, MAP_FOREST, 5, 20) == 'g'); /* and came back with kits */
+}
+static void the_den_says_what_it_holds(void) {
+  Game g;
+  start(&g);
+  g.outcome = OUT_FIGHT;
+  g.phase = PHASE_MORNING;
+  face(&g, MAP_FOREST, 6, 20, -1, 0);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.state == GAME_DIALOGUE && g.dialogue == D_X_DEN_EMPTY);
+  assert(g.notes[g.note_count - 1] == N_FOX_GONE);
+  read_to_the_end(&g);
+  g.outcome = OUT_MEND;
+  g.obs |= OBS(OBS_FOX_TENDED);
+  face(&g, MAP_FOREST, 6, 20, -1, 0);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_X_FOX_KITS);
+}
+static void the_morning_changes_the_map_per_outcome(void) {
+  static const struct {
+    uint8_t outcome, map;
+    int8_t x, y;
+    char morning;
+  } expect[] = {
+      {OUT_FIGHT, MAP_VILLAGE, 25, 13, 'W'},  {OUT_FIGHT, MAP_FOREST, 16, 4, 'x'},
+      {OUT_FIGHT, MAP_FOREST, 4, 22, 'x'},    {OUT_BOUNDARY, MAP_FOREST, 20, 11, 'j'},
+      {OUT_BOUNDARY, MAP_FOREST, 7, 28, '.'}, {OUT_MEND, MAP_VILLAGE, 22, 13, 's'},
+      {OUT_MEND, MAP_FOREST, 26, 11, 'x'},
+  };
+  for (uint8_t i = 0; i < sizeof expect / sizeof expect[0]; i++) {
+    Game g;
+    start(&g);
+    g.outcome = expect[i].outcome;
+    assert(game_tile(&g, expect[i].map, expect[i].x, expect[i].y) != expect[i].morning);
+    g.phase = PHASE_MORNING;
+    assert(game_tile(&g, expect[i].map, expect[i].x, expect[i].y) == expect[i].morning);
+  }
+}
+static void the_grey_patch_and_the_visitor_line(void) {
+  Game g;
+  start(&g);
+  assert(game_tile(&g, MAP_FOREST, 37, 19) != 'v');
+  g.outcome = OUT_BOUNDARY;
+  assert(game_tile(&g, MAP_FOREST, 37, 19) == 'v'); /* whatever was decided */
+  face(&g, MAP_FOREST, 37, 20, 0, -1);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_X_TRACE && game_knows(&g, OBS_GREY_TRACE));
+  assert(g.notes[g.note_count - 1] == N_TRACE);
+  read_to_the_end(&g);
+  /* Reading tracks adds what is missing, not an explanation. */
+  g.obs &= ~OBS(OBS_GREY_TRACE);
+  g.obs |= OBS(OBS_FOX_TENDED);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_X_TRACE_TRACKS);
+  read_to_the_end(&g);
+  /* Only then does the shrine show the line about a visitor. */
+  face(&g, MAP_FOREST, 37, 19, 1, 0);
+  game_action(&g, ACT_CONFIRM);
+  assert(g.dialogue == D_X_INSCRIPTION_LATE);
+  assert(g.notes[g.note_count - 1] == N_VISITOR);
+}
+
 /* Vor der Nacht bleibt es bei der Reaktion auf den Ausgang. */
 static void before_the_night_nothing_changes(void) {
   Game g;
@@ -1221,6 +1294,10 @@ int main(void) {
   before_the_night_nothing_changes();
   escape_still_opens_what_the_dialogue_opens();
   the_futon_asks_the_same();
+  the_fox_leaves_overnight_and_comes_back_with_kits();
+  the_den_says_what_it_holds();
+  the_morning_changes_the_map_per_outcome();
+  the_grey_patch_and_the_visitor_line();
   a_night_opened_by_a_dialogue_asks();
   sleeping_brings_the_morning();
   staying_awake_changes_nothing();

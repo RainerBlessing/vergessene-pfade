@@ -31,6 +31,7 @@ typedef enum {
   OBS_DAIGO_DEAL,
   OBS_STONE_MOVED, /* the stone stands neither where it was dragged to nor home */
   OBS_MORNING,     /* the night has passed */
+  OBS_GREY_TRACE,  /* the grey patch by the shrine has been seen */
   OBS_COUNT
 } ObsId;
 typedef uint32_t Obs;
@@ -156,6 +157,11 @@ typedef enum {
   D_X_FUTON_MORNING,
   D_PROMPT_SLEEP,
   D_SCENE_MORNING,
+  D_X_DEN_EMPTY,
+  D_X_FOX_KITS,
+  D_X_TRACE,
+  D_X_TRACE_TRACKS,
+  D_X_INSCRIPTION_LATE,
   DIALOGUE_COUNT
 } DialogueId;
 #define DIALOGUE_PAGES 3
@@ -198,6 +204,9 @@ typedef enum {
   N_DEAL,
   N_MEND,
   N_MORNING,
+  N_FOX_GONE,
+  N_TRACE,
+  N_VISITOR,
   NOTE_COUNT
 } NoteId;
 extern const char *const notes[NOTE_COUNT];
@@ -238,7 +247,7 @@ typedef struct {
   uint8_t map, x, y;
   char symbol;
   Obs needs;
-  uint8_t outcome;
+  uint8_t outcome, phase; /* OUT_ANY, PHASE_ANY: whatever was decided, at any time */
 } TileOverride;
 extern const TileOverride tile_overrides[];
 extern const uint8_t tile_override_count;

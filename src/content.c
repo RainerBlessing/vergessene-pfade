@@ -27,31 +27,12 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
     [D_ORIHA_OWNER] = {1,
                        {"Sumis Grossmutter also. Dann hat\ndiese Schale eine lange "
                         "Geschichte.\nLass mich darueber nachdenken."}},
-    /* Stein und Mulde verweisen aufeinander, sobald beide bekannt sind (#14). */
-    [D_X_DEN_EMPTY] = {2,
-                       {"Frische Holzspaene liegen vor dem\nverlassenen Bau.",
-                        "Zwischen den Baeumen haben die\nHolzfaeller weitergearbeitet."}},
-    [D_X_FOX_KITS] = {1,
-                      {"Drei junge Fuechse balgen sich vor\ndem Bau. Die Alte sieht "
-                       "dir zu."}},
     /* An empty page shows the last message: the numbers of the closing round. */
     [D_ENC_OFFER_BOWL] = {2,
                           {"Du stellst die geflickte Schale\nins Moos. Die goldenen "
                            "Naehte\nfangen das Licht.",
                            "Der Kami beugt sich darueber.\nDas Knurren hoert auf. "
                            "Es setzt\nsich neben die Schale."}},
-    [D_X_TRACE] = {1,
-                   {"Neben dem Schrein ist der Boden\ngrau. Keine Fussspur. Nichts\n"
-                    "Verbranntes. Keine Flechte."}},
-    [D_X_TRACE_TRACKS] = {2,
-                          {"Neben dem Schrein ist der Boden\ngrau. Keine Fussspur. "
-                           "Nichts\nVerbranntes. Keine Flechte.",
-                           "Und nicht einmal Tiere sind\nhier gegangen."}},
-    [D_X_INSCRIPTION_LATE] = {2,
-                              {"Ein kleiner, verwitterter Schrein.\nEingeritzt: Bis zu "
-                               "den drei\nSteinen und nicht weiter.",
-                               "Weiter unten, kaum lesbar: Es kam\nein Besucher, bevor "
-                               "der Wald\nunruhig wurde."}},
     [D_SCENE_TEASER] = {2,
                         {"Du sitzt lange am Schrein.\nDer Wald ist ruhig. Die graue\n"
                          "Stelle bleibt grau.",
@@ -62,9 +43,6 @@ const Dialogue dialogues[DIALOGUE_COUNT] = {
 /* At most 2 lines of 36 characters; no digits or slashes (test_game). */
 const char *const notes[NOTE_COUNT] = {
 #include "../shared/notes.inc"
-    [N_FOX_GONE] = "Der Fuchsbau ist leer. Der Fuchs\nist fortgezogen.",
-    [N_TRACE] = "Neben dem Schrein ist der Boden\ngrau. Keine Spur, nichts.",
-    [N_VISITOR] = "Am Schrein steht: Ein Besucher kam,\nbevor der Wald unruhig wurde.",
 };
 
 /* Wohin die Antwort auf einen Ausgang fuehrt: in die Nacht (PC) oder zur Schlusstafel
@@ -79,107 +57,23 @@ const DialogueRule dialogue_rules[] = {
 const int dialogue_rule_count = (int)(sizeof dialogue_rules / sizeof dialogue_rules[0]);
 
 const ExaminePoint examine_points[] = {
-#include "../shared/examine_points_a.inc"
-    {.kind = POINT_SYMBOL,
-     .map = MAP_FOREST,
-     .symbol = 'O',
-     .needs = OBS(OBS_GREY_TRACE),
-     .grants = OBS(OBS_SHRINE_INSCRIPTION),
-     .dialogue = D_X_INSCRIPTION_LATE,
-     .note = N_VISITOR},
-#include "../shared/examine_points_b.inc"
-    {.kind = POINT_SYMBOL,
-     .map = MAP_FOREST,
-     .symbol = 'e',
-     .dialogue = D_X_DEN_EMPTY,
-     .note = N_FOX_GONE},
-    {.kind = POINT_SYMBOL, .map = MAP_FOREST, .symbol = 'g', .dialogue = D_X_FOX_KITS},
+#include "../shared/examine_points_1.inc"
+#include "../shared/examine_points_2_late.inc"
+#include "../shared/examine_points_3.inc"
+#include "../shared/examine_points_4_morning.inc"
 #include "../shared/examine_points_futon.inc"
-    /* The shrine after an outcome: a grey patch, and a line further down. */
-    {.kind = POINT_SYMBOL,
-     .map = MAP_FOREST,
-     .symbol = 'v',
-     .needs = OBS(OBS_FOX_TENDED),
-     .grants = OBS(OBS_GREY_TRACE),
-     .dialogue = D_X_TRACE_TRACKS,
-     .note = N_TRACE},
-    {.kind = POINT_SYMBOL,
-     .map = MAP_FOREST,
-     .symbol = 'v',
-     .grants = OBS(OBS_GREY_TRACE),
-     .dialogue = D_X_TRACE,
-     .note = N_TRACE},
 };
 const int examine_point_count = (int)(sizeof examine_points / sizeof examine_points[0]);
 
-/* Sobald der Handel steht, sind die drei Stellen zu sehen: Suchen gehoert nicht
- * zu dieser Entscheidung, sie ist laengst gefallen (#21). */
-#define MARK(x, y)                                                                       \
-  {MAP_FOREST, x, y, 'P', OBS(OBS_DAIGO_DEAL), OUT_ANY, PHASE_ANY, TAG_NEUTRAL}
-#define TRACK(x, y)                                                                      \
-  {MAP_FOREST, x, y, 't', OBS(OBS_FOX_TENDED), OUT_ANY, PHASE_ANY, TAG_NEUTRAL}
+#include "../shared/tile_macros.inc"
+#define TILE(map, x, y, sym, needs, out, ph, tag) {map, x, y, sym, needs, out, ph, tag}
 const TileOverride tile_overrides[] = {
-    MARK(14, 14),
-    MARK(22, 15),
-    MARK(30, 14),
-    /* Orihas shelf: the bowl rests there while the lacquer dries. */
-    {MAP_VILLAGE, 22, 4, 'q', OBS(OBS_BOWL_READY), OUT_ANY, PHASE_ANY, TAG_NEUTRAL},
-    {MAP_VILLAGE, 22, 4, 'b', OBS(OBS_BOWL_DRYING), OUT_ANY, PHASE_ANY, TAG_NEUTRAL},
-    {MAP_FOREST, 5, 20, 'f', OBS(OBS_FOX_TENDED), OUT_ANY, PHASE_ANY, TAG_NEUTRAL},
-    /* Paw prints: around the camp, along the grove edge, to the stone gap. */
-    TRACK(8, 19),
-    TRACK(9, 18),
-    TRACK(10, 17),
-    TRACK(11, 16),
-    TRACK(12, 15),
-    TRACK(14, 14),
-    TRACK(16, 14),
-    TRACK(18, 15),
-    TRACK(20, 15),
-    TRACK(22, 15),
-    TRACK(26, 15),
-    TRACK(28, 15),
-    TRACK(30, 14),
-    TRACK(32, 14),
-    TRACK(34, 13),
+#include "../shared/tile_overrides.inc"
 };
 /* What each outcome changes, at once and again the next morning. Every outcome
  * shows a gain and a loss in both phases; a test checks that. */
-#define CHANGE(map, x, y, sym, out, ph, tag) {map, x, y, sym, 0, out, ph, tag}
 const TileOverride outcome_changes[] = {
-    /* Bekaempfen: the village has wood, the grove and the fox are gone. */
-    CHANGE(MAP_VILLAGE, 23, 13, 'W', OUT_FIGHT, PHASE_ANY, TAG_GAIN),
-    CHANGE(MAP_VILLAGE, 24, 13, 'W', OUT_FIGHT, PHASE_ANY, TAG_GAIN),
-    CHANGE(MAP_FOREST, 20, 6, 'x', OUT_FIGHT, PHASE_ANY, TAG_LOSS),
-    CHANGE(MAP_FOREST, 24, 7, 'x', OUT_FIGHT, PHASE_ANY, TAG_LOSS),
-    CHANGE(MAP_FOREST, 5, 20, 'e', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
-    CHANGE(MAP_FOREST, 7, 18, 'x', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
-    CHANGE(MAP_FOREST, 4, 22, 'x', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
-    CHANGE(MAP_FOREST, 9, 21, 'x', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
-    CHANGE(MAP_VILLAGE, 25, 13, 'W', OUT_FIGHT, PHASE_MORNING, TAG_GAIN),
-    CHANGE(MAP_FOREST, 16, 4, 'x', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
-    CHANGE(MAP_FOREST, 30, 4, 'x', OUT_FIGHT, PHASE_MORNING, TAG_LOSS),
-    /* Alte Grenze: the grove is kept, the camp loses its ground. */
-    CHANGE(MAP_FOREST, 16, 11, 'h', OUT_BOUNDARY, PHASE_ANY, TAG_GAIN),
-    CHANGE(MAP_FOREST, 14, 28, '.', OUT_BOUNDARY, PHASE_ANY, TAG_LOSS),
-    CHANGE(MAP_FOREST, 20, 11, 'j', OUT_BOUNDARY, PHASE_MORNING, TAG_GAIN),
-    CHANGE(MAP_FOREST, 29, 11, 'j', OUT_BOUNDARY, PHASE_MORNING, TAG_GAIN),
-    CHANGE(MAP_FOREST, 7, 28, '.', OUT_BOUNDARY, PHASE_MORNING, TAG_LOSS),
-    CHANGE(MAP_FOREST, 8, 28, '.', OUT_BOUNDARY, PHASE_MORNING, TAG_LOSS),
-    CHANGE(MAP_FOREST, 15, 28, '.', OUT_BOUNDARY, PHASE_MORNING, TAG_LOSS),
-    CHANGE(MAP_FOREST, 12, 30, '.', OUT_BOUNDARY, PHASE_MORNING, TAG_LOSS),
-    /* Kompromiss: deadwood and saplings, but the old edge stays cut. */
-    CHANGE(MAP_FOREST, 13, 30, 'z', OUT_MEND, PHASE_ANY, TAG_GAIN),
-    CHANGE(MAP_FOREST, 22, 10, 'x', OUT_MEND, PHASE_ANY, TAG_LOSS),
-    CHANGE(MAP_VILLAGE, 23, 13, 'W', OUT_MEND, PHASE_MORNING, TAG_GAIN),
-    CHANGE(MAP_FOREST, 16, 11, 'j', OUT_MEND, PHASE_MORNING, TAG_GAIN),
-    CHANGE(MAP_FOREST, 5, 20, 'g', OUT_MEND, PHASE_MORNING, TAG_GAIN),
-    CHANGE(MAP_FOREST, 26, 11, 'x', OUT_MEND, PHASE_MORNING, TAG_LOSS),
-    CHANGE(MAP_VILLAGE, 22, 13, 's', OUT_MEND, PHASE_MORNING, TAG_LOSS),
-    /* The grey patch by the shrine appears whatever was decided. */
-    {MAP_FOREST, 37, 19, 'v', 0, OUT_FIGHT, PHASE_ANY, TAG_NEUTRAL},
-    {MAP_FOREST, 37, 19, 'v', 0, OUT_BOUNDARY, PHASE_ANY, TAG_NEUTRAL},
-    {MAP_FOREST, 37, 19, 'v', 0, OUT_MEND, PHASE_ANY, TAG_NEUTRAL},
+#include "../shared/tile_changes.inc"
 };
 const int outcome_change_count =
     (int)(sizeof outcome_changes / sizeof outcome_changes[0]);

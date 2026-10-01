@@ -128,12 +128,25 @@ Funktionen; sein Verhalten ist unverändert (seine Tests sind grün). **Beim Sch
 eines Dialogs** wichen die Fassungen ab (`OPEN_MEND`, `OPEN_FOLLOW`). Das wurde danach entschieden (siehe unten): es gilt das Verhalten des PC.
 
 ## Stage 9: Der Morgen in Dorf und Wald
-**Ziel**: Morgen-Änderungen der Karte je Ausgang (`outcome_changes` mit Phase), der Fuchs ist
-weg und der Bau leer, die graue Spur am Schrein, der späte Inschriftentext.
-**Erfolgskriterien**: Jeder Ausgang zeigt am Morgen Gewinn und Verlust; die graue Spur ist
-erst am Morgen zu sehen. Die Prüfung „keine Moral-Farben“ der PC-Tests gilt auch hier.
-**Tests**: `the_morning_shows_gain_and_loss`, `the_grey_trace_comes_with_the_morning`.
-**Status**: Not Started
+**Ziel**: Morgen-Änderungen der Karte je Ausgang (jetzt mit `phase`), der Fuchs ist weg und der
+Bau leer (mit Jungen nach dem Kompromiss), die graue Spur am Schrein, der späte
+Inschriftentext.
+**Erfolgskriterien**: Jeder Ausgang verwandelt am Morgen die Karte noch einmal; der Fuchs
+bleibt am Tag des Kampfes und geht über Nacht; die graue Spur erscheint nach jedem Ausgang
+und ihr Lesen führt zum Besucher am Schrein.
+**Tests**: `the_fox_leaves_overnight_and_comes_back_with_kits`, `the_den_says_what_it_holds`,
+`the_morning_changes_the_map_per_outcome`, `the_grey_patch_and_the_visitor_line`,
+`the_morning_redraws_what_the_night_changed` (Bildschirm). Die ersten vier zuerst rot.
+**Status**: Complete
+
+Ergebnis: C64-Datei **30 662 → 31 484 Bytes (+822)**, insgesamt seit Beginn **+3 238**
+(28 246 → 31 484), also 54 % der 6-KB-Grenze. Was neu geteilt ist: fünf Dialoge, drei Notizen,
+fünf Untersuchungspunkte (`examine_points_2_late.inc`, `_4_morning.inc`) und **alle**
+Kartenänderungen und Spuren: `tile_changes.inc` und `tile_overrides.inc` benutzen Makros
+(`CHANGE`, `MARK`, `TRACK`, `TILE`); jede Fassung sagt, was `TILE` ist (PC mit `tag`, C64
+mit `phase`). Auf dem PC bleiben zwei Tabellen (`outcome_changes` zuerst), auf der C64 steht
+eine, in derselben Reihenfolge. Drei neue Kacheln auf der C64 (`g`, `j`, `v`; die Zeichen
+sind eine Wahl, nicht aus dem PC übernommen).
 
 ## Stage 10: Teaser und Ende
 **Ziel**: Das Lesen des Besuchers am Morgen öffnet die Teaser-Szene, danach die

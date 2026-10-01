@@ -283,3 +283,22 @@
     [D_SCENE_MORNING] = {1,
                          {"Du schlaefst, bis die Schiebetuer\nklappert. Am naechsten "
                           "Morgen\nist Kiriyama ein anderes Dorf."}},
+    /* Stein und Mulde verweisen aufeinander, sobald beide bekannt sind (#14). */
+    [D_X_DEN_EMPTY] = {2,
+                       {"Frische Holzspaene liegen vor dem\nverlassenen Bau.",
+                        "Zwischen den Baeumen haben die\nHolzfaeller weitergearbeitet."}},
+    [D_X_FOX_KITS] = {1,
+                      {"Drei junge Fuechse balgen sich vor\ndem Bau. Die Alte sieht "
+                       "dir zu."}},
+    [D_X_TRACE] = {1,
+                   {"Neben dem Schrein ist der Boden\ngrau. Keine Fussspur. Nichts\n"
+                    "Verbranntes. Keine Flechte."}},
+    [D_X_TRACE_TRACKS] = {2,
+                          {"Neben dem Schrein ist der Boden\ngrau. Keine Fussspur. "
+                           "Nichts\nVerbranntes. Keine Flechte.",
+                           "Und nicht einmal Tiere sind\nhier gegangen."}},
+    [D_X_INSCRIPTION_LATE] = {2,
+                              {"Ein kleiner, verwitterter Schrein.\nEingeritzt: Bis zu "
+                               "den drei\nSteinen und nicht weiter.",
+                               "Weiter unten, kaum lesbar: Es kam\nein Besucher, bevor "
+                               "der Wald\nunruhig wurde."}},

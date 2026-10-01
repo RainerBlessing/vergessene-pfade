@@ -30,8 +30,9 @@ static void msg_num(Game *g, int16_t v) {
 static bool matches(const Game *g, Obs needs, Obs forbids) {
   return (g->obs & needs) == needs && !(g->obs & forbids);
 }
-static bool fits_now(const Game *g, Obs needs, uint8_t outcome) {
-  return (g->obs & needs) == needs && (outcome == OUT_ANY || outcome == g->outcome);
+static bool fits_now(const Game *g, Obs needs, uint8_t outcome, uint8_t phase) {
+  return (g->obs & needs) == needs && (outcome == OUT_ANY || outcome == g->outcome) &&
+         (phase == PHASE_ANY || phase == g->phase);
 }
 bool game_knows(const Game *g, ObsId o) { return (g->obs & OBS(o)) != 0; }
 
@@ -46,13 +47,13 @@ char game_tile(const Game *g, uint8_t map, int8_t x, int8_t y) {
   for (uint8_t i = 0; i < tile_override_count; i++) {
     const TileOverride *o = &tile_overrides[i];
     if (o->map == map && o->x == (uint8_t)x && o->y == (uint8_t)y &&
-        fits_now(g, o->needs, o->outcome))
+        fits_now(g, o->needs, o->outcome, o->phase))
       return o->symbol;
   }
   return map_at(map, x, y);
 }
 bool game_shows(const Game *g, const TileOverride *o) {
-  return fits_now(g, o->needs, o->outcome);
+  return fits_now(g, o->needs, o->outcome, o->phase);
 }
 bool game_passable(const Game *g, uint8_t map, int8_t x, int8_t y) {
   const TileDef *t = tile_def(game_tile(g, map, x, y));

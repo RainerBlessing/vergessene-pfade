@@ -145,6 +145,29 @@ static void the_night_prompt_shows_question_and_answers(void) {
   expect_row(22, "> NOCH HIERBLEIBEN");
 }
 
+/* The night changes the map without a step: the picture has to follow, and an
+ * incremental redraw has to look like a fresh one. */
+static void the_morning_redraws_what_the_night_changed(void) {
+  Game g;
+  RenderCache c = {0};
+  uint8_t before[1000], incremental[1000];
+  start(&g);
+  g.outcome = OUT_FIGHT;
+  g.map = MAP_FOREST;
+  g.x = 6;
+  g.y = 21;
+  render(&g, &c);
+  memcpy(before, test_screen, sizeof before);
+  g.phase = PHASE_MORNING; /* the den is empty by morning */
+  g.obs |= OBS(OBS_MORNING);
+  render(&g, &c);
+  memcpy(incremental, test_screen, sizeof incremental);
+  assert(memcmp(before, incremental, sizeof before) != 0);
+  RenderCache fresh = {0};
+  render(&g, &fresh);
+  assert(memcmp(incremental, test_screen, sizeof incremental) == 0);
+}
+
 /* In der Begegnung steht neben dem Text auch, was die Runde gebracht hat. */
 static void encounter_shows_the_round(void) {
   Game g;
@@ -468,6 +491,7 @@ int main(void) {
   notebook_shows_what_was_written();
   mend_view_shows_gap_and_pieces();
   the_night_prompt_shows_question_and_answers();
+  the_morning_redraws_what_the_night_changed();
   encounter_shows_the_round();
   the_health_bar_keeps_its_steps();
   the_shelf_shows_the_dried_bowl();
