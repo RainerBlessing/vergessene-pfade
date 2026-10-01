@@ -48,9 +48,14 @@ für Geteiltes nichts mehr.
     in die Nacht und auf dem C64 zur Schlusstafel führen, nennen
     `OPEN_AFTER_OUTCOME`; jede Seite definiert das Makro. Der Driftmelder löst
     solche Aliase auf, damit die Erlaubnisliste weiter gilt.
-  - `ExaminePoint`: Not Started. PC-eigene Einträge liegen an vier Stellen
-    zwischen den geteilten, deren Reihenfolge nicht überall gleich ist; die PC-Seite
-    schreibt Felder benannt, die C64-Seite positionell. Erst die Reihenfolge klären.
+  - `ExaminePoint`: Complete. 30 Punkte in `shared/examine_points_a.inc` und
+    `_b.inc`; dazwischen steht auf dem PC `D_X_INSCRIPTION_LATE`, das vor der
+    geteilten Inschrift greifen muss. Die übrigen PC-Punkte (Fuchsbau, Futon,
+    graue Spur) folgen am Ende. Die Reihenfolge ist nur innerhalb gleicher Kachel
+    oder Position wichtig; die geteilten Punkte stehen jetzt in der Reihenfolge
+    des C64. Eine echte Abweichung kam dabei ans Licht: `point_at` prüft auf dem
+    C64 die Karte auch bei `POINT_STONE`, auf dem PC nicht. Die drei Stein-Punkte
+    tragen darum `.map = MAP_FOREST`; auf dem PC ändert das nichts.
   - `TileOverride`: bleibt je Seite (PC hat `phase` und `tag`, zwei Tabellen).
 
 ## Stufe 3: gemeinsamer Zustand und Ausgabekanal
