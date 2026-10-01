@@ -5,8 +5,8 @@ Ziel: prüfen, ob der Loop **Erkunden → Beobachten → Verstehen → Handeln**
 Toolchain und VICE-Start ist `~/projekte/c64u/fps-monitor`.
 
 Umfang (mit Rainer abgestimmt): Erkundung beider Karten, die Begegnung am
-Hainrand und alle drei Ausgänge. Nicht im POC: Nacht im Gasthaus, Morgen-Phase
-([#4](../../../issues/4)). Klang (#5) ist als kurze SID-Effekte in der Hauptschleife enthalten.
+Hainrand und alle drei Ausgänge. Nacht im Gasthaus und Morgen-Phase
+([#4](../../../issues/4)) kommen mit den Stufen 7 bis 10 unten dazu. Klang (#5) ist als kurze SID-Effekte in der Hauptschleife enthalten.
 
 Alle Stufen hier sind fertig. Was als Nächstes ansteht, steht in den Issues,
 nicht in diesem Plan: erst einmal durchspielen ([#7](../../../issues/7)) und auf
@@ -64,3 +64,60 @@ drei Pfähle setzen `OUT_MEND` mit Totholz (Gewinn) und verlorenem Hainrand (Ver
 **Tests**: `mend_the_bowl`, `the_bowl_calms_the_spirit`, `stake_out_a_new_boundary`,
 `mend_view_shows_gap_and_pieces`.
 **Status**: Complete
+
+## Nacht und Morgen ([#4](../../../issues/4))
+
+Ziel: Die C64-Fassung bekommt die zweite Konsequenzstufe der SDL-Fassung: Sumi fragt
+nach der Übernachtung, der Futon ist bespielbar, jeder Ausgang zeigt am Morgen
+Gewinn **und** Verlust, und am Schrein liegt die graue Spur samt Hinweis auf den
+Besucher. Entschieden (mit Rainer, 2026-10-01):
+
+- **Umfang:** volle Parität mit dem PC, alles nach dem Ausgang.
+- **Ende:** der Ablauf folgt dem PC bis zur Teaser-Szene; danach kommt die vorhandene
+  Schlusstafel („der Ausschnitt endet hier“). `OPEN_AFTER_OUTCOME` entfällt dann, die
+  drei Sumi-Regeln führen auf beiden Seiten in die Nacht.
+- **Geteilter Code:** Nacht, Frage und Dialogende entstehen von Anfang an in
+  `shared/`, in der Form der C64-Fassung (direkter Zugriff auf `g->feld`, Bytetypen
+  und Casts der C64); die PC-Fassung passt sich an. Die Texte und Tabellen kommen aus
+  den `shared/*.inc`.
+- **Platzgrenze:** höchstens 6 KB mehr in der `.prg` (Datei 28 246 Bytes vor Beginn,
+  22 500 Bytes frei). Nach jeder Stufe `make clean build size`; wird die Grenze
+  überschritten, wird angehalten und gefragt. Geschätzt: etwa 2,7 KB Text, mit Tabellen
+  und Code 4 bis 5 KB (ungemessen).
+
+## Stage 7: Phase und Morgenreaktionen der Figuren
+**Ziel**: Die C64-Fassung kennt `Phase`; die Regelauswahl nutzt `g->phase` statt
+`PHASE_ANY`. Sumi, Mio und Daigo antworten am Morgen je Ausgang anders (zehn Regeln, zehn
+Dialoge, die Notiz `N_MORNING`); die Texte liegen einmal in `shared/*.inc`.
+**Erfolgskriterien**: Mit `phase == PHASE_MORNING` und einem Ausgang antwortet jede der
+drei Figuren mit ihrer Morgenzeile; mit `PHASE_BEFORE` bleibt es bei der bisherigen
+Reaktion. Die Morgenregeln stehen nur noch in `shared/`. Größe gemessen.
+**Tests**: `morning_reactions_follow_the_outcome`, `before_the_night_nothing_changes`.
+**Status**: Not Started
+
+## Stage 8: Die Übernachtungsfrage
+**Ziel**: Nach Sumis Reaktion auf den Ausgang fragt das Spiel „Übernachten?“
+(`GAME_PROMPT`, zwei Antworten); `spend_the_night` setzt den Morgen. Der Futon im
+Gasthaus erklärt sich und fragt dasselbe.
+**Erfolgskriterien**: Ja bringt in den Morgen im Gasthaus (Phase, Szene, Notiz); Nein oder
+Abbrechen lässt es beim Spiel; solange der Wald unentschieden ist, geschieht nichts.
+**Tests**: `the_night_is_offered_after_the_outcome`, `staying_awake_changes_nothing`,
+`the_futon_asks_the_same`.
+**Status**: Not Started
+
+## Stage 9: Der Morgen in Dorf und Wald
+**Ziel**: Morgen-Änderungen der Karte je Ausgang (`outcome_changes` mit Phase), der Fuchs ist
+weg und der Bau leer, die graue Spur am Schrein, der späte Inschriftentext.
+**Erfolgskriterien**: Jeder Ausgang zeigt am Morgen Gewinn und Verlust; die graue Spur ist
+erst am Morgen zu sehen. Die Prüfung „keine Moral-Farben“ der PC-Tests gilt auch hier.
+**Tests**: `the_morning_shows_gain_and_loss`, `the_grey_trace_comes_with_the_morning`.
+**Status**: Not Started
+
+## Stage 10: Teaser und Ende
+**Ziel**: Das Lesen des Besuchers am Morgen öffnet die Teaser-Szene, danach die
+Schlusstafel. Die Unterschiede `OPEN_AFTER_OUTCOME` und der Eintrag in der Erlaubnisliste
+des Drift-Checks fallen weg.
+**Erfolgskriterien**: Ablauf Ausgang → Nacht → Morgen → Teaser → Tafel in einem Test
+durchgespielt; Driftmelder ohne Ausnahme für die drei Sumi-Regeln.
+**Tests**: `the_whole_slice_to_the_end`.
+**Status**: Not Started
